@@ -246,7 +246,7 @@ export default function CityReport() {
   )
 
   const totalSubvention = data.reduce(
-    (sum, row) => sum + Number(row.total_subvention_due ?? 0),
+    (sum, row) => sum + Number(row.total_amount_due ?? 0),
     0
   )
 
@@ -373,126 +373,175 @@ export default function CityReport() {
         </div>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Livraisons</div>
-          <div className="text-2xl font-semibold">{totalDeliveries}</div>
+      <section className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-emerald-900 uppercase tracking-wide">
+            Impact financier
+          </h2>
+          <span className="text-xs text-emerald-700">Budget & volume</span>
         </div>
-
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Subvention communale</div>
-          <div className="text-2xl font-semibold">
-            {formatCHF(totalSubvention)}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-xl border bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">Subvention communale</div>
+            <div className="text-2xl font-semibold text-slate-900">
+              {formatCHF(totalSubvention)}
+            </div>
           </div>
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Volume total</div>
-          <div className="text-2xl font-semibold">
-            {formatCHF(totalVolume)}
+          <div className="rounded-xl border bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">Volume total</div>
+            <div className="text-2xl font-semibold text-slate-900">
+              {formatCHF(totalVolume)}
+            </div>
+          </div>
+          <div className="rounded-xl border bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">Livraisons</div>
+            <div className="text-2xl font-semibold text-slate-900">{totalDeliveries}</div>
           </div>
         </div>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-gray-700">
-          Valeur pour la commune
-        </h2>
+      <section className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-amber-900 uppercase tracking-wide">
+            Public & social
+          </h2>
+          <span className="text-xs text-amber-700">Impact CMS</span>
+        </div>
         {statsLoading ? (
           <div className="text-sm text-gray-500">Chargement...</div>
         ) : statsError ? (
           <div className="text-sm text-red-600">{statsError}</div>
         ) : cityStats ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="rounded-lg border p-4">
-              <div className="text-sm text-gray-500">Beneficiaires uniques</div>
-              <div className="text-2xl font-semibold">{cityStats.unique_clients}</div>
-              <div className="text-xs text-gray-400">Menages servis</div>
-            </div>
-            <div className="rounded-lg border p-4">
-              <div className="text-sm text-gray-500">Beneficiaires CMS</div>
-              <div className="text-2xl font-semibold">{cityStats.cms_unique_clients}</div>
-              <div className="text-xs text-gray-400">Public prioritaire</div>
-            </div>
-            <div className="rounded-lg border p-4">
-              <div className="text-sm text-gray-500">Commerces actifs</div>
-              <div className="text-2xl font-semibold">{cityStats.active_shops}</div>
-              <div className="text-xs text-gray-400">Ce mois</div>
-            </div>
-            <div className="rounded-lg border p-4">
-              <div className="text-sm text-gray-500">Subvention / livraison</div>
-              <div className="text-2xl font-semibold">
-                {formatCHF(averageSubventionPerDelivery)}
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Livraisons CMS</div>
+              <div className="text-2xl font-semibold">{cityStats.cms_deliveries}</div>
+              <div className="text-xs text-gray-400">
+                {cityStats.cms_share_pct.toFixed(1)}% des livraisons
               </div>
-              <div className="text-xs text-gray-400">Moyenne du mois</div>
             </div>
-            <div className="rounded-lg border p-4">
-              <div className="text-sm text-gray-500">Subvention / beneficiaire</div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">% livraisons CMS</div>
               <div className="text-2xl font-semibold">
-                {formatCHF(averageSubventionPerBeneficiary)}
+                {cityStats.cms_share_pct.toFixed(1)}%
               </div>
-              <div className="text-xs text-gray-400">Par menage servi</div>
+              <div className="text-xs text-gray-400">Part du total</div>
             </div>
-            <div className="rounded-lg border p-4">
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
               <div className="text-sm text-gray-500">Prise en charge CMS</div>
               <div className="text-2xl font-semibold">
                 {formatCHF(cityStats.cms_subsidy_chf ?? 0)}
               </div>
               <div className="text-xs text-gray-400">Participation Velocite</div>
             </div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Beneficiaires CMS</div>
+              <div className="text-2xl font-semibold">{cityStats.cms_unique_clients}</div>
+              <div className="text-xs text-gray-400">Public prioritaire</div>
+            </div>
           </div>
         ) : null}
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Livraisons CMS</div>
-          <div className="text-2xl font-semibold">
-            {statsLoading || !cityStats ? '-' : cityStats.cms_deliveries}
-          </div>
-          <div className="text-xs text-gray-400">
-            {statsLoading || !cityStats ? '' : `${cityStats.cms_share_pct.toFixed(1)}% des livraisons`}
-          </div>
+      <section className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-sky-900 uppercase tracking-wide">
+            Service & couverture
+          </h2>
+          <span className="text-xs text-sky-700">Rythme & reach</span>
         </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Sacs moyens</div>
-          <div className="text-2xl font-semibold">
-            {statsLoading || !cityStats ? '-' : cityStats.average_bags.toFixed(1)}
+        {statsLoading ? (
+          <div className="text-sm text-gray-500">Chargement...</div>
+        ) : statsError ? (
+          <div className="text-sm text-red-600">{statsError}</div>
+        ) : cityStats ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Beneficiaires uniques</div>
+              <div className="text-2xl font-semibold">{cityStats.unique_clients}</div>
+              <div className="text-xs text-gray-400">Menages servis</div>
+            </div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Commerces actifs</div>
+              <div className="text-2xl font-semibold">{cityStats.active_shops}</div>
+              <div className="text-xs text-gray-400">Ce mois</div>
+            </div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Sacs moyens</div>
+              <div className="text-2xl font-semibold">
+                {cityStats.average_bags.toFixed(1)}
+              </div>
+              <div className="text-xs text-gray-400">Total sacs: {cityStats.total_bags}</div>
+            </div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Jours actifs</div>
+              <div className="text-2xl font-semibold">{cityStats.active_days}</div>
+              <div className="text-xs text-gray-400">Mois en cours</div>
+            </div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Livraisons / jour</div>
+              <div className="text-2xl font-semibold">
+                {cityStats.deliveries_per_active_day.toFixed(1)}
+              </div>
+              <div className="text-xs text-gray-400">Jours actifs</div>
+            </div>
           </div>
-          <div className="text-xs text-gray-400">
-            {statsLoading || !cityStats ? '' : `Total sacs: ${cityStats.total_bags}`}
-          </div>
-        </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Jours actifs</div>
-          <div className="text-2xl font-semibold">
-            {statsLoading || !cityStats ? '-' : cityStats.active_days}
-          </div>
-          <div className="text-xs text-gray-400">Mois en cours</div>
-        </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Livraisons / jour</div>
-          <div className="text-2xl font-semibold">
-            {statsLoading || !cityStats ? '-' : cityStats.deliveries_per_active_day.toFixed(1)}
-          </div>
-          <div className="text-xs text-gray-400">Jours actifs</div>
-        </div>
+        ) : null}
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">Km a velo (mois)</div>
-          <div className="text-2xl font-semibold">
-            {ecoLoading || !ecoStats ? '-' : ecoStats.distance_km.toFixed(1)}
-          </div>
-          <div className="text-xs text-gray-400">Estimation aller-retour</div>
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+            Efficience
+          </h2>
+          <span className="text-xs text-slate-500">Cout moyen</span>
         </div>
-        <div className="rounded-lg border p-4">
-          <div className="text-sm text-gray-500">CO2 economise (kg)</div>
-          <div className="text-2xl font-semibold">
-            {ecoLoading || !ecoStats ? '-' : ecoStats.co2_saved_kg.toFixed(1)}
+        {statsLoading ? (
+          <div className="text-sm text-gray-500">Chargement...</div>
+        ) : statsError ? (
+          <div className="text-sm text-red-600">{statsError}</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Subvention / livraison</div>
+              <div className="text-2xl font-semibold">
+                {formatCHF(averageSubventionPerDelivery)}
+              </div>
+              <div className="text-xs text-gray-400">Moyenne du mois</div>
+            </div>
+            <div className="rounded-xl border bg-white p-4 shadow-sm">
+              <div className="text-sm text-gray-500">Subvention / beneficiaire</div>
+              <div className="text-2xl font-semibold">
+                {formatCHF(averageSubventionPerBeneficiary)}
+              </div>
+              <div className="text-xs text-gray-400">Par menage servi</div>
+            </div>
           </div>
-          <div className="text-xs text-gray-400">Base voiture 93.6 g/km</div>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-teal-100 bg-teal-50/50 p-4 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-teal-900 uppercase tracking-wide">
+            Impact environnemental
+          </h2>
+          <span className="text-xs text-teal-700">Mobilite douce</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-xl border bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">Km a velo (mois)</div>
+            <div className="text-2xl font-semibold">
+              {ecoLoading || !ecoStats ? '-' : ecoStats.distance_km.toFixed(1)}
+            </div>
+            <div className="text-xs text-gray-400">Estimation aller-retour</div>
+          </div>
+          <div className="rounded-xl border bg-white p-4 shadow-sm">
+            <div className="text-sm text-gray-500">CO2 economise (kg)</div>
+            <div className="text-2xl font-semibold">
+              {ecoLoading || !ecoStats ? '-' : ecoStats.co2_saved_kg.toFixed(1)}
+            </div>
+            <div className="text-xs text-gray-400">Base voiture 93.6 g/km</div>
+          </div>
         </div>
       </section>
 
