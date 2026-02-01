@@ -24,7 +24,8 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
     const [name, setName] = useState('')
     const [ruleType, setRuleType] = useState('bags_price')
     const [bagPrice, setBagPrice] = useState('5.00')
-    const [cmsDiscount, setCmsDiscount] = useState('0')
+    const [cmsPrice, setCmsPrice] = useState('')
+    const [cmsShareMode, setCmsShareMode] = useState<'same' | 'city_shop_50'>('same')
     const [thresholds, setThresholds] = useState<{ min: string, max: string, price: string }[]>([
         { min: '0', max: '50', price: '12.00' },
         { min: '50', max: '', price: '8.00' }
@@ -46,7 +47,12 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                 const pricing = tariffToEdit.rule?.pricing ?? tariffToEdit.rule ?? {}
                 const priceValue = pricing.price_per_2_bags ?? pricing.price_per_bag ?? pricing.amount_per_bag ?? '5.00'
                 setBagPrice(String(priceValue))
-                setCmsDiscount(String(pricing.cms_discount ?? '0'))
+                setCmsPrice(pricing.cms_price_per_2_bags ? String(pricing.cms_price_per_2_bags) : '')
+                if (tariffToEdit.rule?.shares_cms?.shop === 50 && tariffToEdit.rule?.shares_cms?.city === 50) {
+                    setCmsShareMode('city_shop_50')
+                } else {
+                    setCmsShareMode('same')
+                }
             } else {
                 // Map thresholds
                 const pricing = tariffToEdit.rule?.pricing ?? tariffToEdit.rule ?? {}
@@ -73,7 +79,8 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
             setName('')
             setRuleType('bags_price')
             setBagPrice('5.00')
-            setCmsDiscount('0')
+            setCmsPrice('')
+            setCmsShareMode('same')
             setThresholds([
                 { min: '0', max: '50', price: '12.00' },
                 { min: '50', max: '', price: '8.00' }
@@ -119,8 +126,10 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                 rulePayload = {
                     pricing: {
                         price_per_2_bags: parseFloat(bagPrice),
-                        cms_discount: parseFloat(cmsDiscount)
                     }
+                }
+                if (cmsPrice) {
+                    rulePayload.pricing.cms_price_per_2_bags = parseFloat(cmsPrice)
                 }
             } else {
                 // order_amount - threshold_list
@@ -156,6 +165,9 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                 rule_type: backendRuleType,
                 rule: rulePayload,
                 share: sharePayload
+            }
+            if (cmsShareMode === 'city_shop_50') {
+                payload.rule.shares_cms = { client: 0, shop: 50, city: 50, admin_region: 0 }
             }
             if (user?.role === 'super_admin' && adminContextRegion?.id) {
                 payload.admin_region_id = adminContextRegion.id
@@ -229,13 +241,14 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Rabais CMS (CHF)</Label>
+                                    <Label>Prix CMS pour 2 sacs (CHF)</Label>
                                     <Input
                                         type="number" step="0.05"
-                                        value={cmsDiscount}
-                                        onChange={e => setCmsDiscount(e.target.value)}
+                                        value={cmsPrice}
+                                        onChange={e => setCmsPrice(e.target.value)}
+                                        placeholder="Optionnel"
                                     />
-                                    <p className="text-xs text-muted-foreground">Déduit si client CMS</p>
+                                    <p className="text-xs text-muted-foreground">Remplace le rabais si renseigné</p>
                                 </div>
                             </div>
                         ) : (
@@ -325,6 +338,20 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                             Le commerce paiera {100 - parseFloat(clientSharePercent || '0')}%
                                         </span>
                                     </div>
+                                </div>
+                            )}
+                            {ruleType === 'bags_price' && (
+                                <div className="space-y-2 pl-4 border-l-2 border-amber-200">
+                                    <Label>Répartition CMS</Label>
+                                    <Select value={cmsShareMode} onValueChange={(v) => setCmsShareMode(v as any)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="same">Identique au standard</SelectItem>
+                                            <SelectItem value="city_shop_50">50% Commune / 50% Commerce (client = 0)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             )}
                         </div>

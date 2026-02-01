@@ -10,7 +10,7 @@ import { apiPost, apiGet, apiPatch, API_BASE_URL } from '@/lib/api'
 import { useShopClients } from '../hooks/useShopClients'
 import { useShopDeliveries } from '../hooks/useShopDeliveries'
 import { useShopPeriods } from '../hooks/useShopPeriods'
-import { useShopStats } from '../hooks/useShopStats'
+import { useShopStats } from '@/app/(protected)/reports/hooks/useShopStats'
 import { useMe } from '../../hooks/useMe'
 
 function getCurrentMonth() {
