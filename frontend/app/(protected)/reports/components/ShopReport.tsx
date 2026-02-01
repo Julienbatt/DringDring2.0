@@ -882,118 +882,151 @@ export default function ShopReport() {
         </form>
       </section >
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-gray-700">
-          Stats du mois
-        </h2>
+      <section className="space-y-4">
+        <div className="text-sm font-medium text-gray-700">Stats du mois</div>
         {statsLoading ? (
           <div className="text-sm text-gray-500">Chargement...</div>
         ) : statsError ? (
           <div className="text-sm text-red-600">{statsError}</div>
         ) : shopStats ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Livraisons (ce mois)</div>
-                <div className="text-2xl font-semibold">{shopStats.total_deliveries}</div>
-                <div className="text-xs text-gray-400">
-                  {formatPercent(shopStats.deliveries_change_pct)} vs {shopStats.previous_month}
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                  Impact financier
+                </h3>
+                <span className="text-xs text-emerald-700">Recettes & volume</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Montant facture (TTC)</div>
+                  <div className="text-2xl font-semibold">{formatCHF(shopStats.total_volume_chf)}</div>
+                  <div className="text-xs text-gray-400">Part entreprise regionale</div>
                 </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Clients servis</div>
-                <div className="text-2xl font-semibold">{shopStats.unique_clients}</div>
-                <div className="text-xs text-gray-400">
-                  Nouveaux: {newClients}
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Montant des courses</div>
+                  <div className="text-2xl font-semibold">
+                    {formatCHF(shopStats.total_basket_value_chf)}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Panier moyen: {formatCHF(shopStats.average_basket_value_chf)}
+                  </div>
                 </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Clients recurrents</div>
-                <div className="text-2xl font-semibold">{shopStats.repeat_clients}</div>
-                <div className="text-xs text-gray-400">
-                  Taux: {shopStats.repeat_rate_pct.toFixed(1)}%
-                </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Montant facture (TTC)</div>
-                <div className="text-2xl font-semibold">{formatCHF(shopStats.total_volume_chf)}</div>
-                <div className="text-xs text-gray-400">Part entreprise regionale</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Sacs livres</div>
-                <div className="text-2xl font-semibold">{shopStats.total_bags}</div>
-                <div className="text-xs text-gray-400">
-                  Moyenne: {shopStats.average_bags.toFixed(1)}
-                </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Montant des courses</div>
-                <div className="text-2xl font-semibold">
-                  {formatCHF(shopStats.total_basket_value_chf)}
-                </div>
-                <div className="text-xs text-gray-400">
-                  Panier moyen: {formatCHF(shopStats.average_basket_value_chf)}
-                </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Jours actifs</div>
-                <div className="text-2xl font-semibold">{shopStats.active_days}</div>
-                <div className="text-xs text-gray-400">Mois en cours</div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Livraisons / jour</div>
-                <div className="text-2xl font-semibold">{shopStats.deliveries_per_active_day.toFixed(1)}</div>
-                <div className="text-xs text-gray-400">Jours actifs</div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Pic du mois</div>
-                <div className="text-2xl font-semibold">
-                  {shopStats.peak_day_deliveries || 0}
-                </div>
-                <div className="text-xs text-gray-400">
-                  {shopStats.peak_day ? formatDate(shopStats.peak_day) : 'n/a'}
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Livraisons (ce mois)</div>
+                  <div className="text-2xl font-semibold">{shopStats.total_deliveries}</div>
+                  <div className="text-xs text-gray-400">
+                    {formatPercent(shopStats.deliveries_change_pct)} vs {shopStats.previous_month}
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-4">
-                <div className="text-sm text-amber-700">Livraisons CMS</div>
-                <div className="text-2xl font-semibold">{shopStats.cms_deliveries}</div>
-                <div className="text-xs text-amber-700/80">Volume social du mois</div>
+
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  Public & social
+                </h3>
+                <span className="text-xs text-amber-700">Impact CMS</span>
               </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">Prise en charge CMS</div>
-                <div className="text-2xl font-semibold">
-                  {formatCHF(shopStats.cms_subsidy_chf)}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-amber-700">Livraisons CMS</div>
+                  <div className="text-2xl font-semibold">{shopStats.cms_deliveries}</div>
+                  <div className="text-xs text-amber-700/80">Volume social du mois</div>
                 </div>
-                <div className="text-xs text-gray-400">Participation Velocite</div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-sm text-gray-500">% livraisons CMS</div>
-                <div className="text-2xl font-semibold">
-                  {shopStats.cms_share_pct.toFixed(1)}%
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">% livraisons CMS</div>
+                  <div className="text-2xl font-semibold">{shopStats.cms_share_pct.toFixed(1)}%</div>
+                  <div className="text-xs text-gray-400">Part du mois</div>
                 </div>
-                <div className="text-xs text-gray-400">Part du mois</div>
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Prise en charge CMS</div>
+                  <div className="text-2xl font-semibold">
+                    {formatCHF(shopStats.cms_subsidy_chf)}
+                  </div>
+                  <div className="text-xs text-gray-400">Participation Velocite</div>
+                </div>
               </div>
             </div>
-            <div className="rounded-lg border p-4">
-              <div className="text-sm font-medium text-gray-700">Top clients</div>
-              {shopStats.top_clients.length === 0 ? (
-                <div className="text-sm text-gray-500">Aucun client recurrent.</div>
-              ) : (
-                <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {shopStats.top_clients.map((client) => (
-                    <div key={client.client_id} className="rounded border px-3 py-2">
-                      <div className="text-sm font-medium">{client.client_name}</div>
-                      <div className="text-xs text-gray-500">
-                        {client.deliveries} livraisons - {client.bags} sacs
+
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
+                  Service & fidelite
+                </h3>
+                <span className="text-xs text-sky-700">Clients</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Clients servis</div>
+                  <div className="text-2xl font-semibold">{shopStats.unique_clients}</div>
+                  <div className="text-xs text-gray-400">Nouveaux: {newClients}</div>
+                </div>
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Clients recurrents</div>
+                  <div className="text-2xl font-semibold">{shopStats.repeat_clients}</div>
+                  <div className="text-xs text-gray-400">
+                    Taux: {shopStats.repeat_rate_pct.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border bg-white p-4 shadow-sm">
+                <div className="text-sm font-medium text-gray-700">Top clients</div>
+                {shopStats.top_clients.length === 0 ? (
+                  <div className="text-sm text-gray-500">Aucun client recurrent.</div>
+                ) : (
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {shopStats.top_clients.map((client) => (
+                      <div key={client.client_id} className="rounded border px-3 py-2">
+                        <div className="text-sm font-medium">{client.client_name}</div>
+                        <div className="text-xs text-gray-500">
+                          {client.deliveries} livraisons - {client.bags} sacs
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                  Operations
+                </h3>
+                <span className="text-xs text-slate-500">Rythme & capacite</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Sacs livres</div>
+                  <div className="text-2xl font-semibold">{shopStats.total_bags}</div>
+                  <div className="text-xs text-gray-400">
+                    Moyenne: {shopStats.average_bags.toFixed(1)}
+                  </div>
                 </div>
-              )}
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Jours actifs</div>
+                  <div className="text-2xl font-semibold">{shopStats.active_days}</div>
+                  <div className="text-xs text-gray-400">Mois en cours</div>
+                </div>
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Livraisons / jour</div>
+                  <div className="text-2xl font-semibold">
+                    {shopStats.deliveries_per_active_day.toFixed(1)}
+                  </div>
+                  <div className="text-xs text-gray-400">Jours actifs</div>
+                </div>
+                <div className="rounded-xl border bg-white p-4 shadow-sm">
+                  <div className="text-sm text-gray-500">Pic du mois</div>
+                  <div className="text-2xl font-semibold">
+                    {shopStats.peak_day_deliveries || 0}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {shopStats.peak_day ? formatDate(shopStats.peak_day) : 'n/a'}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
