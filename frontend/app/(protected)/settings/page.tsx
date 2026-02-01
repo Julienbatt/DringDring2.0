@@ -449,7 +449,7 @@ export default function SettingsPage() {
                         <div>
                             <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Role</label>
                             <div className="mt-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                {roleLabel(user.role)}
+                                {roleLabel(user.role ?? undefined)}
                             </div>
                         </div>
                         {user.shop_id && (

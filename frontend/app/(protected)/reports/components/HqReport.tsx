@@ -66,6 +66,26 @@ const MONTH_SHORT_LABELS = [
 
 const MONEY_COLUMNS = new Set(['total_subvention_due', 'total_volume_chf'])
 
+type HqBillingRow = {
+  hq_id?: string | null
+  hq_name?: string | null
+  admin_region_id?: string | null
+  admin_region_name?: string | null
+  total_deliveries?: number | null
+  total_subvention_due?: number | null
+  total_volume_chf?: number | null
+  billing_month?: string | null
+  is_frozen?: boolean | null
+  shop_id?: string | null
+  shop_name?: string | null
+  city_name?: string | null
+}
+
+type RegionOption = {
+  id: string
+  name: string
+}
+
 const DETAIL_COLUMNS = [
   'shop_name',
   'city_name',
@@ -226,13 +246,18 @@ export default function HqReport() {
     handleMonthChange(getMonthValue(date.getFullYear(), date.getMonth()))
   }
 
-  const summaryRows = Array.isArray(data) ? data : data?.rows ?? []
-  const filteredRows =
+  const summaryRows: HqBillingRow[] = Array.isArray(data)
+    ? (data as HqBillingRow[])
+    : data && typeof data === 'object' && 'rows' in data
+      ? ((data as { rows?: HqBillingRow[] }).rows ?? [])
+      : []
+
+  const filteredRows: HqBillingRow[] =
     user?.hq_id && Array.isArray(summaryRows)
       ? summaryRows.filter((row) => row.hq_id === user.hq_id)
       : summaryRows
 
-  const regionOptions = Array.from(
+  const regionOptions: RegionOption[] = Array.from(
     new Map(
       filteredRows
         .filter((row) => row.admin_region_id)
@@ -268,8 +293,12 @@ export default function HqReport() {
     }
   })
 
-  const resolvedRows = filteredRows
-  const summaryMonth = Array.isArray(data) ? selectedMonth : data?.month ?? selectedMonth
+  const resolvedRows: HqBillingRow[] = filteredRows
+  const summaryMonth = Array.isArray(data)
+    ? selectedMonth
+    : data && typeof data === 'object' && 'month' in data
+      ? String((data as { month?: string }).month ?? selectedMonth)
+      : selectedMonth
 
   useEffect(() => {
     if (!selectedRegionId && regionOptions.length === 1) {

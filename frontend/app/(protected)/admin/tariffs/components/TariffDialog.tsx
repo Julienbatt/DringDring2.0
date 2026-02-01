@@ -160,7 +160,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
             }
 
             const backendRuleType = ruleType === 'bags_price' ? 'bags' : ruleType
-            const payload = {
+            const payload: any = {
                 name,
                 rule_type: backendRuleType,
                 rule: rulePayload,

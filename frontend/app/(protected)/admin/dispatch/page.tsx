@@ -702,7 +702,9 @@ export default function DispatchPage() {
                         </Link>
                         <button
                             type="button"
-                            onClick={fetchData}
+                            onClick={() => {
+                                void fetchData()
+                            }}
                             className="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700"
                         >
                             Rafraichir maintenant
