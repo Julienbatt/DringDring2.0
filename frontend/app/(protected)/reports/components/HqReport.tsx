@@ -555,73 +555,97 @@ export default function HqReport() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
-                <div className="text-xs uppercase tracking-[0.18em] text-emerald-700">Subvention HQ</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(totalSubventionValue)}</div>
-                <div className="text-xs text-emerald-700/80">Engagement financier du mois</div>
+            <section className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                  Impact financier
+                </h2>
+                <span className="text-xs text-emerald-700">Budget & volume</span>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Volume traite</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(totalVolumeValue)}</div>
-                <div className="text-xs text-slate-500">Valeur totale des commandes</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Livraisons</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">{totalDeliveries}</div>
-                <div className="text-xs text-slate-500">Operations completees</div>
-              </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
-                <div className="text-xs uppercase tracking-[0.18em] text-amber-700">Subvention / livraison</div>
-                <div className="mt-2 text-2xl font-semibold text-slate-900">
-                  {formatCHF(averageSubventionPerDelivery)}
+              <div className="mt-4 grid gap-4 md:grid-cols-4">
+                <div className="rounded-2xl border border-emerald-100 bg-white p-5">
+                  <div className="text-xs uppercase tracking-[0.18em] text-emerald-700">Subvention HQ</div>
+                  <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(totalSubventionValue)}</div>
+                  <div className="text-xs text-emerald-700/80">Engagement financier du mois</div>
                 </div>
-                <div className="text-xs text-amber-700/80">Cout moyen par service</div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Volume traite</div>
+                  <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(totalVolumeValue)}</div>
+                  <div className="text-xs text-slate-500">Valeur totale des commandes</div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Livraisons</div>
+                  <div className="mt-2 text-2xl font-semibold text-slate-900">{totalDeliveries}</div>
+                  <div className="text-xs text-slate-500">Operations completees</div>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
+                  <div className="text-xs uppercase tracking-[0.18em] text-amber-700">Subvention / livraison</div>
+                  <div className="mt-2 text-2xl font-semibold text-slate-900">
+                    {formatCHF(averageSubventionPerDelivery)}
+                  </div>
+                  <div className="text-xs text-amber-700/80">Cout moyen par service</div>
+                </div>
               </div>
-            </div>
+            </section>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Clients servis</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{uniqueClients}</div>
-            <div className="text-xs text-slate-500">Menages soutenus</div>
+        <section className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+              Public & social
+            </h2>
+            <span className="text-xs text-amber-700">Impact CMS</span>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Commerces actifs</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{activeShops}</div>
-            <div className="text-xs text-slate-500">Partenaires engages</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Communes couvertes</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{activeCities}</div>
-            <div className="text-xs text-slate-500">Reseau territorial</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Livraisons / jour</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">
-              {deliveriesPerActiveDay.toFixed(1)}
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-amber-100 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-amber-700">Livraisons CMS</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{cmsDeliveries}</div>
+              <div className="text-xs text-amber-700/80">Volume social du mois</div>
             </div>
-            <div className={`text-xs ${deliveriesChangeTone}`}>Evol. {deliveriesChangeLabel}</div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">% de livraisons CMS</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{cmsSharePct.toFixed(1)}%</div>
+              <div className="text-xs text-slate-500">Part du total</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Prise en charge CMS</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(cmsSubsidy)}</div>
+              <div className="text-xs text-slate-500">Participation Velocite</div>
+            </div>
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-amber-700">Livraisons CMS</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{cmsDeliveries}</div>
-            <div className="text-xs text-amber-700/80">Volume social du mois</div>
+        <section className="rounded-2xl border border-sky-100 bg-sky-50/50 p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
+              Service & couverture
+            </h2>
+            <span className="text-xs text-sky-700">Rythme & reach</span>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-500">% de livraisons CMS</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{cmsSharePct.toFixed(1)}%</div>
-            <div className="text-xs text-slate-500">Part du total</div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Prise en charge CMS</div>
-            <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(cmsSubsidy)}</div>
-            <div className="text-xs text-slate-500">Participation Velocite</div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Clients servis</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{uniqueClients}</div>
+              <div className="text-xs text-slate-500">Menages soutenus</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Commerces actifs</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{activeShops}</div>
+              <div className="text-xs text-slate-500">Partenaires engages</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Communes couvertes</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">{activeCities}</div>
+              <div className="text-xs text-slate-500">Reseau territorial</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Livraisons / jour</div>
+              <div className="mt-2 text-2xl font-semibold text-slate-900">
+                {deliveriesPerActiveDay.toFixed(1)}
+              </div>
+              <div className={`text-xs ${deliveriesChangeTone}`}>Evol. {deliveriesChangeLabel}</div>
+            </div>
           </div>
         </section>
 
