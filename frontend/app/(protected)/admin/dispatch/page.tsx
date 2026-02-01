@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
 import { format } from 'date-fns'
@@ -49,6 +49,10 @@ export default function DispatchPage() {
     const [couriers, setCouriers] = useState<Courier[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set())
+    const previousDeliveryIdsRef = useRef<Set<string>>(new Set())
+    const hasLoadedOnceRef = useRef(false)
+    const lastFetchAtRef = useRef(0)
 
     // Assignment Modal State
     const [selectedDelivery, setSelectedDelivery] = useState<DispatchDelivery | null>(null)
@@ -69,26 +73,49 @@ export default function DispatchPage() {
     // Tabs State
     const [activeTab, setActiveTab] = useState<'todo' | 'assigned' | 'done'>('todo')
 
+    const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
+    const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
+    const [monthPickerOpen, setMonthPickerOpen] = useState(false)
+    const [pickerYear, setPickerYear] = useState(() => Number(getCurrentMonth().split('-')[0]))
+
     // Allow admin_region or super_admin (with optional context drill-down).
     useEffect(() => {
         if (!user) return
         if (user.role !== 'admin_region' && user.role !== 'super_admin') return
 
         fetchData()
-    }, [user, adminContextRegion])
+    }, [user, adminContextRegion, selectedMonth])
 
-    const fetchData = async () => {
-        setLoading(true)
+    useEffect(() => {
+        if (!user) return
+        if (user.role !== 'admin_region' && user.role !== 'super_admin') return
+
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState !== 'visible') return
+            fetchData({ silent: true })
+        }, 15000)
+
+        return () => window.clearInterval(intervalId)
+    }, [user, adminContextRegion, selectedMonth])
+
+    const fetchData = async ({ silent = false }: { silent?: boolean } = {}) => {
+        if (!silent) {
+            setLoading(true)
+        }
         setError(null)
         try {
+            const fetchStartedAt = Date.now()
             // Parallel fetch: Deliveries + Couriers (for dropdown)
             // Couriers endpoint: /couriers (list couriers in region - auto filtered for admin_region)
             // Delivery endpoint: /dispatch/deliveries
 
-            const queryParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
+            const monthParam = `month=${encodeURIComponent(selectedMonth)}`
+            const regionParam = adminContextRegion ? `&admin_region_id=${adminContextRegion.id}` : ''
+            const queryParams = `?${monthParam}${regionParam}`
+            const couriersParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
             const [deliveriesRes, couriersRes] = await Promise.all([
                 api.get<DispatchDelivery[]>(`/dispatch/deliveries${queryParams}`, session?.access_token),
-                api.get<any[]>(`/couriers${queryParams}`, session?.access_token)
+                api.get<any[]>(`/couriers${couriersParams}`, session?.access_token)
             ])
 
             // Mapping backend response to frontend Courier type if schema differs slightly
@@ -102,18 +129,53 @@ export default function DispatchPage() {
             }))
 
             setDeliveries(deliveriesRes)
+            const currentIds = new Set(deliveriesRes.map((delivery) => delivery.id))
+            if (hasLoadedOnceRef.current) {
+                const previousFetchAt = lastFetchAtRef.current
+                const highlightIds = deliveriesRes
+                    .filter((delivery) => {
+                        if (!previousDeliveryIdsRef.current.has(delivery.id)) return true
+                        if (!delivery.status_updated_at) return false
+                        const updatedAt = new Date(delivery.status_updated_at).getTime()
+                        return !Number.isNaN(updatedAt) && updatedAt > previousFetchAt
+                    })
+                    .map((delivery) => delivery.id)
+                if (highlightIds.length > 0) {
+                    setHighlightedIds((prev) => {
+                        const next = new Set(prev)
+                        highlightIds.forEach((id) => next.add(id))
+                        return next
+                    })
+                }
+            } else {
+                hasLoadedOnceRef.current = true
+                setHighlightedIds(new Set())
+            }
+            previousDeliveryIdsRef.current = currentIds
+            lastFetchAtRef.current = fetchStartedAt
             setCouriers(formattedCouriers)
         } catch (err: any) {
             console.error(err)
             setError('Erreur lors du chargement des donnees dispatch.')
         } finally {
-            setLoading(false)
+            if (!silent) {
+                setLoading(false)
+            }
         }
     }
 
     const handleAssignClick = (delivery: DispatchDelivery) => {
         setSelectedDelivery(delivery)
         setIsModalOpen(true)
+    }
+
+    const clearHighlight = (deliveryId: string) => {
+        setHighlightedIds((prev) => {
+            if (!prev.has(deliveryId)) return prev
+            const next = new Set(prev)
+            next.delete(deliveryId)
+            return next
+        })
     }
 
     const handleAssignConfirm = async (courierId: string) => {
@@ -130,6 +192,11 @@ export default function DispatchPage() {
                     ? { ...d, courier_id: courierId, status: 'assigned' }
                     : d
             ))
+            setHighlightedIds((prev) => {
+                const next = new Set(prev)
+                next.add(selectedDelivery.id)
+                return next
+            })
 
             const assignedCourier = couriers.find(c => c.id === courierId)
             if (assignedCourier?.phone_number) {
@@ -143,6 +210,19 @@ export default function DispatchPage() {
             alert("Erreur lors de l'assignation")
         } finally {
             setAssigningLoading(false)
+        }
+    }
+
+    const handleMarkDelivered = async (delivery: DispatchDelivery) => {
+        try {
+            await api.patch(`/dispatch/deliveries/${delivery.id}/complete`, {}, session?.access_token)
+            setDeliveries(prev => prev.map(d => (
+                d.id === delivery.id
+                    ? { ...d, status: 'delivered' }
+                    : d
+            )))
+        } catch (err) {
+            alert("Erreur lors de la validation")
         }
     }
 
@@ -217,6 +297,17 @@ export default function DispatchPage() {
     }
 
     const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), [])
+    const [selectedYear, selectedMonthIndex] = selectedMonth.split('-').map(Number)
+    const formatMonthLabel = (year: number, monthIndex: number) => {
+        const label = format(new Date(year, monthIndex, 1), 'MMMM yyyy', { locale: fr })
+        return `${label.charAt(0).toUpperCase()}${label.slice(1)}`
+    }
+    const getMonthValue = (year: number, monthIndex: number) =>
+        `${year}-${String(monthIndex + 1).padStart(2, '0')}`
+    const stepMonth = (delta: number) => {
+        const date = new Date(selectedYear, selectedMonthIndex - 1 + delta, 1)
+        setSelectedMonth(getMonthValue(date.getFullYear(), date.getMonth()))
+    }
     const isSameDay = (dateValue: string) => String(dateValue).slice(0, 10) === todayKey
     const pendingDeliveries = deliveries.filter(
         (d) => !d.courier_id && !['delivered', 'cancelled'].includes(d.status || '')
@@ -275,12 +366,82 @@ export default function DispatchPage() {
         <div className="mx-auto max-w-6xl p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Dispatch et operations</h1>
-                <button
-                    onClick={fetchData}
-                    className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
-                >
-                    Actualiser
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => stepMonth(-1)}
+                                className="rounded-full px-2 py-1 text-gray-500 hover:bg-gray-100"
+                            >
+                                ‹
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMonthPickerOpen((prev) => !prev)}
+                                className="min-w-[140px] text-left font-medium text-gray-700"
+                            >
+                                {formatMonthLabel(selectedYear, selectedMonthIndex - 1)}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => stepMonth(1)}
+                                className="rounded-full px-2 py-1 text-gray-500 hover:bg-gray-100"
+                            >
+                                ›
+                            </button>
+                        </div>
+                        {monthPickerOpen && (
+                            <div className="absolute right-0 z-10 mt-2 w-64 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg">
+                                <div className="flex items-center justify-between px-1 pb-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPickerYear((y) => y - 1)}
+                                        className="rounded-full px-2 py-1 text-gray-500 hover:bg-gray-100"
+                                    >
+                                        ‹
+                                    </button>
+                                    <div className="text-sm font-semibold text-gray-700">{pickerYear}</div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPickerYear((y) => y + 1)}
+                                        className="rounded-full px-2 py-1 text-gray-500 hover:bg-gray-100"
+                                    >
+                                        ›
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {Array.from({ length: 12 }).map((_, index) => {
+                                        const isSelected = pickerYear === selectedYear && index === selectedMonthIndex - 1
+                                        return (
+                                            <button
+                                                key={`${pickerYear}-${index}`}
+                                                type="button"
+                                                className={`rounded-lg px-2 py-2 text-xs font-medium ${
+                                                    isSelected
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                                }`}
+                                                onClick={() => {
+                                                    setSelectedMonth(getMonthValue(pickerYear, index))
+                                                    setMonthPickerOpen(false)
+                                                }}
+                                            >
+                                                {format(new Date(pickerYear, index, 1), 'MMM', { locale: fr })}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={fetchData}
+                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
+                    >
+                        Actualiser
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -364,6 +525,8 @@ export default function DispatchPage() {
                                 const canEdit = canEditDelivery(delivery)
                                 const canAssign = !isDelivered && !isCancelled
                                 const canCancel = canEdit
+                                const isHighlighted = highlightedIds.has(delivery.id)
+                                const highlightClass = isHighlighted ? 'bg-amber-50/80' : ''
                                 const statusText = isCancelled
                                     ? 'Annulee'
                                     : isDelivered
@@ -373,15 +536,19 @@ export default function DispatchPage() {
                                             : 'Non assignee'
                                 const notesShort = delivery.notes ? delivery.notes.slice(0, 60) : ''
                                 return (
-                                    <tr key={delivery.id}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <tr
+                                        key={delivery.id}
+                                        onClick={() => clearHighlight(delivery.id)}
+                                        className={isHighlighted ? 'bg-amber-50/80 animate-pulse' : undefined}
+                                    >
+                                        <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${highlightClass} ${isHighlighted ? 'border-l-4 border-amber-300' : ''}`}>
                                             <div className="font-medium">{format(new Date(delivery.delivery_date), 'EEE dd MMM', { locale: fr })}</div>
                                             <div className="text-gray-500">{delivery.time_window}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${highlightClass}`}>
                                             {delivery.shop_name}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className={`px-6 py-4 text-sm text-gray-500 ${highlightClass}`}>
                                             <div className="font-medium text-gray-900">{delivery.client_name || 'Client'}</div>
                                             <div>{delivery.client_address}</div>
                                             <div>{delivery.client_city}</div>
@@ -397,10 +564,10 @@ export default function DispatchPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="hidden xl:table-cell px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={delivery.notes || ''}>
+                                        <td className={`hidden xl:table-cell px-6 py-4 text-sm text-gray-500 max-w-xs truncate ${highlightClass}`} title={delivery.notes || ''}>
                                             {delivery.notes || '-'}
                                         </td>
-                                        <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm">
+                                        <td className={`hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm ${highlightClass}`}>
                                             <span
                                                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                                     isCancelled
@@ -415,7 +582,7 @@ export default function DispatchPage() {
                                                 {isCancelled ? 'Annulee' : isDelivered ? 'Livree' : hasCourier ? 'En cours' : 'Non assigne'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                        <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 ${highlightClass}`}>
                                             {canAssign && (
                                                 <button
                                                     onClick={() => handleAssignClick(delivery)}
@@ -423,6 +590,14 @@ export default function DispatchPage() {
                                                     disabled={!canEdit}
                                                 >
                                                     {delivery.courier_id ? 'Changer' : 'Assigner'}
+                                                </button>
+                                            )}
+                                            {!isDelivered && !isCancelled && hasCourier && (
+                                                <button
+                                                    onClick={() => handleMarkDelivered(delivery)}
+                                                    className="text-slate-600 hover:text-slate-800"
+                                                >
+                                                    Terminer
                                                 </button>
                                             )}
                                             {canEdit && (

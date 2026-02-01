@@ -29,7 +29,7 @@ def compute_financials(
     if bags < 1:
         raise HTTPException(status_code=400, detail="Bags must be >= 1")
 
-    shares = _resolve_shares(rule, share)
+    shares = _resolve_shares(rule, share, is_cms=is_cms)
     if not shares:
         raise HTTPException(status_code=400, detail="Tariff shares missing")
 
@@ -61,6 +61,23 @@ def compute_financials(
     return total_price, s_client, s_shop, s_city, s_admin
 
 
+def compute_total_price(
+    *,
+    rule_type: str,
+    rule: dict,
+    bags: int,
+    order_amount: Decimal | float | None,
+    is_cms: bool,
+):
+    return _compute_total_price(
+        rule_type=rule_type,
+        rule=rule,
+        bags=bags,
+        order_amount=order_amount,
+        is_cms=is_cms,
+    )
+
+
 def _compute_total_price(
     *,
     rule_type: str,
@@ -85,10 +102,14 @@ def _compute_total_price(
         else:
             price_per_2_bags = Decimal(str(price_per_2_bags_raw))
 
-        cms_discount = Decimal(str(pricing.get("cms_discount", 0)))
         blocks = (bags + 1) // 2
         if is_cms:
-            unit_price = max(Decimal("0.00"), price_per_2_bags - cms_discount)
+            cms_price_raw = pricing.get("cms_price_per_2_bags")
+            if cms_price_raw is not None:
+                unit_price = Decimal(str(cms_price_raw))
+            else:
+                cms_discount = Decimal(str(pricing.get("cms_discount", 0)))
+                unit_price = max(Decimal("0.00"), price_per_2_bags - cms_discount)
         else:
             unit_price = price_per_2_bags
         return unit_price * blocks
@@ -141,7 +162,11 @@ def _resolve_pricing(rule: dict) -> dict:
     return rule
 
 
-def _resolve_shares(rule: dict, share: dict) -> dict:
+def _resolve_shares(rule: dict, share: dict, *, is_cms: bool) -> dict:
+    if is_cms:
+        cms_shares = rule.get("shares_cms")
+        if isinstance(cms_shares, dict) and cms_shares:
+            return cms_shares
     shares = rule.get("shares")
     if isinstance(shares, dict) and shares:
         return shares

@@ -7,6 +7,7 @@ import { API_BASE_URL } from '@/lib/api'
 import { useShopDeliveries } from '../../reports/hooks/useShopDeliveries'
 import { useShopPeriods } from '../../reports/hooks/useShopPeriods'
 import { Button } from '@/components/ui/button'
+import { useMe } from '../../hooks/useMe'
 
 type ShopDeliveryRow = Record<string, any>
 
@@ -63,10 +64,12 @@ export default function ShopBillingPage() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const { data: deliveries, loading, error } = useShopDeliveries(selectedMonth)
   const { data: periods, loading: periodsLoading, error: periodsError } = useShopPeriods()
+  const { data: me } = useMe()
   const [downloading, setDownloading] = useState<string | null>(null)
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState(() => Number(getCurrentMonth().split('-')[0]))
   const monthPickerRef = useRef<HTMLDivElement | null>(null)
+  const isHqDependentShop = Boolean(me?.role === 'shop' && me?.hq_id)
 
   const activeDeliveries = (deliveries ?? []).filter(
     (row: ShopDeliveryRow) => String(row.status || '').toLowerCase() !== 'cancelled'
@@ -122,7 +125,7 @@ export default function ShopBillingPage() {
       if (!session) return
 
       const res = await fetch(
-        `${API_BASE_URL}/deliveries/shop/export?month=${month}`,
+        `${API_BASE_URL}/reports/shop-export?month=${month}`,
         {
           headers: { Authorization: `Bearer ${session.access_token}` },
         }
@@ -327,7 +330,11 @@ export default function ShopBillingPage() {
 
       <div className="rounded-md border bg-white p-4 space-y-4">
         <div className="text-lg font-semibold">Factures par periode</div>
-        {periodsLoading ? (
+        {isHqDependentShop ? (
+          <div className="text-sm text-gray-500">
+            Facturation geree par le HQ. Aucun PDF commerce n&apos;est disponible pour ce compte.
+          </div>
+        ) : periodsLoading ? (
           <div className="text-sm text-gray-500">Chargement...</div>
         ) : periodsError ? (
           <div className="text-sm text-red-600">{periodsError}</div>

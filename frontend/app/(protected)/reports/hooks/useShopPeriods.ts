@@ -37,7 +37,7 @@ export function useShopPeriods() {
       }
 
       const result = await apiGet<ShopPeriodRow[]>(
-        '/deliveries/shop/periods',
+        '/reports/shop-periods',
         session.access_token
       )
       setData(result)

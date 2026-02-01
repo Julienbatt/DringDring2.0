@@ -11,6 +11,7 @@ import { useShopClients } from '../hooks/useShopClients'
 import { useShopDeliveries } from '../hooks/useShopDeliveries'
 import { useShopPeriods } from '../hooks/useShopPeriods'
 import { useShopStats } from '../hooks/useShopStats'
+import { useMe } from '../../hooks/useMe'
 
 function getCurrentMonth() {
   const now = new Date()
@@ -157,6 +158,8 @@ export default function ShopReport() {
   const [selectedMonth] = useState(getCurrentMonth())
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { data: me } = useMe()
+  const isHqDependentShop = Boolean(me?.role === 'shop' && me?.hq_id)
 
   const [formState, setFormState] = useState<FormState>({
     client_id: '',
@@ -536,37 +539,39 @@ export default function ShopReport() {
                     (par {currentFrozenPeriod.frozen_by_name || 'Admin'} le {formatDate(currentFrozenPeriod.frozen_at)})
                   </span>
 
-                  <button
-                    onClick={async () => {
-                      try {
-                        const supabase = createClient()
-                        const { data } = await supabase.auth.getSession()
-                        if (!data.session) return
+                  {!isHqDependentShop && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const supabase = createClient()
+                          const { data } = await supabase.auth.getSession()
+                          if (!data.session) return
 
-                        const res = await fetch(`${API_BASE_URL}/reports/shop-monthly-pdf?shop_id=${currentFrozenPeriod.shop_id || ''}&month=${selectedMonth}`, {
-                          headers: { Authorization: `Bearer ${data.session.access_token}` }
-                        })
-                        if (!res.ok) throw new Error("Erreur téléchargement")
+                          const res = await fetch(`${API_BASE_URL}/reports/shop-monthly-pdf?shop_id=${currentFrozenPeriod.shop_id || ''}&month=${selectedMonth}`, {
+                            headers: { Authorization: `Bearer ${data.session.access_token}` }
+                          })
+                          if (!res.ok) throw new Error("Erreur téléchargement")
 
-                        const blob = await res.blob()
-                        const url = window.URL.createObjectURL(blob)
-                        const a = document.createElement("a")
-                        a.href = url
-                        a.download = `Commerce_Report_${selectedMonth}.pdf`
-                        document.body.appendChild(a)
-                        a.click()
-                        window.URL.revokeObjectURL(url)
-                        document.body.removeChild(a)
-                      } catch (e) {
-                        alert("Impossible de télécharger le PDF")
-                      }
-                    }}
-                    type="button"
-                    className="ml-2 flex items-center gap-1 rounded bg-white px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 cursor-pointer"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
-                    PDF
-                  </button>
+                          const blob = await res.blob()
+                          const url = window.URL.createObjectURL(blob)
+                          const a = document.createElement("a")
+                          a.href = url
+                          a.download = `Commerce_Report_${selectedMonth}.pdf`
+                          document.body.appendChild(a)
+                          a.click()
+                          window.URL.revokeObjectURL(url)
+                          document.body.removeChild(a)
+                        } catch (e) {
+                          alert("Impossible de télécharger le PDF")
+                        }
+                      }}
+                      type="button"
+                      className="ml-2 flex items-center gap-1 rounded bg-white px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-50 border border-blue-200 cursor-pointer"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+                      PDF
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -950,6 +955,27 @@ export default function ShopReport() {
                 <div className="text-xs text-gray-400">
                   {shopStats.peak_day ? formatDate(shopStats.peak_day) : 'n/a'}
                 </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-4">
+                <div className="text-sm text-amber-700">Livraisons CMS</div>
+                <div className="text-2xl font-semibold">{shopStats.cms_deliveries}</div>
+                <div className="text-xs text-amber-700/80">Volume social du mois</div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="text-sm text-gray-500">Prise en charge CMS</div>
+                <div className="text-2xl font-semibold">
+                  {formatCHF(shopStats.cms_subsidy_chf)}
+                </div>
+                <div className="text-xs text-gray-400">Participation Velocite</div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <div className="text-sm text-gray-500">% livraisons CMS</div>
+                <div className="text-2xl font-semibold">
+                  {shopStats.cms_share_pct.toFixed(1)}%
+                </div>
+                <div className="text-xs text-gray-400">Part du mois</div>
               </div>
             </div>
             <div className="rounded-lg border p-4">

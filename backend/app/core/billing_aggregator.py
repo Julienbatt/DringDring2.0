@@ -352,10 +352,13 @@ def aggregate_billing_run(
                         pc.name AS parent_city_name,
                         l.client_name,
                         COALESCE(l.city_name, c.name) AS delivery_city_name,
+                        l.is_cms,
                         l.bags,
                         f.total_price,
+                        f.share_client,
                         f.share_city,
-                        f.share_admin_region
+                        f.share_admin_region,
+                        f.cms_subsidy
                     FROM delivery d
                     JOIN shop s ON s.id = d.shop_id
                     JOIN city c ON c.id = d.city_id
@@ -387,17 +390,22 @@ def aggregate_billing_run(
                     parent_city_name,
                     client_name,
                     delivery_city_name,
+                    is_cms,
                     bags,
                     total_price,
+                    share_client,
                     share_city,
                     share_admin_region,
+                    cms_subsidy,
                 ) in cur.fetchall():
                     commune_id = parent_city_id or city_id
                     commune_name = parent_city_name or city_name
 
+                    share_client_amount = Decimal(str(share_client or 0))
                     share_city_amount = Decimal(str(share_city or 0))
                     share_admin_amount = Decimal(str(share_admin_region or 0))
                     total_price_amount = Decimal(str(total_price or 0))
+                    cms_subsidy_amount = Decimal(str(cms_subsidy or 0))
 
                     meta = {
                         "delivery_date": delivery_date.isoformat(),
@@ -407,6 +415,8 @@ def aggregate_billing_run(
                         "total_price": float(total_price) if total_price is not None else None,
                         "shop_name": shop_name,
                         "delivery_city_name": delivery_city_name,
+                        "is_cms": bool(is_cms),
+                        "cms_subsidy": float(cms_subsidy_amount),
                     }
 
                     if commune_id and share_city_amount > 0:
@@ -420,12 +430,13 @@ def aggregate_billing_run(
                         )
 
                     if share_admin_amount > 0:
+                        payor_amount = share_admin_amount + (Decimal("0.00") if is_cms else share_client_amount)
                         if _is_independent_hq(str(hq_id) if hq_id else None, hq_name):
                             payor_lines[("SHOP_INDEP", str(shop_id))].append(
                                 RecipientLine(
                                     shop_id=str(shop_id),
                                     delivery_id=str(delivery_id),
-                                    amount_due=share_admin_amount,
+                                    amount_due=payor_amount,
                                     meta=meta,
                                 )
                             )
@@ -434,7 +445,7 @@ def aggregate_billing_run(
                                 RecipientLine(
                                     shop_id=str(shop_id),
                                     delivery_id=str(delivery_id),
-                                    amount_due=share_admin_amount,
+                                    amount_due=payor_amount,
                                     meta=meta,
                                 )
                             )

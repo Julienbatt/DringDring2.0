@@ -21,6 +21,7 @@ export type CityStats = {
   deliveries_change_pct: number | null
   total_subvention_chf: number
   total_volume_chf: number
+  cms_subsidy_chf: number
 }
 
 export function useCityStats(month?: string) {

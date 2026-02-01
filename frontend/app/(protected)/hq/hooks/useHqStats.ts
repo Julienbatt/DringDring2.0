@@ -17,13 +17,16 @@ export type HqStats = {
   total_subvention_chf: number
   total_basket_value_chf: number
   average_basket_value_chf: number
+  cms_deliveries: number
+  cms_share_pct: number
+  cms_subsidy_chf: number
   active_days: number
   deliveries_per_active_day: number
   previous_month_deliveries: number
   deliveries_change_pct: number | null
 }
 
-export function useHqStats(month?: string) {
+export function useHqStats(month?: string, adminRegionId?: string | null) {
   const [data, setData] = useState<HqStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +45,10 @@ export function useHqStats(month?: string) {
         return
       }
 
-      const query = month ? `?month=${encodeURIComponent(month)}` : ''
+      const params = new URLSearchParams()
+      if (month) params.set('month', month)
+      if (adminRegionId) params.set('admin_region_id', adminRegionId)
+      const query = params.toString() ? `?${params.toString()}` : ''
       const result = await apiGet<HqStats>(`/stats/hq${query}`, session.access_token)
       setData(result)
     } catch (e: any) {
@@ -58,7 +64,7 @@ export function useHqStats(month?: string) {
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, adminRegionId])
 
   useEffect(() => {
     load()

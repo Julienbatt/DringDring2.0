@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useCityBilling } from '../../dashboard/hooks/useCityBilling'
 import { useCityBillingShops } from '../../dashboard/hooks/useCityBillingShops'
@@ -36,6 +37,36 @@ function getCurrentMonth() {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   return `${now.getFullYear()}-${month}`
 }
+
+const MONTH_LABELS = [
+  'Janvier',
+  'Fevrier',
+  'Mars',
+  'Avril',
+  'Mai',
+  'Juin',
+  'Juillet',
+  'Aout',
+  'Septembre',
+  'Octobre',
+  'Novembre',
+  'Decembre',
+]
+
+const MONTH_SHORT_LABELS = [
+  'Janv',
+  'Fevr',
+  'Mars',
+  'Avr',
+  'Mai',
+  'Juin',
+  'Juil',
+  'Aout',
+  'Sept',
+  'Oct',
+  'Nov',
+  'Dec',
+]
 
 const MONEY_COLUMNS = new Set(['total_subvention_due', 'total_volume_chf'])
 
@@ -120,6 +151,11 @@ export default function CityReport() {
   const [selectedMonth, setSelectedMonth] = useState(
     paramMonth ?? getCurrentMonth()
   )
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false)
+  const [pickerYear, setPickerYear] = useState(() =>
+    Number(getCurrentMonth().split('-')[0])
+  )
+  const monthPickerRef = useRef<HTMLDivElement | null>(null)
 
   const { data, loading, error } = useCityBilling(selectedMonth)
   const {
@@ -139,6 +175,45 @@ export default function CityReport() {
     const params = new URLSearchParams(searchParams.toString())
     params.set('month', value)
     router.replace(`${pathname}?${params.toString()}`)
+  }
+
+  useEffect(() => {
+    const [year] = selectedMonth.split('-')
+    setPickerYear(Number(year))
+  }, [selectedMonth])
+
+  useEffect(() => {
+    if (!monthPickerOpen) return
+    const handleClick = (event: MouseEvent) => {
+      if (!monthPickerRef.current) return
+      if (!monthPickerRef.current.contains(event.target as Node)) {
+        setMonthPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [monthPickerOpen])
+
+  const [selectedYear, selectedMonthIndex] = selectedMonth
+    .split('-')
+    .map((value, index) => (index === 0 ? Number(value) : Number(value) - 1)) as [
+    number,
+    number,
+  ]
+
+  const formatMonthLabel = (year: number, monthIndex: number) => {
+    const label = MONTH_LABELS[monthIndex] || ''
+    return `${label} ${year}`
+  }
+
+  const getMonthValue = (year: number, monthIndex: number) => {
+    const monthValue = String(monthIndex + 1).padStart(2, '0')
+    return `${year}-${monthValue}`
+  }
+
+  const stepMonth = (delta: number) => {
+    const date = new Date(selectedYear, selectedMonthIndex + delta, 1)
+    handleMonthChange(getMonthValue(date.getFullYear(), date.getMonth()))
   }
 
   if (loading || shopLoading) {
@@ -222,17 +297,79 @@ export default function CityReport() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-600" htmlFor="city-month">
-            Mois
-          </label>
-          <input
-            id="city-month"
-            type="month"
-            className="border rounded px-2 py-1 text-sm"
-            value={selectedMonth}
-            onChange={(event) => handleMonthChange(event.target.value)}
-          />
+        <div className="relative" ref={monthPickerRef}>
+          <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-1.5 py-1 text-xs text-slate-600 shadow-sm">
+            <button
+              type="button"
+              onClick={() => stepMonth(-1)}
+              aria-label="Mois precedent"
+              className="rounded-full p-1 text-slate-500 hover:bg-slate-100"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold text-slate-900 hover:bg-slate-100"
+              onClick={() => setMonthPickerOpen((prev) => !prev)}
+            >
+              <Calendar className="h-4 w-4 text-slate-500" />
+              <span>{formatMonthLabel(selectedYear, selectedMonthIndex)}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => stepMonth(1)}
+              aria-label="Mois suivant"
+              className="rounded-full p-1 text-slate-500 hover:bg-slate-100"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          {monthPickerOpen ? (
+            <div className="absolute right-0 z-20 mt-2 w-[260px] rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setPickerYear((prev) => prev - 1)}
+                  aria-label="Annee precedente"
+                  className="rounded-full p-1 text-slate-500 hover:bg-slate-100"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="text-sm font-semibold">{pickerYear}</div>
+                <button
+                  type="button"
+                  onClick={() => setPickerYear((prev) => prev + 1)}
+                  aria-label="Annee suivante"
+                  className="rounded-full p-1 text-slate-500 hover:bg-slate-100"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {MONTH_SHORT_LABELS.map((label, index) => {
+                  const isSelected =
+                    pickerYear === selectedYear && index === selectedMonthIndex
+                  return (
+                    <button
+                      key={`${pickerYear}-${index}`}
+                      type="button"
+                      className={`rounded-lg px-2 py-2 text-xs font-semibold transition-colors ${
+                        isSelected
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-50 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700'
+                      }`}
+                      onClick={() => {
+                        handleMonthChange(getMonthValue(pickerYear, index))
+                        setMonthPickerOpen(false)
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -295,6 +432,13 @@ export default function CityReport() {
                 {formatCHF(averageSubventionPerBeneficiary)}
               </div>
               <div className="text-xs text-gray-400">Par menage servi</div>
+            </div>
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-gray-500">Prise en charge CMS</div>
+              <div className="text-2xl font-semibold">
+                {formatCHF(cityStats.cms_subsidy_chf ?? 0)}
+              </div>
+              <div className="text-xs text-gray-400">Participation Velocite</div>
             </div>
           </div>
         ) : null}

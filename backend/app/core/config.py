@@ -31,6 +31,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3001",
         "http://172.18.160.1:3000",
     ]
+    CORS_ORIGINS_STR: str | None = None
     API_V1_STR: str = "/api/v1"
 
     class Config:
@@ -38,3 +39,9 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 settings = Settings()
+
+
+def get_cors_origins() -> list[str]:
+    if not settings.CORS_ORIGINS_STR:
+        return settings.CORS_ORIGINS
+    return [origin.strip() for origin in settings.CORS_ORIGINS_STR.split(",") if origin.strip()]

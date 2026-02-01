@@ -16,6 +16,7 @@ import { apiGet, apiPost, API_BASE_URL } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type BillingDocument = {
     id: string
@@ -97,7 +98,10 @@ function getCurrentMonth() {
 
 export default function BillingPage() {
     const { adminContextRegion, user } = useAuth()
-    const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const paramMonth = searchParams.get('month')
+    const [selectedMonth, setSelectedMonth] = useState(paramMonth ?? getCurrentMonth())
     const [data, setData] = useState<BillingData | null>(null)
     const [details, setDetails] = useState<BillingLine[]>([])
     const [loading, setLoading] = useState(false)
@@ -110,11 +114,21 @@ export default function BillingPage() {
     const [previewMode, setPreviewMode] = useState(true)
     const [vatRate, setVatRate] = useState<number | null>(null)
     const monthPickerRef = useRef<HTMLDivElement | null>(null)
+    const dataRequestRef = useRef(0)
+    const detailsRequestRef = useRef(0)
+    const vatRequestRef = useRef(0)
+    const loadAllRequestRef = useRef(0)
 
     useEffect(() => {
-        loadData()
-        loadDetails()
-        loadVatRate()
+        if (paramMonth && paramMonth !== selectedMonth) {
+            setSelectedMonth(paramMonth)
+        }
+    }, [paramMonth, selectedMonth])
+
+    useEffect(() => {
+        setData(null)
+        setDetails([])
+        loadAll()
     }, [selectedMonth, adminContextRegion])
 
     useEffect(() => {
@@ -135,55 +149,12 @@ export default function BillingPage() {
     }, [monthPickerOpen])
 
 
-    const loadData = async () => {
+    const loadAll = async () => {
+        const requestId = ++loadAllRequestRef.current
+        const dataRequestId = ++dataRequestRef.current
+        const detailsRequestId = ++detailsRequestRef.current
+        const vatRequestId = ++vatRequestRef.current
         setLoading(true)
-        try {
-            const supabase = createClient()
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session?.access_token) return
-
-            const queryParams = adminContextRegion ? `&admin_region_id=${adminContextRegion.id}` : ''
-            await apiPost(
-                `/billing/region/aggregate?month=${selectedMonth}${queryParams}`,
-                {},
-                session.access_token
-            )
-            const res = await apiGet<BillingData>(
-                `/billing/documents?month=${selectedMonth}${queryParams}`,
-                session.access_token
-            )
-            setData(res)
-        } catch (error) {
-            console.error('Failed to load billing data', error)
-            toast.error('Erreur lors du chargement des donnees')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const loadVatRate = async () => {
-        try {
-            const supabase = createClient()
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session?.access_token) return
-            const res = await apiGet<{ rate: number }>(
-                `/settings/vat-rate?month=${selectedMonth}`,
-                session.access_token
-            )
-            if (typeof res?.rate === 'number') {
-                setVatRate(res.rate)
-            }
-        } catch (error) {
-            const message = String(error || '')
-            if (message.includes('access required') || message.includes('API error 403')) {
-                setVatRate(null)
-                return
-            }
-            setVatRate(null)
-        }
-    }
-
-    const loadDetails = async () => {
         setDetailLoading(true)
         try {
             const supabase = createClient()
@@ -191,16 +162,30 @@ export default function BillingPage() {
             if (!session?.access_token) return
 
             const queryParams = adminContextRegion ? `&admin_region_id=${adminContextRegion.id}` : ''
-            const res = await apiGet<BillingLine[]>(
-                `/billing/documents/lines?month=${selectedMonth}${queryParams}`,
-                session.access_token
-            )
-            setDetails(res)
+            const [docsRes, detailsRes, vatRes] = await Promise.all([
+                apiGet<BillingData>(`/billing/documents?month=${selectedMonth}${queryParams}`, session.access_token),
+                apiGet<BillingLine[]>(`/billing/documents/lines?month=${selectedMonth}${queryParams}`, session.access_token),
+                apiGet<{ rate: number }>(`/settings/vat-rate?month=${selectedMonth}`, session.access_token),
+            ])
+
+            if (requestId !== loadAllRequestRef.current) return
+            if (dataRequestId === dataRequestRef.current) {
+                setData(docsRes)
+            }
+            if (detailsRequestId === detailsRequestRef.current) {
+                setDetails(detailsRes)
+            }
+            if (vatRequestId === vatRequestRef.current) {
+                setVatRate(typeof vatRes?.rate === 'number' ? vatRes.rate : null)
+            }
         } catch (error) {
-            console.error('Failed to load billing deliveries', error)
-            toast.error('Erreur lors du chargement des details')
+            console.error('Failed to load billing data', error)
+            toast.error('Erreur lors du chargement des donnees')
         } finally {
-            setDetailLoading(false)
+            if (requestId === loadAllRequestRef.current) {
+                setLoading(false)
+                setDetailLoading(false)
+            }
         }
     }
 
@@ -217,8 +202,7 @@ export default function BillingPage() {
                 {},
                 session.access_token
             )
-            loadData()
-            loadDetails()
+            loadAll()
             toast.success('Facturation recalculee')
         } catch (error) {
             console.error('Refresh failed', error)
@@ -364,6 +348,9 @@ export default function BillingPage() {
         const date = new Date(selectedYear, selectedMonthIndex + delta, 1)
         const nextValue = getMonthValue(date.getFullYear(), date.getMonth())
         setSelectedMonth(nextValue)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('month', nextValue)
+        router.replace(`?${params.toString()}`)
     }
 
     const documents = data?.rows ?? []
@@ -382,6 +369,7 @@ export default function BillingPage() {
     const totalBilledHt = externalDocuments.reduce((sum, row) => sum + Number(row.amount_ht || 0), 0)
     const totalBilledVat = externalDocuments.reduce((sum, row) => sum + Number(row.amount_vat || 0), 0)
 
+    const documentById = new Map(documents.map((doc) => [doc.id, doc]))
     const externalDetails = details.filter((row) => row.recipient_type !== 'INTERNAL')
     const visibleDetails = externalDetails.filter((row) => {
         if (externalFilter !== 'ALL' && row.recipient_type !== externalFilter) return false
@@ -475,7 +463,11 @@ export default function BillingPage() {
                                                                 : 'bg-slate-50 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700'
                                                         }`}
                                                         onClick={() => {
-                                                            setSelectedMonth(getMonthValue(pickerYear, index))
+                                                            const nextValue = getMonthValue(pickerYear, index)
+                                                            setSelectedMonth(nextValue)
+                                                            const params = new URLSearchParams(searchParams.toString())
+                                                            params.set('month', nextValue)
+                                                            router.replace(`?${params.toString()}`)
                                                             setMonthPickerOpen(false)
                                                         }}
                                                     >
@@ -724,7 +716,7 @@ export default function BillingPage() {
                     <div>
                         <div className="text-lg font-semibold">Audit des livraisons (factures externes)</div>
                         <div className="text-sm text-muted-foreground">
-                            Liste des livraisons pour audit, filtrees par payeur si besoin.
+                            Liste des lignes de facturation. Une livraison peut apparaitre plusieurs fois (1 par payeur).
                         </div>
                     </div>
                     <select
@@ -753,6 +745,7 @@ export default function BillingPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Date</TableHead>
+                            <TableHead>Payeur</TableHead>
                             <TableHead>Commerce</TableHead>
                             <TableHead>Client</TableHead>
                             <TableHead>Commune partenaire</TableHead>
@@ -763,20 +756,23 @@ export default function BillingPage() {
                     <TableBody>
                         {detailLoading ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-20 text-center">Chargement...</TableCell>
+                                <TableCell colSpan={7} className="h-20 text-center">Chargement...</TableCell>
                             </TableRow>
                         ) : visibleDetails.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
+                                <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
                                     Aucune livraison pour cette periode.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             visibleDetails.map((row) => {
                                 const amountDue = Number(row.amount_due || 0)
+                                const doc = documentById.get(row.document_id)
+                                const payeurLabel = doc?.recipient_name ?? recipientTypeLabels[row.recipient_type] ?? row.recipient_type
                                 return (
                                     <TableRow key={row.id}>
                                         <TableCell>{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
+                                        <TableCell>{payeurLabel}</TableCell>
                                         <TableCell>{row.shop_name || '-'}</TableCell>
                                         <TableCell>{row.client_name || '-'}</TableCell>
                                         <TableCell>{row.commune_name || '-'}</TableCell>

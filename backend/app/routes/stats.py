@@ -146,9 +146,11 @@ def get_shop_stats(
                         d.delivery_date::date AS delivery_day,
                         d.client_id,
                         l.client_name,
+                        l.is_cms,
                         COALESCE(l.bags, 0) AS bags,
                         COALESCE(l.basket_value, 0) AS basket_value,
                         COALESCE(f.share_admin_region, 0) AS amount_due,
+                        COALESCE(f.cms_subsidy, 0) AS cms_subsidy,
                         COALESCE(st.status, '') AS status
                     FROM delivery d
                     JOIN delivery_logistics l ON l.delivery_id = d.id
@@ -189,8 +191,10 @@ def get_shop_stats(
                     (SELECT COALESCE(SUM(bags), 0) FROM base) AS total_bags,
                     (SELECT COALESCE(AVG(bags), 0) FROM base) AS average_bags,
                     (SELECT COALESCE(SUM(amount_due), 0) FROM base) AS total_volume_chf,
+                    (SELECT COALESCE(SUM(cms_subsidy), 0) FROM base) AS cms_subsidy_chf,
                     (SELECT COALESCE(SUM(basket_value), 0) FROM base) AS total_basket_value,
                     (SELECT COALESCE(AVG(NULLIF(basket_value, 0)), 0) FROM base) AS average_basket_value,
+                    (SELECT COUNT(*) FROM base WHERE is_cms IS TRUE) AS cms_deliveries,
                     (SELECT COUNT(*) FROM daily_counts) AS active_days,
                     (SELECT delivery_day FROM peak_day) AS peak_day,
                     (SELECT deliveries FROM peak_day) AS peak_day_deliveries
@@ -270,11 +274,13 @@ def get_shop_stats(
     total_bags = int(stats_row[3] or 0)
     average_bags = float(stats_row[4] or 0)
     total_volume_chf = float(stats_row[5] or 0)
-    total_basket_value = float(stats_row[6] or 0)
-    average_basket_value = float(stats_row[7] or 0)
-    active_days = int(stats_row[8] or 0)
-    peak_day = stats_row[9].isoformat() if stats_row[9] else None
-    peak_day_deliveries = int(stats_row[10] or 0)
+    cms_subsidy_chf = float(stats_row[6] or 0)
+    total_basket_value = float(stats_row[7] or 0)
+    average_basket_value = float(stats_row[8] or 0)
+    cms_deliveries = int(stats_row[9] or 0)
+    active_days = int(stats_row[10] or 0)
+    peak_day = stats_row[11].isoformat() if stats_row[11] else None
+    peak_day_deliveries = int(stats_row[12] or 0)
 
     repeat_rate = (repeat_clients / unique_clients * 100) if unique_clients else 0.0
     deliveries_change_pct = None
@@ -284,6 +290,7 @@ def get_shop_stats(
     deliveries_per_active_day = (
         total_deliveries / active_days if active_days else 0.0
     )
+    cms_share_pct = (cms_deliveries / total_deliveries * 100) if total_deliveries else 0.0
 
     return {
         "month": month_start.isoformat()[:7],
@@ -295,6 +302,9 @@ def get_shop_stats(
         "total_bags": total_bags,
         "average_bags": round(average_bags, 2),
         "total_volume_chf": round(total_volume_chf, 2),
+        "cms_subsidy_chf": round(cms_subsidy_chf, 2),
+        "cms_deliveries": cms_deliveries,
+        "cms_share_pct": round(cms_share_pct, 1),
         "total_basket_value_chf": round(total_basket_value, 2),
         "average_basket_value_chf": round(average_basket_value, 2),
         "active_days": active_days,
@@ -336,6 +346,7 @@ def get_city_stats(
                         COALESCE(l.bags, 0) AS bags,
                         COALESCE(f.share_city, 0) AS share_city,
                         COALESCE(f.total_price, 0) AS total_price,
+                        COALESCE(f.cms_subsidy, 0) AS cms_subsidy,
                         COALESCE(st.status, '') AS status
                     FROM delivery d
                     JOIN delivery_logistics l ON l.delivery_id = d.id
@@ -368,7 +379,8 @@ def get_city_stats(
                     (SELECT COALESCE(AVG(bags), 0) FROM base) AS average_bags,
                     (SELECT COUNT(*) FROM daily_counts) AS active_days,
                     (SELECT COALESCE(SUM(share_city), 0) FROM base) AS total_subvention,
-                    (SELECT COALESCE(SUM(total_price), 0) FROM base) AS total_volume
+                    (SELECT COALESCE(SUM(total_price), 0) FROM base) AS total_volume,
+                    (SELECT COALESCE(SUM(cms_subsidy), 0) FROM base) AS cms_subsidy_total
                 """,
                 (str(city_id), str(city_id), month_start),
             )
@@ -405,6 +417,7 @@ def get_city_stats(
     active_days = int(stats_row[7] or 0)
     total_subvention = float(stats_row[8] or 0)
     total_volume = float(stats_row[9] or 0)
+    cms_subsidy_total = float(stats_row[10] or 0)
 
     cms_share_pct = (cms_deliveries / total_deliveries * 100) if total_deliveries else 0.0
     deliveries_change_pct = None
@@ -434,6 +447,7 @@ def get_city_stats(
         else None,
         "total_subvention_chf": round(total_subvention, 2),
         "total_volume_chf": round(total_volume, 2),
+        "cms_subsidy_chf": round(cms_subsidy_total, 2),
     }
 
 
@@ -442,6 +456,7 @@ def get_hq_stats(
     user=Depends(require_hq_user),
     jwt_claims: str = Depends(get_current_user_claims),
     month: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}$"),
+    admin_region_id: Optional[str] = Query(default=None),
 ):
     hq_id = user.hq_id
     if not hq_id:
@@ -461,14 +476,17 @@ def get_hq_stats(
                         d.client_id,
                         s.id AS shop_id,
                         s.city_id AS city_id,
+                        l.is_cms,
                         COALESCE(l.bags, 0) AS bags,
                         COALESCE(l.basket_value, 0) AS basket_value,
                         COALESCE(f.total_price, 0) AS total_price,
                         COALESCE(f.share_city, 0) AS share_city,
                         COALESCE(f.share_admin_region, 0) AS share_admin_region,
+                        COALESCE(f.cms_subsidy, 0) AS cms_subsidy,
                         COALESCE(st.status, '') AS status
                     FROM delivery d
                     JOIN shop s ON s.id = d.shop_id
+                    JOIN city c ON c.id = s.city_id
                     JOIN delivery_logistics l ON l.delivery_id = d.id
                     LEFT JOIN delivery_financial f ON f.delivery_id = d.id
                     LEFT JOIN LATERAL (
@@ -482,6 +500,7 @@ def get_hq_stats(
                       AND date_trunc('month', d.delivery_date)
                         = date_trunc('month', %s::date)
                       AND COALESCE(st.status, '') <> 'cancelled'
+                      AND (%s::uuid IS NULL OR c.admin_region_id = %s)
                 ),
                 daily_counts AS (
                     SELECT delivery_day, COUNT(*) AS deliveries
@@ -499,9 +518,11 @@ def get_hq_stats(
                     (SELECT COALESCE(SUM(share_city + share_admin_region), 0) FROM base) AS total_subvention,
                     (SELECT COALESCE(SUM(basket_value), 0) FROM base) AS total_basket_value,
                     (SELECT COALESCE(AVG(NULLIF(basket_value, 0)), 0) FROM base) AS average_basket_value,
+                    (SELECT COUNT(*) FROM base WHERE is_cms IS TRUE) AS cms_deliveries,
+                    (SELECT COALESCE(SUM(cms_subsidy), 0) FROM base) AS cms_subsidy_chf,
                     (SELECT COUNT(*) FROM daily_counts) AS active_days
                 """,
-                (str(hq_id), month_start),
+                (str(hq_id), month_start, admin_region_id, admin_region_id),
             )
             stats_row = cur.fetchone()
 
@@ -510,6 +531,7 @@ def get_hq_stats(
                 SELECT COUNT(*)
                 FROM delivery d
                 JOIN shop s ON s.id = d.shop_id
+                JOIN city c ON c.id = s.city_id
                 LEFT JOIN LATERAL (
                     SELECT status
                     FROM delivery_status
@@ -521,8 +543,9 @@ def get_hq_stats(
                   AND date_trunc('month', d.delivery_date)
                     = date_trunc('month', %s::date)
                   AND COALESCE(st.status, '') <> 'cancelled'
+                  AND (%s::uuid IS NULL OR c.admin_region_id = %s)
                 """,
-                (str(hq_id), prev_month_start),
+                (str(hq_id), prev_month_start, admin_region_id, admin_region_id),
             )
             prev_deliveries = int(cur.fetchone()[0] or 0)
 
@@ -536,7 +559,9 @@ def get_hq_stats(
     total_subvention = float(stats_row[7] or 0)
     total_basket_value = float(stats_row[8] or 0)
     average_basket_value = float(stats_row[9] or 0)
-    active_days = int(stats_row[10] or 0)
+    cms_deliveries = int(stats_row[10] or 0)
+    cms_subsidy_chf = float(stats_row[11] or 0)
+    active_days = int(stats_row[12] or 0)
 
     deliveries_change_pct = None
     if prev_deliveries:
@@ -545,6 +570,7 @@ def get_hq_stats(
     deliveries_per_active_day = (
         total_deliveries / active_days if active_days else 0.0
     )
+    cms_share_pct = (cms_deliveries / total_deliveries * 100) if total_deliveries else 0.0
 
     return {
         "month": month_start.isoformat()[:7],
@@ -559,6 +585,9 @@ def get_hq_stats(
         "total_subvention_chf": round(total_subvention, 2),
         "total_basket_value_chf": round(total_basket_value, 2),
         "average_basket_value_chf": round(average_basket_value, 2),
+        "cms_deliveries": cms_deliveries,
+        "cms_share_pct": round(cms_share_pct, 1),
+        "cms_subsidy_chf": round(cms_subsidy_chf, 2),
         "active_days": active_days,
         "deliveries_per_active_day": round(deliveries_per_active_day, 2),
         "previous_month_deliveries": prev_deliveries,

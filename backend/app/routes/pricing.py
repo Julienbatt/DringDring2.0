@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from uuid import UUID
 
 from app.core.security import get_current_user_claims
-from app.core.tariff_engine import compute_financials, parse_rule
+from app.core.tariff_engine import compute_financials, compute_total_price, parse_rule
 from app.core.tariff_validation import validate_tariff_rule
 from app.db.session import get_db_connection
 
@@ -109,6 +109,24 @@ def calculate_delivery(
                 is_cms=is_cms,
             )
 
+            cms_subsidy = None
+            if is_cms:
+                standard_total = compute_total_price(
+                    rule_type=rule_type,
+                    rule=rule_data,
+                    bags=bags,
+                    order_amount=order_amount,
+                    is_cms=False,
+                )
+                cms_total = compute_total_price(
+                    rule_type=rule_type,
+                    rule=rule_data,
+                    bags=bags,
+                    order_amount=order_amount,
+                    is_cms=True,
+                )
+                cms_subsidy = max(standard_total - cms_total, 0)
+
             # --------------------------------------------------
             # 5. Snapshot financier (INSERT unique)
             # --------------------------------------------------
@@ -121,8 +139,9 @@ def calculate_delivery(
                     share_client,
                     share_shop,
                     share_city,
-                    share_admin_region
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    share_admin_region,
+                    cms_subsidy
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     str(delivery_id),
@@ -131,7 +150,8 @@ def calculate_delivery(
                     s_client,
                     s_shop,
                     s_city,
-                    s_admin
+                    s_admin,
+                    cms_subsidy,
                 )
             )
 
@@ -145,4 +165,3 @@ def calculate_delivery(
             "admin_region": float(s_admin),
         }
     }
-

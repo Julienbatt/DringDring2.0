@@ -18,7 +18,7 @@ from app.core.guards import (
 from app.core.config import settings
 from app.core.geo import compute_co2_saved_kg, compute_distance_km, geocode_swiss_address
 from app.core.security import get_current_user_claims
-from app.core.tariff_engine import compute_financials, parse_rule
+from app.core.tariff_engine import compute_financials, compute_total_price, parse_rule
 from app.core.tariff_validation import validate_tariff_rule
 from app.db.session import get_db_connection
 from app.pdf.shop_monthly_report import build_shop_monthly_pdf
@@ -223,6 +223,14 @@ def create_delivery(
                             order_amount=payload.order_amount,
                             is_cms=payload.is_cms
                         )
+                        standard_total = compute_total_price(
+                            rule_type=r_type,
+                            rule=parse_rule(r_val),
+                            bags=payload.bags,
+                            order_amount=payload.order_amount,
+                            is_cms=False,
+                        )
+                        cms_subsidy = max(Decimal("0.00"), Decimal(str(standard_total)) - Decimal(str(total))) if payload.is_cms else Decimal("0.00")
                         # Business rule: no separate shop share; fold into admin_region share.
                         if s_shop:
                             s_admin = s_admin + s_shop
@@ -236,7 +244,8 @@ def create_delivery(
                             client_share=s_cli,
                             shop_share=s_shop,
                             city_share=s_city,
-                            admin_share=s_admin
+                            admin_share=s_admin,
+                            cms_subsidy=cms_subsidy,
                         )
 
     except Exception as e:
@@ -625,7 +634,7 @@ def list_shop_deliveries(
             return {"rows": rows, "is_frozen": is_frozen}
 
 
-@router.get("/shop/export")
+@router.get("/shop/export", deprecated=True)
 def export_shop_deliveries(
     month: str = Query(pattern=r"^\d{4}-\d{2}$"),
     user: MeResponse = Depends(require_shop_user),
@@ -803,7 +812,7 @@ def cancel_delivery_admin(
                 )
 
 
-@router.get("/shop/periods")
+@router.get("/shop/periods", deprecated=True)
 def list_shop_periods(
     user: MeResponse = Depends(require_shop_user),
     jwt_claims: str = Depends(get_current_user_claims),
@@ -1276,6 +1285,14 @@ def _apply_delivery_update(
         share=share_data,
         is_cms=is_cms,
     )
+    standard_total = compute_total_price(
+        rule_type=rule_type,
+        rule=rule_data,
+        bags=new_bags,
+        order_amount=new_order_amount,
+        is_cms=False,
+    )
+    cms_subsidy = max(Decimal("0.00"), Decimal(str(standard_total)) - Decimal(str(total_price))) if is_cms else Decimal("0.00")
     if s_shop:
         s_admin = s_admin + s_shop
         s_shop = 0
@@ -1311,7 +1328,8 @@ def _apply_delivery_update(
             share_client = %s,
             share_shop = %s,
             share_city = %s,
-            share_admin_region = %s
+            share_admin_region = %s,
+            cms_subsidy = %s
         WHERE delivery_id = %s
         """,
         (
@@ -1321,6 +1339,7 @@ def _apply_delivery_update(
             s_shop,
             s_city,
             s_admin,
+            cms_subsidy,
             delivery_id,
         ),
     )
@@ -1334,6 +1353,7 @@ def _apply_delivery_update(
             shop_share=s_shop,
             city_share=s_city,
             admin_share=s_admin,
+            cms_subsidy=cms_subsidy,
         )
 
     return {
@@ -1434,6 +1454,14 @@ def _create_delivery_core(
         share=share_data,
         is_cms=client["is_cms"],
     )
+    standard_total = compute_total_price(
+        rule_type=rule_type,
+        rule=rule_data,
+        bags=payload.bags,
+        order_amount=payload.order_amount,
+        is_cms=False,
+    )
+    cms_subsidy = max(Decimal("0.00"), Decimal(str(standard_total)) - Decimal(str(total_price))) if client["is_cms"] else Decimal("0.00")
     if s_shop:
         s_admin = s_admin + s_shop
         s_shop = 0
@@ -1486,8 +1514,9 @@ def _create_delivery_core(
             share_client,
             share_shop,
             share_city,
-            share_admin_region
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            share_admin_region,
+            cms_subsidy
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             delivery_id,
@@ -1497,6 +1526,7 @@ def _create_delivery_core(
             s_shop,
             s_city,
             s_admin,
+            cms_subsidy,
         ),
     )
 
@@ -1679,6 +1709,7 @@ def _insert_delivery_financial(
     shop_share: Decimal,
     city_share: Decimal,
     admin_share: Decimal,
+    cms_subsidy: Decimal,
 ):
     cur.execute(
         """
@@ -1689,8 +1720,9 @@ def _insert_delivery_financial(
             share_client,
             share_shop,
             share_city,
-            share_admin_region
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            share_admin_region,
+            cms_subsidy
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             delivery_id,
@@ -1700,6 +1732,7 @@ def _insert_delivery_financial(
             shop_share,
             city_share,
             admin_share,
+            cms_subsidy,
         ),
     )
 

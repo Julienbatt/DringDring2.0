@@ -21,6 +21,9 @@ export type ShopStats = {
   total_bags: number
   average_bags: number
   total_volume_chf: number
+  cms_subsidy_chf: number
+  cms_deliveries: number
+  cms_share_pct: number
   total_basket_value_chf: number
   average_basket_value_chf: number
   active_days: number

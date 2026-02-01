@@ -37,6 +37,7 @@ class AssignCourierPayload(BaseModel):
 
 @router.get("/deliveries")
 def list_dispatch_deliveries(
+    month: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}$"),
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     admin_region_id: Optional[str] = None, # Drill-down for Super Admin
@@ -61,10 +62,19 @@ def list_dispatch_deliveries(
     if not target_region_id:
         raise HTTPException(status_code=400, detail="Admin region id missing")
 
-    if not date_from:
-        date_from = date.today()
-    if not date_to:
-        date_to = date.today() + timedelta(days=1)
+    if month:
+        try:
+            month_date = date.fromisoformat(f"{month}-01")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid month format") from exc
+        month_end = (month_date.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+        date_from = month_date
+        date_to = month_end
+    else:
+        if not date_from:
+            date_from = date.today()
+        if not date_to:
+            date_to = date.today() + timedelta(days=1)
 
     try:
         with get_db_connection(jwt_claims) as conn:
@@ -137,6 +147,48 @@ def list_dispatch_deliveries(
                 return results
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@router.patch("/deliveries/{delivery_id}/complete")
+def complete_delivery(
+    delivery_id: UUID,
+    user: MeResponse = Depends(require_admin_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    user_region_id = user.admin_region_id
+
+    with get_db_connection(jwt_claims) as conn:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT c.admin_region_id
+                    FROM delivery d
+                    JOIN shop s ON s.id = d.shop_id
+                    JOIN city c ON c.id = s.city_id
+                    WHERE d.id = %s
+                    """,
+                    (str(delivery_id),)
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise HTTPException(status_code=404, detail="Delivery not found")
+                
+                delivery_region_id = row[0]
+
+                if user.role != 'super_admin':
+                    if not user_region_id or str(delivery_region_id) != str(user_region_id):
+                        raise HTTPException(status_code=403, detail="Not in your region")
+
+                cur.execute(
+                    """
+                    INSERT INTO delivery_status (delivery_id, status)
+                    VALUES (%s, 'delivered')
+                    """,
+                    (str(delivery_id),)
+                )
+
+    return {"status": "success"}
 
 @router.patch("/deliveries/{delivery_id}/assign")
 def assign_courier(
