@@ -436,7 +436,9 @@ export default function DispatchPage() {
                         )}
                     </div>
                     <button
-                        onClick={fetchData}
+                        onClick={() => {
+                            void fetchData()
+                        }}
                         className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
                     >
                         Actualiser
