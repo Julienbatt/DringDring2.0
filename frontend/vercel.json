@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "dringdring.me"
+        }
+      ],
+      "destination": "https://staging.dringdring.me/$1",
+      "permanent": true
+    }
+  ]
+}
