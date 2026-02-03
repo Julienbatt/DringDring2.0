@@ -13,6 +13,7 @@ Required env vars:
 
 Notes:
 - Any change to `NEXT_PUBLIC_API_URL` requires a Vercel redeploy.
+- If a custom API domain is not ready (SSL pending), use the Render URL temporarily.
 
 ## 2) Backend (Render)
 Recommended start command:
@@ -25,6 +26,10 @@ Required env vars (minimum):
 - `SUPABASE_JWT_SECRET`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_KEY`
+
+Database connection:
+- Prefer Supabase **Session Pooler** URI (IPv4, port **6543**) for Render and local tooling.
+- Direct connection (`db.<project>.supabase.co:5432`) can fail on IPv6-only networks.
 
 Optional but used in billing/PDF:
 - `BILLING_CREDITOR_NAME`
@@ -44,6 +49,18 @@ Optional for routing:
 Update backend CORS to include the Vercel domain(s).
 File: `backend/app/core/config.py` (`CORS_ORIGINS`).
 
+## 4) Custom domains & SSL (staging/prod)
+Render custom domain **must** be added on the backend service to get a valid SSL cert.
+
+Example staging:
+- DNS (Infomaniak): `api-staging.dringdring.me` → CNAME `dringdring2-0.onrender.com`
+- Render → Settings → Custom Domains: add `api-staging.dringdring.me`
+- Wait for **Certificate pending → Active**
+
+Until SSL is active, the frontend must point to:
+`https://dringdring2-0.onrender.com/api/v1`  
+Otherwise the browser shows `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` and login loops.
+
 ## 4) Migrations
 Run migrations in order (see `backend/README.md`).
 Important recent ones: v41 - v47 (billing + views + basket value).
@@ -52,3 +69,8 @@ Important recent ones: v41 - v47 (billing + views + basket value).
 - Backend: `/api/v1/health`
 - Frontend: `/login` (should render)
 
+## 6) Environments (staging vs prod)
+Best practice: separate projects for **staging** and **prod**:
+- Supabase: two projects (distinct URL/keys/db)
+- Render: two services (distinct `DATABASE_URL`, `SUPABASE_*`)
+- Vercel: two projects or two env sets
