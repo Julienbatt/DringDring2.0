@@ -74,3 +74,32 @@ Best practice: separate projects for **staging** and **prod**:
 - Supabase: two projects (distinct URL/keys/db)
 - Render: two services (distinct `DATABASE_URL`, `SUPABASE_*`)
 - Vercel: two projects or two env sets
+
+## 7) Production checklist (copy from staging)
+1) **Supabase (prod)**: create a new project
+   - Collect: `Project URL`, `anon public key`, `service_role key`, `JWT secret`
+   - Database URI: **Session Pooler** (port **6543**)
+2) **Render (backend prod)**: create a new service
+   - Set env:
+     - `DATABASE_URL` = pooler **prod** URI
+     - `SUPABASE_URL` = **prod**
+     - `SUPABASE_SERVICE_KEY` = **prod**
+     - `SUPABASE_JWT_SECRET` = **prod**
+     - `CORS_ORIGINS_STR` = `https://dringdring.me`
+3) **Vercel (frontend prod)**: create a new project or prod env
+   - Set env:
+     - `NEXT_PUBLIC_SUPABASE_URL` = **prod**
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = **prod**
+     - `NEXT_PUBLIC_API_URL` = `https://api.dringdring.me/api/v1`
+4) **DNS (Infomaniak)**
+   - `api.dringdring.me` → CNAME Render service
+   - `dringdring.me` → Vercel A record (76.76.21.21)
+5) **Render Custom Domain**
+   - Add `api.dringdring.me`
+   - Wait for **Certificate issued**
+6) **Supabase Auth (prod)**
+   - Site URL: `https://dringdring.me`
+   - Redirect URLs: `https://dringdring.me/*`
+7) **Smoke tests**
+   - `https://api.dringdring.me/api/v1/health`
+   - `https://dringdring.me/login`
