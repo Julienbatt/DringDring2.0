@@ -2,6 +2,10 @@ import csv
 import os
 import sys
 import psycopg
+import subprocess
+import tempfile
+from pathlib import Path
+from urllib.parse import urlparse
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from app.core.config import settings
@@ -14,16 +18,129 @@ def _clean(value):
     if value is None:
         return None
     val = str(value).strip()
+    val = val.replace("\r", " ").replace("\n", " ")
     if val in ('', '-', '–', '—'):
         return None
     return val
 
 
+def _normalize_phone(value):
+    raw = _clean(value)
+    if not raw:
+        return None
+    # Keep leading +, strip other non-digits
+    if raw.startswith('+'):
+        digits = '+' + ''.join(ch for ch in raw if ch.isdigit())
+        return digits if len(digits) > 1 else None
+    digits = ''.join(ch for ch in raw if ch.isdigit())
+    if not digits:
+        return None
+    # Swiss normalization
+    if digits.startswith('0'):
+        return '+41' + digits[1:]
+    if digits.startswith('7'):
+        return '+417' + digits[1:]
+    if digits.startswith('27'):
+        return '+4127' + digits[2:]
+    if digits.startswith('2'):
+        return '+41' + digits
+    return '+' + digits
+
+
+def _connect_db():
+    # Pooler endpoints can reject server-side prepared statements.
+    try:
+        return psycopg.connect(settings.DATABASE_URL, autocommit=True, prepare_threshold=0)
+    except Exception as err:
+        raise err
+
+
+def _psql_path():
+    return "/Applications/Postgres.app/Contents/Versions/latest/bin/psql"
+
+
+def _load_city_map_with_psql():
+    output = subprocess.check_output(
+        [_psql_path(), settings.DATABASE_URL, "-A", "-F", "|", "-t", "-c", "select id,name from city;"],
+        text=True,
+    )
+    city_map = {}
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        city_id, name = line.split("|", 1)
+        city_map[name] = city_id
+    return city_map
+
+
+def _import_with_psql(rows):
+    city_map = _load_city_map_with_psql()
+    default_city_id = city_map.get(DEFAULT_CITY_NAME)
+    if not default_city_id:
+        raise RuntimeError(f"City '{DEFAULT_CITY_NAME}' not found.")
+
+    # Prepare normalized CSV for COPY
+    fd, tmp_path = tempfile.mkstemp(prefix="clients_import_", suffix=".csv")
+    Path(tmp_path).write_text(
+        "name,address,postal_code,city_name,city_id,is_cms,floor,door_code,phone,active\n",
+        encoding="utf-8",
+    )
+    count = 0
+    with open(tmp_path, "a", encoding="utf-8", newline="") as out:
+        writer = csv.writer(out, lineterminator="\n")
+        for row in rows:
+            name = _clean(row.get("Nom Complet"))
+            if not name:
+                continue
+            addr_1 = _clean(row.get("Adresse 1"))
+            num_1 = _clean(row.get("Numéro 1"))
+            address = " ".join([part for part in [addr_1, num_1] if part]).strip()
+            etage = _clean(row.get("Etage 1"))
+            code_entree = _clean(row.get("Code entrée"))
+            tel = _normalize_phone(row.get("Tél"))
+            postal_code = _clean(row.get("NPA 1")) or ""
+            city_text = _clean(row.get("Lieu 1")) or DEFAULT_CITY_NAME
+            cms_val = str(row.get("CMS", "")).lower().strip()
+            is_cms = cms_val in ["oui", "yes", "true", "1"]
+            city_id_to_use = city_map.get(city_text, default_city_id)
+            writer.writerow([
+                name,
+                address,
+                postal_code,
+                city_text,
+                city_id_to_use,
+                is_cms,
+                etage,
+                code_entree,
+                tel,
+                True,
+            ])
+            count += 1
+
+    try:
+        subprocess.run([_psql_path(), settings.DATABASE_URL, "-v", "ON_ERROR_STOP=1",
+                        "-c", "TRUNCATE TABLE client CASCADE;"], check=True)
+        subprocess.run([
+            _psql_path(),
+            settings.DATABASE_URL,
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-c",
+            "\\copy client (name,address,postal_code,city_name,city_id,is_cms,floor,door_code,phone,active) "
+            f"from '{tmp_path}' with (format csv, header true)"
+        ], check=True)
+    finally:
+        try:
+            os.remove(tmp_path)
+        except FileNotFoundError:
+            pass
+    print(f"Done. Imported {count} clients (psql fallback).")
+
+
 def import_clients():
     print("Connecting to DB...")
     try:
-        # Pooler endpoints can reject server-side prepared statements.
-        conn = psycopg.connect(settings.DATABASE_URL, autocommit=True, prepare_threshold=0)
+        conn = _connect_db()
         with conn.cursor() as cur:
             # 0. Clean table for fresh import (DEV ONLY)
             print("Cleaning table 'client'...")
@@ -74,12 +191,12 @@ def import_clients():
                         continue
 
                     addr_1 = _clean(row.get('Adresse 1'))
-                    num_1 = _clean(row.get('NumAcro 1'))
+                    num_1 = _clean(row.get('Numéro 1'))
                     address = " ".join([part for part in [addr_1, num_1] if part]).strip()
 
                     etage = _clean(row.get('Etage 1'))
-                    code_entree = _clean(row.get('Code entrAce'))
-                    tel = _clean(row.get('TAcl'))
+                    code_entree = _clean(row.get('Code entrée'))
+                    tel = _normalize_phone(row.get('Tél'))
 
                     postal_code = _clean(row.get('NPA 1')) or ''
                     city_text = _clean(row.get('Lieu 1')) or DEFAULT_CITY_NAME
@@ -118,6 +235,16 @@ def import_clients():
             print(f"Done. Imported {count} clients.")
 
     except Exception as e:
+        err_text = str(e)
+        if "nodename nor servname provided" in err_text:
+            print("DB DNS resolution failed. Falling back to psql import...")
+        elif "prepared statement" in err_text:
+            print("DB prepared statement error (pooler). Falling back to psql import...")
+        if "nodename nor servname provided" in err_text or "prepared statement" in err_text:
+            with open(CSV_FILE, "r", encoding="utf-8", errors="replace") as f:
+                rows = list(csv.DictReader(f))
+            _import_with_psql(rows)
+            return
         print(f"Global Error: {e}")
 
 
