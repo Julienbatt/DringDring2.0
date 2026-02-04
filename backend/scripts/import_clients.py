@@ -1,7 +1,10 @@
 import csv
 import os
 import sys
-import psycopg
+try:
+    import psycopg
+except ModuleNotFoundError:
+    psycopg = None
 import subprocess
 import tempfile
 from pathlib import Path
@@ -54,6 +57,8 @@ def _normalize_phone(value):
 def _connect_db():
     # Pooler endpoints can reject server-side prepared statements.
     try:
+        if psycopg is None:
+            raise RuntimeError("psycopg not installed")
         return psycopg.connect(_get_db_url(), autocommit=True, prepare_threshold=0)
     except Exception as err:
         raise err
@@ -245,7 +250,14 @@ def import_clients():
             print("DB DNS resolution failed. Falling back to psql import...")
         elif "prepared statement" in err_text:
             print("DB prepared statement error (pooler). Falling back to psql import...")
-        if "nodename nor servname provided" in err_text or "prepared statement" in err_text:
+        if "psycopg not installed" in err_text or "No module named" in err_text:
+            print("psycopg missing. Falling back to psql import...")
+        if (
+            "nodename nor servname provided" in err_text
+            or "prepared statement" in err_text
+            or "psycopg not installed" in err_text
+            or "No module named" in err_text
+        ):
             with open(CSV_FILE, "r", encoding="utf-8", errors="replace") as f:
                 rows = list(csv.DictReader(f))
             _import_with_psql(rows, _get_db_url())
