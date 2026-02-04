@@ -522,6 +522,8 @@ export default function ShopReport() {
   }
 
   const [tariffType, setTariffType] = useState<'bags' | 'order_amount' | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
+  const [configError, setConfigError] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch shop configuration on mount
@@ -532,9 +534,14 @@ export default function ShopReport() {
         if (!sessionData.session) return
 
         const config = await apiGet('/deliveries/shop/configuration', sessionData.session.access_token) as { rule_type: string }
-        setTariffType(config.rule_type as any)
+        const normalized = String(config.rule_type || '').trim().toLowerCase()
+        setTariffType(normalized === 'order_amount' ? 'order_amount' : 'bags')
+        setConfigError(null)
       } catch (e) {
         console.error('Failed to load shop config', e)
+        setConfigError('Configuration tarifaire indisponible.')
+      } finally {
+        setConfigLoading(false)
       }
     }
     fetchConfig()
@@ -615,6 +622,12 @@ export default function ShopReport() {
           <div className="text-sm text-orange-600">
             Periode gelee : creation et simulation de livraisons desactivees.
           </div>
+        )}
+        {configLoading && (
+          <div className="text-sm text-gray-500">Chargement de la configuration tarifaire...</div>
+        )}
+        {configError && (
+          <div className="text-sm text-red-600">{configError}</div>
         )}
         {submitError && (
           <div className="text-sm text-red-600">{submitError}</div>
@@ -794,7 +807,7 @@ export default function ShopReport() {
               <option value="16:00-20:00">16:00-20:00</option>
             </select>
           </label>
-          {tariffType !== 'order_amount' && (
+          {!configLoading && tariffType !== 'order_amount' && (
             <label className="text-sm text-gray-600">
               Sacs
               <select
@@ -828,7 +841,7 @@ export default function ShopReport() {
             />
           </label>
 
-          {tariffType === 'order_amount' && (
+          {!configLoading && tariffType === 'order_amount' && (
             <label className="text-sm text-gray-600">
               Valeur des courses (CHF)
               <input
@@ -846,7 +859,7 @@ export default function ShopReport() {
             </label>
           )}
 
-          {tariffType !== 'order_amount' && (
+          {!configLoading && tariffType !== 'order_amount' && (
             <label className="text-sm text-gray-600">
               Valeur des courses (CHF)
               <input
@@ -895,7 +908,7 @@ export default function ShopReport() {
             <button
               className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
               type="submit"
-              disabled={submitting || !preview || isFrozen}
+              disabled={submitting || !preview || isFrozen || configLoading || Boolean(configError)}
             >
               {submitting
                 ? 'Enregistrement...'

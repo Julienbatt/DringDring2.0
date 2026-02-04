@@ -577,7 +577,8 @@ def get_shop_configuration(
             if not row:
                 raise HTTPException(status_code=404, detail="Configuration not found")
             
-            return {"rule_type": row[0]}
+            rule_type = (row[0] or "").strip().lower()
+            return {"rule_type": rule_type}
 
 @router.get("/shop")
 def list_shop_deliveries(

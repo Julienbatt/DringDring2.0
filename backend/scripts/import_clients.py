@@ -95,6 +95,7 @@ def _import_with_psql(rows, db_url: str):
         encoding="utf-8",
     )
     count = 0
+    seen_keys = set()
     with open(tmp_path, "a", encoding="utf-8", newline="") as out:
         writer = csv.writer(out, lineterminator="\n")
         for row in rows:
@@ -114,6 +115,15 @@ def _import_with_psql(rows, db_url: str):
             cms_val = str(row.get("CMS", "")).lower().strip()
             is_cms = cms_val in ["oui", "yes", "true", "1"]
             city_id_to_use = city_map.get(city_text, default_city_id)
+            key = (
+                name.lower().strip(),
+                address.lower().strip(),
+                postal_code.strip(),
+                str(city_id_to_use),
+            )
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
             writer.writerow([
                 name,
                 address,
@@ -196,6 +206,7 @@ def import_clients():
 
             print(f"Importing {len(rows)} clients...")
             count = 0
+            seen_keys = set()
             for row in rows:
                 try:
                     name = _clean(row.get('Nom Complet'))
@@ -221,6 +232,16 @@ def import_clients():
                     cur.execute("SELECT id FROM city WHERE name = %s", (city_text,))
                     city_lookup = cur.fetchone()
                     city_id_to_use = city_lookup[0] if city_lookup else default_city_id
+
+                    key = (
+                        name.lower().strip(),
+                        address.lower().strip(),
+                        postal_code.strip(),
+                        str(city_id_to_use),
+                    )
+                    if key in seen_keys:
+                        continue
+                    seen_keys.add(key)
 
                     cur.execute(
                         """
