@@ -306,7 +306,7 @@ export default function ShopReport() {
   }
 
   useEffect(() => {
-    const bagCount = Number(formState.bags)
+    const bagCount = tariffType === 'order_amount' ? 1 : Number(formState.bags)
 
     // [NEW] Block preview if frozen
     if (isFrozen) {
@@ -315,7 +315,18 @@ export default function ShopReport() {
       return
     }
 
-    if (!formState.client_id || Number.isNaN(bagCount) || bagCount < 1) {
+    if (!formState.client_id) {
+      setPreview(null)
+      setPreviewError(null)
+      return
+    }
+    if (tariffType === 'order_amount') {
+      if (!formState.order_amount || Number(formState.order_amount) <= 0) {
+        setPreview(null)
+        setPreviewError(null)
+        return
+      }
+    } else if (Number.isNaN(bagCount) || bagCount < 1) {
       setPreview(null)
       setPreviewError(null)
       return
@@ -368,7 +379,9 @@ export default function ShopReport() {
   }, [
     formState.client_id,
     formState.bags,
+    formState.order_amount,
     formState.delivery_date,
+    tariffType,
     isFrozen, // Dependency added
   ])
 
@@ -377,7 +390,7 @@ export default function ShopReport() {
     setSubmitting(true)
     setSubmitError(null)
 
-    const bagCount = Number(formState.bags)
+    const bagCount = tariffType === 'order_amount' ? 1 : Number(formState.bags)
     if (isFrozen) {
       setSubmitError('Cette periode est gelee')
       setSubmitting(false)
@@ -388,10 +401,18 @@ export default function ShopReport() {
       setSubmitting(false)
       return
     }
-    if (Number.isNaN(bagCount) || bagCount < 1) {
-      setSubmitError('Veuillez selectionner un nombre de sacs valide')
-      setSubmitting(false)
-      return
+    if (tariffType === 'order_amount') {
+      if (!formState.order_amount || Number(formState.order_amount) <= 0) {
+        setSubmitError('Veuillez saisir une valeur de courses valide')
+        setSubmitting(false)
+        return
+      }
+    } else {
+      if (Number.isNaN(bagCount) || bagCount < 1) {
+        setSubmitError('Veuillez selectionner un nombre de sacs valide')
+        setSubmitting(false)
+        return
+      }
     }
 
     try {
@@ -409,7 +430,9 @@ export default function ShopReport() {
           time_window: formState.time_window,
           bags: bagCount,
           order_amount: formState.order_amount ? Number(formState.order_amount) : null,
-          basket_value: formState.basket_value ? Number(formState.basket_value) : null,
+          basket_value: tariffType === 'order_amount'
+            ? (formState.order_amount ? Number(formState.order_amount) : null)
+            : (formState.basket_value ? Number(formState.basket_value) : null),
           notes: formState.notes,
         }
         await apiPatch(`/deliveries/shop/${editingDeliveryId}`, payload, session.access_token)
@@ -421,7 +444,9 @@ export default function ShopReport() {
           time_window: formState.time_window,
           bags: bagCount,
           order_amount: formState.order_amount ? Number(formState.order_amount) : null,
-          basket_value: formState.basket_value ? Number(formState.basket_value) : null,
+          basket_value: tariffType === 'order_amount'
+            ? (formState.order_amount ? Number(formState.order_amount) : null)
+            : (formState.basket_value ? Number(formState.basket_value) : null),
           notes: formState.notes,
         }
         await apiPost('/deliveries/shop', payload, session.access_token)
@@ -769,25 +794,27 @@ export default function ShopReport() {
               <option value="16:00-20:00">16:00-20:00</option>
             </select>
           </label>
-          <label className="text-sm text-gray-600">
-            Sacs
-            <select
-              className="mt-1 w-full rounded border px-2 py-1"
-              name="bags"
-              value={formState.bags}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Selectionner</option>
-              {Array.from({ length: 20 }, (_, index) => index + 1).map(
-                (count) => (
-                  <option key={count} value={count}>
-                    {count} sac{count > 1 ? 's' : ''}
-                  </option>
-                )
-              )}
-            </select>
-          </label>
+          {tariffType !== 'order_amount' && (
+            <label className="text-sm text-gray-600">
+              Sacs
+              <select
+                className="mt-1 w-full rounded border px-2 py-1"
+                name="bags"
+                value={formState.bags}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Selectionner</option>
+                {Array.from({ length: 20 }, (_, index) => index + 1).map(
+                  (count) => (
+                    <option key={count} value={count}>
+                      {count} sac{count > 1 ? 's' : ''}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
+          )}
 
           <label className="text-sm text-gray-600 md:col-span-2">
             Remarques / Instructions (facultatif)
@@ -803,7 +830,7 @@ export default function ShopReport() {
 
           {tariffType === 'order_amount' && (
             <label className="text-sm text-gray-600">
-              Montant Commande (CHF)
+              Valeur des courses (CHF)
               <input
                 className="mt-1 w-full rounded border px-2 py-1"
                 type="number"
@@ -813,24 +840,29 @@ export default function ShopReport() {
                 onChange={handleChange}
                 required
               />
+              <span className="text-xs text-gray-400">
+                Obligatoire pour les commerces au tarif palier.
+              </span>
             </label>
           )}
 
-          <label className="text-sm text-gray-600">
-            Valeur des courses (CHF)
-            <input
-              className="mt-1 w-full rounded border px-2 py-1"
-              type="number"
-              step="0.05"
-              name="basket_value"
-              value={formState.basket_value || ''}
-              onChange={handleChange}
-              placeholder="Optionnel"
-            />
-            <span className="text-xs text-gray-400">
-              Utilise pour la rentabilite, non facture.
-            </span>
-          </label>
+          {tariffType !== 'order_amount' && (
+            <label className="text-sm text-gray-600">
+              Valeur des courses (CHF)
+              <input
+                className="mt-1 w-full rounded border px-2 py-1"
+                type="number"
+                step="0.05"
+                name="basket_value"
+                value={formState.basket_value || ''}
+                onChange={handleChange}
+                placeholder="Optionnel"
+              />
+              <span className="text-xs text-gray-400">
+                Utilise pour la rentabilite, non facture.
+              </span>
+            </label>
+          )}
 
           {previewError && (
             <div className="md:col-span-2 text-sm text-red-600">
