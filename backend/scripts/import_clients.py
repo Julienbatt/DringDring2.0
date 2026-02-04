@@ -14,6 +14,10 @@ CSV_FILE = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', 'clients_
 DEFAULT_CITY_NAME = 'Sion'
 
 
+def _get_db_url() -> str:
+    return os.getenv("DATABASE_URL_STAGING") or settings.DATABASE_URL
+
+
 def _clean(value):
     if value is None:
         return None
@@ -50,7 +54,7 @@ def _normalize_phone(value):
 def _connect_db():
     # Pooler endpoints can reject server-side prepared statements.
     try:
-        return psycopg.connect(settings.DATABASE_URL, autocommit=True, prepare_threshold=0)
+        return psycopg.connect(_get_db_url(), autocommit=True, prepare_threshold=0)
     except Exception as err:
         raise err
 
@@ -59,9 +63,9 @@ def _psql_path():
     return "/Applications/Postgres.app/Contents/Versions/latest/bin/psql"
 
 
-def _load_city_map_with_psql():
+def _load_city_map_with_psql(db_url: str):
     output = subprocess.check_output(
-        [_psql_path(), settings.DATABASE_URL, "-A", "-F", "|", "-t", "-c", "select id,name from city;"],
+        [_psql_path(), db_url, "-A", "-F", "|", "-t", "-c", "select id,name from city;"],
         text=True,
     )
     city_map = {}
@@ -73,8 +77,8 @@ def _load_city_map_with_psql():
     return city_map
 
 
-def _import_with_psql(rows):
-    city_map = _load_city_map_with_psql()
+def _import_with_psql(rows, db_url: str):
+    city_map = _load_city_map_with_psql(db_url)
     default_city_id = city_map.get(DEFAULT_CITY_NAME)
     if not default_city_id:
         raise RuntimeError(f"City '{DEFAULT_CITY_NAME}' not found.")
@@ -118,11 +122,11 @@ def _import_with_psql(rows):
             count += 1
 
     try:
-        subprocess.run([_psql_path(), settings.DATABASE_URL, "-v", "ON_ERROR_STOP=1",
+        subprocess.run([_psql_path(), db_url, "-v", "ON_ERROR_STOP=1",
                         "-c", "TRUNCATE TABLE client CASCADE;"], check=True)
         subprocess.run([
             _psql_path(),
-            settings.DATABASE_URL,
+            db_url,
             "-v",
             "ON_ERROR_STOP=1",
             "-c",
@@ -140,6 +144,7 @@ def _import_with_psql(rows):
 def import_clients():
     print("Connecting to DB...")
     try:
+        db_url = _get_db_url()
         conn = _connect_db()
         with conn.cursor() as cur:
             # 0. Clean table for fresh import (DEV ONLY)
@@ -243,7 +248,7 @@ def import_clients():
         if "nodename nor servname provided" in err_text or "prepared statement" in err_text:
             with open(CSV_FILE, "r", encoding="utf-8", errors="replace") as f:
                 rows = list(csv.DictReader(f))
-            _import_with_psql(rows)
+            _import_with_psql(rows, _get_db_url())
             return
         print(f"Global Error: {e}")
 
