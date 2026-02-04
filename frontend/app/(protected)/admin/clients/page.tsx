@@ -41,6 +41,8 @@ export default function ClientsPage() {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedClient, setSelectedClient] = useState<ClientData | null>(null)
+    const cmsCount = clients.filter((client) => client.is_cms).length
+    const standardCount = clients.length - cmsCount
 
     useEffect(() => {
         if (session?.access_token) {
@@ -93,6 +95,21 @@ export default function ClientsPage() {
                     <Plus className="mr-2 h-4 w-4" />
                     Nouveau client
                 </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
+                    <div className="text-xs uppercase tracking-wide text-gray-400">Total</div>
+                    <div className="mt-1 text-2xl font-semibold text-gray-900">{clients.length}</div>
+                </div>
+                <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
+                    <div className="text-xs uppercase tracking-wide text-gray-400">Clients CMS</div>
+                    <div className="mt-1 text-2xl font-semibold text-emerald-700">{cmsCount}</div>
+                </div>
+                <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
+                    <div className="text-xs uppercase tracking-wide text-gray-400">Clients standards</div>
+                    <div className="mt-1 text-2xl font-semibold text-gray-900">{standardCount}</div>
+                </div>
             </div>
 
             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border shadow-sm max-w-md">
