@@ -104,6 +104,8 @@ def _import_with_psql(rows, db_url: str):
             addr_1 = _clean(row.get("Adresse 1"))
             num_1 = _clean(row.get("Numéro 1"))
             address = " ".join([part for part in [addr_1, num_1] if part]).strip()
+            if not address:
+                address = "Adresse inconnue"
             etage = _clean(row.get("Etage 1"))
             code_entree = _clean(row.get("Code entrée"))
             tel = _normalize_phone(row.get("Tél"))
@@ -203,6 +205,8 @@ def import_clients():
                     addr_1 = _clean(row.get('Adresse 1'))
                     num_1 = _clean(row.get('Numéro 1'))
                     address = " ".join([part for part in [addr_1, num_1] if part]).strip()
+                    if not address:
+                        address = "Adresse inconnue"
 
                     etage = _clean(row.get('Etage 1'))
                     code_entree = _clean(row.get('Code entrée'))

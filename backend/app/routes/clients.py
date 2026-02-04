@@ -206,7 +206,7 @@ def list_shop_clients(
             # Select all clients in that Admin Region
             cur.execute(
                 """
-                SELECT c.id::text as id, c.name, c.address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms, 
+                SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms, 
                        c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
                 FROM client c
                 JOIN city cc ON c.city_id = cc.id
@@ -237,7 +237,7 @@ def list_admin_clients(
         with conn.cursor() as cur:
             if target_region_id:
                 query = """
-                SELECT c.id::text as id, c.name, c.address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
+                SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
                        c.floor, c.door_code, c.phone, c.active, c.lat, c.lng,
                        city.name as city_real_name
                 FROM client c
@@ -249,7 +249,7 @@ def list_admin_clients(
                 params = (target_region_id,)
             else:
                 query = """
-                SELECT c.id::text as id, c.name, c.address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
+                SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
                        c.floor, c.door_code, c.phone, c.active, c.lat, c.lng,
                        city.name as city_real_name
                 FROM client c
@@ -278,7 +278,7 @@ def get_my_client(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT c.id::text as id, c.name, c.address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms,
+                SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms,
                        c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
                 FROM client c
                 WHERE c.id = %s
@@ -365,7 +365,7 @@ def update_my_client(
             )
             cur.execute(
                 """
-                SELECT c.id::text as id, c.name, c.address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms,
+                SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms,
                        c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
                 FROM client c
                 WHERE c.id = %s
