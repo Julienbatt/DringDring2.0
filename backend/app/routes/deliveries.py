@@ -603,6 +603,7 @@ def list_shop_deliveries(
                     l.address,
                     l.city_name,
                     l.time_window,
+                    l.short_code,
                     l.bags,
                     l.order_amount,
                     l.basket_value,

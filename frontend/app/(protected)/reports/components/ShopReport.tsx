@@ -79,6 +79,7 @@ function formatMonth(value: unknown) {
 }
 
 const TABLE_COLUMNS = [
+  'short_code',
   'delivery_date',
   'client_name',
   'address',
@@ -90,10 +91,11 @@ const TABLE_COLUMNS = [
 ]
 
 const TABLE_LABELS: Record<string, string> = {
+  short_code: 'N°',
   delivery_date: 'Date',
   client_name: 'Client',
   address: 'Adresse',
-    city_name: 'Commune partenaire',
+  city_name: 'Commune partenaire',
   bags: 'Sacs',
   basket_value: 'Valeur des courses (CHF)',
   status: 'Statut',
