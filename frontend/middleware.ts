@@ -9,7 +9,7 @@ export async function middleware(req: NextRequest) {
   // Defensive: strip legacy base path if present.
   if (path === '/DringDring' || path.startsWith('/DringDring/')) {
     const nextUrl = req.nextUrl.clone()
-    const stripped = path.replace(/^\\/DringDring/, '') || '/'
+    const stripped = path.replace('/DringDring', '') || '/'
     nextUrl.pathname = stripped
     return NextResponse.redirect(nextUrl)
   }
