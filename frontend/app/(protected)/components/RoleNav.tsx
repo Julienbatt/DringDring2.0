@@ -40,6 +40,9 @@ export default function RoleNav() {
   }
 
   const items = NAV_ITEMS.filter((item) => item.roles.includes(effectiveRole))
+  if (effectiveRole === 'courier' && user?.can_dispatch) {
+    items.push({ label: 'Dispatch', href: '/courier/dispatch', roles: ['courier'] })
+  }
 
   return (
     <div className="border-b bg-white">

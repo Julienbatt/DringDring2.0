@@ -5,7 +5,7 @@ import uuid
 import logging
 import re
 
-from app.core.guards import require_admin_user, require_shop_user # Maybe just admin_region for now? user said "Admin Region"
+from app.core.guards import require_admin_user, require_dispatch_user, require_shop_user # Maybe just admin_region for now? user said "Admin Region"
 from app.core.security import get_current_user_claims
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
@@ -47,6 +47,7 @@ class CourierCreate(BaseModel):
     email: Optional[EmailStr] = None
     vehicle_type: Optional[str] = 'bike'
     active: bool = True
+    can_dispatch: bool = False
     admin_region_id: Optional[str] = None
 
 class CourierResponse(BaseModel):
@@ -58,12 +59,13 @@ class CourierResponse(BaseModel):
     email: Optional[str]
     vehicle_type: Optional[str]
     active: bool
+    can_dispatch: bool
     admin_region_name: Optional[str] # Context for Super Admin
     
 @router.get("")
 def list_couriers(
     admin_region_id: Optional[str] = None, # Drill-down context for Super Admin
-    user: MeResponse = Depends(require_admin_user), 
+    user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
     # Security: Only Super Admin can specify a region to view.
@@ -90,11 +92,22 @@ def list_couriers(
             )
             has_vehicle_type = cur.fetchone() is not None
             vehicle_select = "c.vehicle_type" if has_vehicle_type else "NULL::text"
+            cur.execute(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'courier'
+                  AND column_name = 'can_dispatch'
+                """
+            )
+            has_can_dispatch = cur.fetchone() is not None
+            can_dispatch_select = "c.can_dispatch" if has_can_dispatch else "FALSE::boolean"
 
             if target_region_id:
                  # Filter by specific region (Drill-Down OR Admin Region view)
                  query = """
-                    SELECT c.id, c.first_name, c.last_name, c.courier_number, c.phone_number, c.email, c.active, {vehicle_select} as vehicle_type, ar.name as admin_region_name
+                    SELECT c.id, c.first_name, c.last_name, c.courier_number, c.phone_number, c.email, c.active, {vehicle_select} as vehicle_type, {can_dispatch_select} as can_dispatch, ar.name as admin_region_name
                     FROM courier c
                     LEFT JOIN admin_region ar ON c.admin_region_id = ar.id
                     WHERE c.admin_region_id = %s
@@ -104,7 +117,7 @@ def list_couriers(
             else:
                  # Super Admin seeing ALL (No drill-down)
                  query = """
-                    SELECT c.id, c.first_name, c.last_name, c.courier_number, c.phone_number, c.email, c.active, {vehicle_select} as vehicle_type, ar.name as admin_region_name
+                    SELECT c.id, c.first_name, c.last_name, c.courier_number, c.phone_number, c.email, c.active, {vehicle_select} as vehicle_type, {can_dispatch_select} as can_dispatch, ar.name as admin_region_name
                     FROM courier c
                     LEFT JOIN admin_region ar ON c.admin_region_id = ar.id
                     ORDER BY ar.name, c.last_name, c.first_name
@@ -112,10 +125,10 @@ def list_couriers(
                  params = ()
 
             try:
-                cur.execute(query.format(vehicle_select=vehicle_select), params)
+                cur.execute(query.format(vehicle_select=vehicle_select, can_dispatch_select=can_dispatch_select), params)
             except Exception as exc:
                 if "vehicle_type" in str(exc):
-                    cur.execute(query.format(vehicle_select="NULL::text"), params)
+                    cur.execute(query.format(vehicle_select="NULL::text", can_dispatch_select=can_dispatch_select), params)
                 else:
                     raise
             columns = [desc[0] for desc in cur.description]
@@ -166,50 +179,107 @@ def create_courier(
                 """
             )
             has_vehicle_type = cur.fetchone() is not None
+            cur.execute(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'courier'
+                  AND column_name = 'can_dispatch'
+                """
+            )
+            has_can_dispatch = cur.fetchone() is not None
             try:
                 if has_vehicle_type:
-                    cur.execute(
-                        """
-                        INSERT INTO courier (
-                            id, first_name, last_name, courier_number, phone_number, email, active, 
-                            vehicle_type, admin_region_id
+                    if has_can_dispatch:
+                        cur.execute(
+                            """
+                            INSERT INTO courier (
+                                id, first_name, last_name, courier_number, phone_number, email, active, 
+                                vehicle_type, can_dispatch, admin_region_id
+                            )
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                            """,
+                            (
+                                courier_id,
+                                courier.first_name,
+                                courier.last_name,
+                                courier.courier_number,
+                                normalized_phone,
+                                courier.email,
+                                courier.active,
+                                courier.vehicle_type,
+                                courier.can_dispatch,
+                                admin_region_id
+                            )
                         )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id
-                        """,
-                        (
-                            courier_id, 
-                            courier.first_name, 
-                            courier.last_name, 
-                            courier.courier_number, 
-                            normalized_phone,
-                            courier.email, 
-                            courier.active,
-                            courier.vehicle_type,
-                            admin_region_id
+                    else:
+                        cur.execute(
+                            """
+                            INSERT INTO courier (
+                                id, first_name, last_name, courier_number, phone_number, email, active, 
+                                vehicle_type, admin_region_id
+                            )
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                            """,
+                            (
+                                courier_id,
+                                courier.first_name,
+                                courier.last_name,
+                                courier.courier_number,
+                                normalized_phone,
+                                courier.email,
+                                courier.active,
+                                courier.vehicle_type,
+                                admin_region_id
+                            )
                         )
-                    )
                 else:
-                    cur.execute(
-                        """
-                        INSERT INTO courier (
-                            id, first_name, last_name, courier_number, phone_number, email, active, 
-                            admin_region_id
+                    if has_can_dispatch:
+                        cur.execute(
+                            """
+                            INSERT INTO courier (
+                                id, first_name, last_name, courier_number, phone_number, email, active, 
+                                can_dispatch, admin_region_id
+                            )
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                            """,
+                            (
+                                courier_id,
+                                courier.first_name,
+                                courier.last_name,
+                                courier.courier_number,
+                                normalized_phone,
+                                courier.email,
+                                courier.active,
+                                courier.can_dispatch,
+                                admin_region_id
+                            )
                         )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        RETURNING id
-                        """,
-                        (
-                            courier_id, 
-                            courier.first_name, 
-                            courier.last_name, 
-                            courier.courier_number, 
-                            normalized_phone,
-                            courier.email, 
-                            courier.active,
-                            admin_region_id
+                    else:
+                        cur.execute(
+                            """
+                            INSERT INTO courier (
+                                id, first_name, last_name, courier_number, phone_number, email, active, 
+                                admin_region_id
+                            )
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                            """,
+                            (
+                                courier_id,
+                                courier.first_name,
+                                courier.last_name,
+                                courier.courier_number,
+                                normalized_phone,
+                                courier.email,
+                                courier.active,
+                                admin_region_id
+                            )
                         )
-                    )
                 conn.commit()
             except Exception as e:
                 conn.rollback()
@@ -239,6 +309,16 @@ def update_courier(
                 """
             )
             has_vehicle_type = cur.fetchone() is not None
+            cur.execute(
+                """
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'courier'
+                  AND column_name = 'can_dispatch'
+                """
+            )
+            has_can_dispatch = cur.fetchone() is not None
             # Check existence
             cur.execute("SELECT admin_region_id, phone_number FROM courier WHERE id = %s", (courier_id,))
             row = cur.fetchone()
@@ -270,42 +350,84 @@ def update_courier(
             phone_value = normalized_phone if normalized_phone else (None if courier.phone_number == "" else existing_phone)
 
             if has_vehicle_type:
-                cur.execute(
-                    f"""
-                    UPDATE courier 
-                    SET first_name = %s, last_name = %s, courier_number = %s, 
-                        phone_number = %s, email = %s, active = %s, vehicle_type = %s
-                    {where_sql}
-                    """,
-                    [
-                        courier.first_name,
-                        courier.last_name,
-                        courier.courier_number,
-                        phone_value,
-                        courier.email,
-                        courier.active,
-                        courier.vehicle_type,
-                        *where_params,
-                    ],
-                )
+                if has_can_dispatch:
+                    cur.execute(
+                        f"""
+                        UPDATE courier 
+                        SET first_name = %s, last_name = %s, courier_number = %s, 
+                            phone_number = %s, email = %s, active = %s, vehicle_type = %s,
+                            can_dispatch = %s
+                        {where_sql}
+                        """,
+                        [
+                            courier.first_name,
+                            courier.last_name,
+                            courier.courier_number,
+                            phone_value,
+                            courier.email,
+                            courier.active,
+                            courier.vehicle_type,
+                            courier.can_dispatch,
+                            *where_params,
+                        ],
+                    )
+                else:
+                    cur.execute(
+                        f"""
+                        UPDATE courier 
+                        SET first_name = %s, last_name = %s, courier_number = %s, 
+                            phone_number = %s, email = %s, active = %s, vehicle_type = %s
+                        {where_sql}
+                        """,
+                        [
+                            courier.first_name,
+                            courier.last_name,
+                            courier.courier_number,
+                            phone_value,
+                            courier.email,
+                            courier.active,
+                            courier.vehicle_type,
+                            *where_params,
+                        ],
+                    )
             else:
-                cur.execute(
-                    f"""
-                    UPDATE courier 
-                    SET first_name = %s, last_name = %s, courier_number = %s, 
-                        phone_number = %s, email = %s, active = %s
-                    {where_sql}
-                    """,
-                    [
-                        courier.first_name,
-                        courier.last_name,
-                        courier.courier_number,
-                        phone_value,
-                        courier.email,
-                        courier.active,
-                        *where_params,
-                    ],
-                )
+                if has_can_dispatch:
+                    cur.execute(
+                        f"""
+                        UPDATE courier 
+                        SET first_name = %s, last_name = %s, courier_number = %s, 
+                            phone_number = %s, email = %s, active = %s, can_dispatch = %s
+                        {where_sql}
+                        """,
+                        [
+                            courier.first_name,
+                            courier.last_name,
+                            courier.courier_number,
+                            phone_value,
+                            courier.email,
+                            courier.active,
+                            courier.can_dispatch,
+                            *where_params,
+                        ],
+                    )
+                else:
+                    cur.execute(
+                        f"""
+                        UPDATE courier 
+                        SET first_name = %s, last_name = %s, courier_number = %s, 
+                            phone_number = %s, email = %s, active = %s
+                        {where_sql}
+                        """,
+                        [
+                            courier.first_name,
+                            courier.last_name,
+                            courier.courier_number,
+                            phone_value,
+                            courier.email,
+                            courier.active,
+                            *where_params,
+                        ],
+                    )
             if cur.rowcount == 0:
                 raise HTTPException(status_code=403, detail="Not authorized for this courier")
             conn.commit()

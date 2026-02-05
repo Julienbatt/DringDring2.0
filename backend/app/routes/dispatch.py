@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from pydantic import BaseModel
 from uuid import UUID
 
-from app.core.guards import require_admin_user
+from app.core.guards import require_dispatch_user
 from app.core.security import get_current_user_claims
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
@@ -41,7 +41,7 @@ def list_dispatch_deliveries(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     admin_region_id: Optional[str] = None, # Drill-down for Super Admin
-    user: MeResponse = Depends(require_admin_user),
+    user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
     """
@@ -58,6 +58,9 @@ def list_dispatch_deliveries(
              # or we show ALL (but that might vary by region logic).
              # Let's require it.
              raise HTTPException(status_code=400, detail="Super Admin must specify admin_region_id context")
+    elif user.role == "courier":
+        if not user.admin_region_id:
+            raise HTTPException(status_code=400, detail="Courier admin region missing")
 
     if not target_region_id:
         raise HTTPException(status_code=400, detail="Admin region id missing")
@@ -152,7 +155,7 @@ def list_dispatch_deliveries(
 @router.patch("/deliveries/{delivery_id}/complete")
 def complete_delivery(
     delivery_id: UUID,
-    user: MeResponse = Depends(require_admin_user),
+    user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
     user_region_id = user.admin_region_id
@@ -194,7 +197,7 @@ def complete_delivery(
 def assign_courier(
     delivery_id: UUID,
     payload: AssignCourierPayload,
-    user: MeResponse = Depends(require_admin_user),
+    user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
     # For assignment, simpler: we check the delivery's region, and verify user has access to it.
@@ -223,6 +226,26 @@ def assign_courier(
                 
                 delivery_region_id = row[0]
 
+                if user.role == 'courier':
+                     if not user.courier_id:
+                          raise HTTPException(status_code=403, detail="Courier identity missing")
+                     # Courier can dispatch only within their region
+                     if not user_region_id or str(delivery_region_id) != str(user_region_id):
+                          raise HTTPException(status_code=403, detail="Not in your region")
+                     cur.execute(
+                         """
+                         SELECT admin_region_id
+                         FROM courier
+                         WHERE id = %s
+                         """,
+                         (str(payload.courier_id),)
+                     )
+                     target_row = cur.fetchone()
+                     if not target_row:
+                          raise HTTPException(status_code=404, detail="Courier not found")
+                     target_region_id = target_row[0]
+                     if str(target_region_id) != str(user_region_id):
+                          raise HTTPException(status_code=403, detail="Courier not in your region")
                 if user.role != 'super_admin':
                      if not user_region_id or str(delivery_region_id) != str(user_region_id):
                           raise HTTPException(status_code=403, detail="Not in your region")

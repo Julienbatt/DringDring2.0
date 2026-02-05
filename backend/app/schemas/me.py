@@ -11,6 +11,8 @@ class MeResponse(BaseModel):
     shop_id: Optional[str] = None
     admin_region_id: Optional[str] = None
     client_id: Optional[str] = None
+    courier_id: Optional[str] = None
+    can_dispatch: bool = False
 
     @field_validator(
         "city_id",
@@ -18,6 +20,7 @@ class MeResponse(BaseModel):
         "shop_id",
         "admin_region_id",
         "client_id",
+        "courier_id",
         mode="before",
     )
     @classmethod

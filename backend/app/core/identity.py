@@ -56,6 +56,31 @@ def resolve_identity(user_id: str, email: str, jwt_claims: str) -> MeResponse:
     def _to_str(value):
         return str(value) if value is not None else None
 
+    courier_id = None
+    can_dispatch = False
+    if role == "courier":
+        try:
+            with get_db_connection(jwt_claims) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT id, admin_region_id, can_dispatch
+                        FROM public.courier
+                        WHERE user_id = %s
+                        LIMIT 1
+                        """,
+                        (user_id,),
+                    )
+                    courier_row = cur.fetchone()
+                    if courier_row:
+                        courier_id, courier_admin_region_id, courier_can_dispatch = courier_row
+                        if not admin_region_id and courier_admin_region_id:
+                            admin_region_id = courier_admin_region_id
+                        can_dispatch = bool(courier_can_dispatch)
+        except Exception:
+            courier_id = None
+            can_dispatch = False
+
     return MeResponse(
         user_id=user_id,
         email=email,
@@ -65,4 +90,6 @@ def resolve_identity(user_id: str, email: str, jwt_claims: str) -> MeResponse:
         shop_id=_to_str(shop_id),
         admin_region_id=_to_str(admin_region_id),
         client_id=_to_str(client_id),
+        courier_id=_to_str(courier_id),
+        can_dispatch=can_dispatch,
     )

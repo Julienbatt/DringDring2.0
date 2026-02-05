@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 
 // Map roles to navigation items based on SPECIFICATION
-const getNavItems = (role: string, adminContextRegion: any, pathname: string) => {
+const getNavItems = (role: string, adminContextRegion: any, canDispatch: boolean) => {
 
 
     // Base Items (available to generic logged in users if no specific role match?)
@@ -95,7 +95,7 @@ const getNavItems = (role: string, adminContextRegion: any, pathname: string) =>
     if (role === 'courier') {
         return [
             { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-            // Minimal for now as verified earlier
+            ...(canDispatch ? [{ label: 'Dispatch', href: '/courier/dispatch', icon: ListTodo }] : []),
         ]
     }
 
@@ -109,7 +109,7 @@ export default function Sidebar() {
     if (loading) return <div className="w-64 bg-gray-900 h-screen animate-pulse"></div>
 
     const role = user?.role ?? 'guest'
-    const navItems = getNavItems(role, adminContextRegion, pathname)
+    const navItems = getNavItems(role, adminContextRegion, !!user?.can_dispatch)
     const settingsHref = role === 'customer' ? '/customer/profile' : '/settings'
 
     return (

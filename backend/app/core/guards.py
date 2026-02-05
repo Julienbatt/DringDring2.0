@@ -117,25 +117,7 @@ def require_hq_or_admin_user_for_shop(
             admin_region_row = cur.fetchone()
             admin_region_id = admin_region_row[0] if admin_region_row else None
 
-    if identity.role == "hq":
-        if not identity.hq_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="HQ access required",
-            )
-        if str(identity.hq_id) != str(shop_hq_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="HQ access required",
-            )
-        return identity
-
     if identity.role == "admin_region":
-        if shop_hq_id is not None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin region access required",
-            )
         if not identity.admin_region_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -150,7 +132,7 @@ def require_hq_or_admin_user_for_shop(
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="HQ or admin access required",
+        detail="Admin region access required",
     )
 
 
@@ -169,6 +151,25 @@ def require_admin_user(
             detail="Admin access required",
         )
     return identity
+
+
+def require_dispatch_user(
+    user=Depends(get_current_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+) -> MeResponse:
+    identity = resolve_identity(
+        user_id=user.user_id,
+        email=user.email,
+        jwt_claims=jwt_claims,
+    )
+    if identity.role in ("admin_region", "super_admin"):
+        return identity
+    if identity.role == "courier" and identity.can_dispatch:
+        return identity
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Dispatch access required",
+    )
 
 
 def require_admin_or_city_user(

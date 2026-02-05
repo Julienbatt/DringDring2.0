@@ -16,6 +16,8 @@ export type UserIdentity = {
     admin_region_id: string | null
     shop_id?: string | null
     client_id?: string | null
+    courier_id?: string | null
+    can_dispatch?: boolean
 }
 
 export type AdminRegionContext = {
