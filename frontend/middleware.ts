@@ -4,6 +4,15 @@ import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
+  const path = req.nextUrl.pathname
+
+  // Defensive: strip legacy base path if present.
+  if (path === '/DringDring' || path.startsWith('/DringDring/')) {
+    const nextUrl = req.nextUrl.clone()
+    const stripped = path.replace(/^\\/DringDring/, '') || '/'
+    nextUrl.pathname = stripped
+    return NextResponse.redirect(nextUrl)
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
