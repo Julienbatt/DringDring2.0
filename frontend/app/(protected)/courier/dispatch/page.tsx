@@ -17,6 +17,7 @@ type DispatchDelivery = {
   client_floor: string | null
   client_door_code: string | null
   time_window: string
+  short_code: string | null
   notes: string | null
   bags: number | null
   status: string | null
@@ -110,9 +111,11 @@ export default function CourierDispatchPage() {
         prev.map((d) => (d.id === deliveryId ? { ...d, courier_id: targetCourierId, status: 'assigned' } : d))
       )
       setAssignTarget(null)
+      return true
     } catch (err) {
       console.error(err)
       alert("Erreur lors de l'assignation")
+      return false
     }
   }
 
@@ -120,12 +123,13 @@ export default function CourierDispatchPage() {
     if (!courier.phone_number) return '#'
     const cleanNumber = courier.phone_number.replace(/\D/g, '')
     const message = [
+      delivery.short_code ? `Code: ${delivery.short_code}` : null,
       `Nouvelle course: ${delivery.shop_name}`,
       `Retrait: ${delivery.shop_address || '-'}`,
       `Livraison: ${delivery.client_address}, ${delivery.client_city}`,
       `Horaire: ${delivery.time_window}`,
       `Sacs: ${delivery.bags ?? '-'}`,
-    ].join('\n')
+    ].filter(Boolean).join('\n')
     return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`
   }
 
@@ -315,21 +319,27 @@ export default function CourierDispatchPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleAssignCourier(assignTarget.id, courier.id)}
-                        className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-                      >
-                        Assigner
-                      </button>
-                      {courier.phone_number && (
-                        <a
-                          href={getWhatsAppLink(assignTarget, courier)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+                      {courier.phone_number ? (
+                        <button
+                          onClick={async () => {
+                            const ok = await handleAssignCourier(assignTarget.id, courier.id)
+                            if (!ok) return
+                            const link = getWhatsAppLink(assignTarget, courier)
+                            if (link !== '#') {
+                              window.open(link, '_blank', 'noopener,noreferrer')
+                            }
+                          }}
+                          className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
-                          WhatsApp
-                        </a>
+                          Assigner + WhatsApp
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleAssignCourier(assignTarget.id, courier.id)}
+                          className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                        >
+                          Assigner
+                        </button>
                       )}
                     </div>
                   </div>
