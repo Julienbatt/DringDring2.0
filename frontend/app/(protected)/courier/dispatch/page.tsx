@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
-import { Phone, MapPin, RefreshCw, CheckCircle2, Users } from 'lucide-react'
+import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle } from 'lucide-react'
 
 type DispatchDelivery = {
   id: string
@@ -44,7 +44,7 @@ export default function CourierDispatchPage() {
   const [couriers, setCouriers] = useState<Courier[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'todo' | 'mine'>('todo')
+  const [activeTab, setActiveTab] = useState<'todo' | 'assigned' | 'done'>('todo')
   const [assignTarget, setAssignTarget] = useState<DispatchDelivery | null>(null)
 
   const canDispatch = !!user?.can_dispatch
@@ -84,9 +84,13 @@ export default function CourierDispatchPage() {
     () => deliveries.filter((d) => !d.courier_id && !['delivered', 'cancelled'].includes(d.status || '')),
     [deliveries]
   )
-  const mine = useMemo(
-    () => deliveries.filter((d) => d.courier_id && d.courier_id === courierId && !['cancelled'].includes(d.status || '')),
-    [deliveries, courierId]
+  const assigned = useMemo(
+    () => deliveries.filter((d) => d.courier_id && !['delivered', 'cancelled'].includes(d.status || '')),
+    [deliveries]
+  )
+  const done = useMemo(
+    () => deliveries.filter((d) => ['delivered', 'cancelled'].includes(d.status || '')),
+    [deliveries]
   )
 
   const handleAssignSelf = async (deliveryId: string) => {
@@ -187,12 +191,21 @@ export default function CourierDispatchPage() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('mine')}
+              onClick={() => setActiveTab('assigned')}
               className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold border ${
-                activeTab === 'mine' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'
+                activeTab === 'assigned' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'
               }`}
             >
-              Mes missions ({mine.length})
+              En cours ({assigned.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('done')}
+              className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold border ${
+                activeTab === 'done' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              Termine ({done.length})
             </button>
           </div>
         </div>
@@ -204,13 +217,13 @@ export default function CourierDispatchPage() {
         <div className="p-4 rounded-lg border border-red-200 bg-red-50 text-red-700">{error}</div>
       ) : (
         <div className="space-y-4">
-              {(activeTab === 'todo' ? todo : mine).length === 0 ? (
-                <div className="p-8 rounded-xl border bg-white text-center text-gray-500">
-                  Aucune course pour cette date.
-                </div>
-              ) : (
-                (activeTab === 'todo' ? todo : mine).map((delivery) => (
-                  <div key={delivery.id} className="bg-white rounded-xl border shadow-sm p-4 space-y-4">
+          {(activeTab === 'todo' ? todo : activeTab === 'assigned' ? assigned : done).length === 0 ? (
+            <div className="p-8 rounded-xl border bg-white text-center text-gray-500">
+              Aucune course pour cette date.
+            </div>
+          ) : (
+            (activeTab === 'todo' ? todo : activeTab === 'assigned' ? assigned : done).map((delivery) => (
+              <div key={delivery.id} className="bg-white rounded-xl border shadow-sm p-4 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-xs uppercase tracking-wider text-gray-500">{delivery.time_window}</div>
@@ -280,8 +293,56 @@ export default function CourierDispatchPage() {
                         Assigner
                       </button>
                     </div>
+                  ) : activeTab === 'assigned' ? (
+                    <div className="ml-auto flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!session?.access_token) return
+                          try {
+                            await api.post(`/deliveries/${delivery.id}/status?status=picked_up`, {}, session.access_token)
+                            fetchDeliveries()
+                          } catch (err) {
+                            alert("Erreur lors de la collecte")
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                      >
+                        Collecte
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!session?.access_token) return
+                          try {
+                            await api.post(`/deliveries/${delivery.id}/status?status=delivered`, {}, session.access_token)
+                            fetchDeliveries()
+                          } catch (err) {
+                            alert("Erreur lors de la livraison")
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                      >
+                        Livre
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!session?.access_token) return
+                          try {
+                            await api.post(`/deliveries/${delivery.id}/status?status=cancelled`, {}, session.access_token)
+                            fetchDeliveries()
+                          } catch (err) {
+                            alert("Erreur lors de l'annulation")
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Annuler
+                      </button>
+                    </div>
                   ) : (
-                    <span className="ml-auto text-xs font-semibold text-emerald-700">Assigne</span>
+                    <span className="ml-auto text-xs font-semibold text-gray-500">
+                      {delivery.status === 'cancelled' ? 'Annulee' : 'Livree'}
+                    </span>
                   )}
                 </div>
 

@@ -106,7 +106,7 @@ const getNavItems = (role: string, adminContextRegion: any, canDispatch: boolean
 }
 
 export default function Sidebar() {
-    const { user, loading, adminContextRegion, setAdminContext } = useAuth()
+    const { user, loading, adminContextRegion, setAdminContext, signOut } = useAuth()
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -122,10 +122,10 @@ export default function Sidebar() {
             <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow sm:hidden"
+                className="fixed right-3 top-3 z-50 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow sm:hidden"
                 aria-label="Ouvrir le menu"
             >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4" />
             </button>
 
             {/* Backdrop */}
@@ -221,7 +221,17 @@ export default function Sidebar() {
                     <Settings className="w-4 h-4 mr-0 sm:mr-2" />
                     <span className="inline">Parametres</span>
                 </Link>
-                {/* Log out is handled by supabase auth usually, but we could add a button here later */}
+                <button
+                    type="button"
+                    onClick={async () => {
+                        setMobileOpen(false)
+                        await signOut()
+                    }}
+                    className="mt-2 flex w-full items-center justify-center sm:justify-start rounded px-2 py-2 text-sm text-slate-700 transition hover:bg-white hover:text-slate-900"
+                >
+                    <LogOut className="w-4 h-4 mr-0 sm:mr-2" />
+                    <span className="inline">Se deconnecter</span>
+                </button>
             </div>
             </div>
         </>
