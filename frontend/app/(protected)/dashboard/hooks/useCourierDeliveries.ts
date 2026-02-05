@@ -24,8 +24,10 @@ export function useCourierDeliveries(date?: string) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    const load = useCallback(async () => {
-        setLoading(true)
+    const load = useCallback(async (silent: boolean = false) => {
+        if (!silent) {
+            setLoading(true)
+        }
         setError(null)
 
         try {
@@ -50,12 +52,23 @@ export function useCourierDeliveries(date?: string) {
             setError('Erreur de chargement des livraisons')
             setData(null)
         } finally {
-            setLoading(false)
+            if (!silent) {
+                setLoading(false)
+            }
         }
     }, [date])
 
     useEffect(() => {
         load()
+    }, [load])
+
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState !== 'visible') return
+            load(true)
+        }, 10000)
+
+        return () => window.clearInterval(intervalId)
     }, [load])
 
     return { data, loading, error, refresh: load }

@@ -173,6 +173,7 @@ export default function ShopReport() {
     basket_value: '',
     notes: '',
   })
+  const [deliveryDateDisplay, setDeliveryDateDisplay] = useState(() => formatSwissDate(getToday()))
   const [isCreatingClient, setIsCreatingClient] = useState(false)
   const [newClient, setNewClient] = useState({
     name: '', address: '', postal_code: '', city_id: '', floor: '', door_code: '',
@@ -189,6 +190,27 @@ export default function ShopReport() {
     url.searchParams.delete('month')
     router.replace(`${url.pathname}${url.search}`, { scroll: false })
   }, [router, searchParams])
+
+  useEffect(() => {
+    setDeliveryDateDisplay(formatSwissDate(formState.delivery_date))
+  }, [formState.delivery_date, formResetKey])
+
+  function formatSwissDate(value: string) {
+    if (!value) return ''
+    const [year, month, day] = value.split('-')
+    if (!year || !month || !day) return value
+    return `${day}/${month}/${year}`
+  }
+
+  function parseSwissDate(value: string) {
+    const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+    if (!match) return null
+    const [, dd, mm, yyyy] = match
+    const iso = `${yyyy}-${mm}-${dd}`
+    const test = new Date(iso)
+    if (Number.isNaN(test.getTime())) return null
+    return iso
+  }
 
   // Fetch cities for New Client form
   useEffect(() => {
@@ -815,10 +837,28 @@ export default function ShopReport() {
             Date
             <input
               className="mt-1 w-full rounded border px-2 py-1"
-              type="date"
-              name="delivery_date"
-              value={formState.delivery_date}
-              onChange={handleChange}
+              type="text"
+              inputMode="numeric"
+              placeholder="JJ/MM/AAAA"
+              name="delivery_date_display"
+              value={deliveryDateDisplay}
+              onChange={(event) => {
+                const next = event.target.value.replace(/[^\d/]/g, '')
+                setDeliveryDateDisplay(next)
+                const parsed = parseSwissDate(next)
+                if (parsed) {
+                  setFormState((prev) => ({
+                    ...prev,
+                    delivery_date: parsed,
+                  }))
+                }
+              }}
+              onBlur={() => {
+                const parsed = parseSwissDate(deliveryDateDisplay)
+                if (!parsed) {
+                  setDeliveryDateDisplay(formatSwissDate(formState.delivery_date))
+                }
+              }}
               required
             />
           </label>
