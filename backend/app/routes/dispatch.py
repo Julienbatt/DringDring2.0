@@ -41,6 +41,8 @@ def list_dispatch_deliveries(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     admin_region_id: Optional[str] = None, # Drill-down for Super Admin
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
@@ -64,6 +66,12 @@ def list_dispatch_deliveries(
 
     if not target_region_id:
         raise HTTPException(status_code=400, detail="Admin region id missing")
+
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
 
     if month:
         try:
@@ -128,8 +136,9 @@ def list_dispatch_deliveries(
                       AND d.delivery_date >= %s
                       AND d.delivery_date <= %s
                     ORDER BY d.delivery_date, l.time_window
+                    LIMIT %s OFFSET %s
                     """,
-                    (target_region_id, date_from, date_to),
+                    (target_region_id, date_from, date_to, limit, offset),
                 )
                 
                 columns = [desc[0] for desc in cur.description]
@@ -201,6 +210,14 @@ def update_dispatch_status(
     jwt_claims: str = Depends(get_current_user_claims),
 ):
     user_region_id = user.admin_region_id
+    allowed_transitions = {
+        "created": {"picked_up", "cancelled", "issue"},
+        "assigned": {"picked_up", "cancelled", "issue"},
+        "picked_up": {"delivered", "cancelled", "issue"},
+        "issue": {"picked_up", "delivered", "cancelled"},
+        "delivered": set(),
+        "cancelled": set(),
+    }
 
     with get_db_connection(jwt_claims) as conn:
         with conn:
@@ -232,11 +249,22 @@ def update_dispatch_status(
                     if not user_region_id or str(delivery_region_id) != str(user_region_id):
                         raise HTTPException(status_code=403, detail="Not in your region")
 
+                if status == current_status:
+                    return {
+                        "status": "success",
+                        "delivery_id": str(delivery_id),
+                        "status_value": status,
+                        "no_change": True,
+                    }
+
                 if current_status in ("delivered", "cancelled") and status != current_status:
                     raise HTTPException(status_code=409, detail="Delivery already completed")
 
                 if status in ("picked_up", "delivered") and not courier_id:
                     raise HTTPException(status_code=409, detail="Courier not assigned")
+
+                if status not in allowed_transitions.get(current_status, set()):
+                    raise HTTPException(status_code=409, detail="Invalid status transition")
 
                 cur.execute(
                     """

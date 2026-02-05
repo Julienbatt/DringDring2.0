@@ -65,9 +65,16 @@ class CourierResponse(BaseModel):
 @router.get("")
 def list_couriers(
     admin_region_id: Optional[str] = None, # Drill-down context for Super Admin
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     # Security: Only Super Admin can specify a region to view.
     # For others, we FORCE their own region.
     if user.role != 'super_admin':
@@ -112,8 +119,9 @@ def list_couriers(
                     LEFT JOIN admin_region ar ON c.admin_region_id = ar.id
                     WHERE c.admin_region_id = %s
                     ORDER BY c.last_name, c.first_name
+                    LIMIT %s OFFSET %s
                  """
-                 params = (target_region_id,)
+                 params = (target_region_id, limit, offset)
             else:
                  # Super Admin seeing ALL (No drill-down)
                  query = """
@@ -121,8 +129,9 @@ def list_couriers(
                     FROM courier c
                     LEFT JOIN admin_region ar ON c.admin_region_id = ar.id
                     ORDER BY ar.name, c.last_name, c.first_name
+                    LIMIT %s OFFSET %s
                  """
-                 params = ()
+                 params = (limit, offset)
 
             try:
                 cur.execute(query.format(vehicle_select=vehicle_select, can_dispatch_select=can_dispatch_select), params)

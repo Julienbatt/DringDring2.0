@@ -73,9 +73,16 @@ def list_cantons(
 
 @router.get("")
 def list_admin_regions(
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_super_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -85,7 +92,10 @@ def list_admin_regions(
                 FROM admin_region ar
                 LEFT JOIN canton c ON ar.canton_id = c.id
                 ORDER BY ar.name
+                LIMIT %s OFFSET %s
                 """
+                ,
+                (limit, offset),
             )
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()

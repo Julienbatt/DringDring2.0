@@ -22,13 +22,21 @@ class UserUpdate(BaseModel):
 
 @router.get("")
 def list_users(
+    page: int = 1,
+    per_page: int = 200,
     user: MeResponse = Depends(require_super_admin)
 ):
     """
     List users from Supabase Auth via Admin API.
     Only for Super Admin.
     """
-    url = f"{settings.SUPABASE_URL}/auth/v1/admin/users"
+    if page < 1:
+        page = 1
+    if per_page < 1:
+        per_page = 1
+    per_page = min(per_page, 1000)
+
+    url = f"{settings.SUPABASE_URL}/auth/v1/admin/users?page={page}&per_page={per_page}"
     headers = {
         "apikey": settings.SUPABASE_SERVICE_KEY,
         "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",

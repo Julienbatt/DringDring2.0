@@ -24,9 +24,16 @@ class CityCreate(BaseModel):
 @router.get("")
 def list_cities(
     admin_region_id: Optional[str] = None, # Drill-down context
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_admin_or_city_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     # Security Context Enforcement
     if user.role == 'city':
         if not user.city_id:
@@ -82,8 +89,9 @@ def list_cities(
                 GROUP BY c.id, c.name, c.canton_id, c.admin_region_id, c.parent_city_id,
                          cn.name, ar.name, p.name
                 ORDER BY c.name
+                LIMIT %s OFFSET %s
                 """
-                params = (target_city_id, target_city_id)
+                params = (target_city_id, target_city_id, limit, offset)
             elif target_region_id:
                 query = f"""
                 SELECT c.id, c.name, c.canton_id, c.admin_region_id, c.parent_city_id,
@@ -100,8 +108,9 @@ def list_cities(
                 GROUP BY c.id, c.name, c.canton_id, c.admin_region_id, c.parent_city_id,
                          cn.name, ar.name, p.name
                 ORDER BY c.name
+                LIMIT %s OFFSET %s
                 """
-                params = (target_region_id,)
+                params = (target_region_id, limit, offset)
             else:
                 # Super Admin Global View
                 query = f"""
@@ -118,8 +127,9 @@ def list_cities(
                 GROUP BY c.id, c.name, c.canton_id, c.admin_region_id, c.parent_city_id,
                          cn.name, ar.name, p.name
                 ORDER BY ar.name, c.name
+                LIMIT %s OFFSET %s
                 """
-                params = ()
+                params = (limit, offset)
 
             cur.execute(query, params)
             columns = [desc[0] for desc in cur.description]

@@ -741,7 +741,7 @@ export default function BillingPage() {
                     </select>
                 </div>
                 <div className="table-scroll">
-                    <Table className="min-w-[980px]">
+                    <Table className="min-w-[1100px]">
                     <TableHeader>
                         <TableRow>
                             <TableHead className="whitespace-nowrap">Date</TableHead>
@@ -749,8 +749,8 @@ export default function BillingPage() {
                             <TableHead className="min-w-[200px]">Commerce</TableHead>
                             <TableHead className="min-w-[160px]">Client</TableHead>
                             <TableHead className="min-w-[220px]">Commune partenaire</TableHead>
-                            <TableHead className="text-right whitespace-nowrap">Sacs</TableHead>
-                            <TableHead className="text-right whitespace-nowrap w-[160px]">Montant a facturer (CHF)</TableHead>
+                            <TableHead className="text-right whitespace-nowrap min-w-[80px]">Sacs</TableHead>
+                            <TableHead className="text-right whitespace-nowrap min-w-[190px] pr-4">Montant a facturer (CHF)</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -777,7 +777,7 @@ export default function BillingPage() {
                                         <TableCell className="max-w-[180px] truncate" title={row.client_name || ''}>{row.client_name || '-'}</TableCell>
                                         <TableCell className="max-w-[260px] truncate" title={row.commune_name || ''}>{row.commune_name || '-'}</TableCell>
                                         <TableCell className="text-right whitespace-nowrap tabular-nums">{row.bags ?? '-'}</TableCell>
-                                        <TableCell className="text-right whitespace-nowrap tabular-nums font-semibold">
+                                        <TableCell className="text-right whitespace-nowrap tabular-nums font-semibold pr-4">
                                             CHF {amountDue.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                                         </TableCell>
                                     </TableRow>

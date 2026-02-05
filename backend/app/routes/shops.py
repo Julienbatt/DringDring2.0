@@ -66,9 +66,16 @@ class TariffResponse(BaseModel):
 @router.get("/admin", response_model=List[ShopResponse])
 def list_admin_shops(
     admin_region_id: Optional[str] = None, # Drill-down context
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     # Security: Enforce region for non-super admins
     target_region_id = admin_region_id
     if user.role != 'super_admin':
@@ -92,8 +99,9 @@ def list_admin_shops(
                 LEFT JOIN hq h ON s.hq_id = h.id
                 WHERE c.admin_region_id = %s
                 ORDER BY s.name
+                LIMIT %s OFFSET %s
                 """
-                params = (target_region_id,)
+                params = (target_region_id, limit, offset)
             else:
                 # Super Admin global view
                 query = """
@@ -108,8 +116,9 @@ def list_admin_shops(
                 LEFT JOIN city c ON s.city_id = c.id
                 LEFT JOIN hq h ON s.hq_id = h.id
                 ORDER BY s.name
+                LIMIT %s OFFSET %s
                 """
-                params = ()
+                params = (limit, offset)
 
             cur.execute(query, params)
             columns = [desc[0] for desc in cur.description]
@@ -118,9 +127,16 @@ def list_admin_shops(
 
 @router.get("/hqs", response_model=List[HQResponse])
 def list_hqs(
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             def has_column(table: str, column: str) -> bool:
@@ -142,7 +158,8 @@ def list_hqs(
             phone_select = "phone" if has_column("hq", "phone") else "NULL::text as phone"
 
             cur.execute(
-                f"SELECT id::text as id, name, {address_select}, {contact_select}, {email_select}, {phone_select} FROM hq ORDER BY name"
+                f\"SELECT id::text as id, name, {address_select}, {contact_select}, {email_select}, {phone_select} FROM hq ORDER BY name LIMIT %s OFFSET %s\",
+                (limit, offset),
             )
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
@@ -235,9 +252,16 @@ def delete_hq(
 @router.get("/tariffs", response_model=List[TariffResponse])
 def list_tariffs(
     admin_region_id: Optional[str] = None,
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             query = """
@@ -257,7 +281,8 @@ def list_tariffs(
                 query += " AND t.admin_region_id = %s"
                 params.append(admin_region_id)
             
-            query += " ORDER BY t.id, v.valid_from DESC"
+            query += " ORDER BY t.id, v.valid_from DESC LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
             
             cur.execute(query, tuple(params))
             columns = [desc[0] for desc in cur.description]
@@ -267,9 +292,16 @@ def list_tariffs(
 
 @router.get("/hq", response_model=List[ShopResponse])
 def list_hq_shops(
+    limit: int = 500,
+    offset: int = 0,
     user: MeResponse = Depends(require_hq_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    limit = min(limit, 2000)
     if not user.hq_id:
         raise HTTPException(status_code=400, detail="HQ id missing")
 
@@ -289,8 +321,9 @@ def list_hq_shops(
                 LEFT JOIN hq h ON h.id = s.hq_id
                 WHERE s.hq_id = %s
                 ORDER BY s.name
+                LIMIT %s OFFSET %s
                 """,
-                (str(user.hq_id),),
+                (str(user.hq_id), limit, offset),
             )
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
