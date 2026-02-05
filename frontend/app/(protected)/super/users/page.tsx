@@ -112,14 +112,14 @@ export default function SuperAdminUsersPage() {
                 </p>
             </header>
 
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                <Table>
+            <div className="table-scroll bg-white rounded-lg border shadow-sm">
+                <Table className="min-w-[900px]">
                     <TableHeader className="bg-gray-50">
                         <TableRow>
                             <TableHead>Email</TableHead>
                             <TableHead>Role</TableHead>
-                            <TableHead>Contexte (ID)</TableHead>
-                            <TableHead>Derniere connexion</TableHead>
+                            <TableHead className="hidden lg:table-cell">Contexte (ID)</TableHead>
+                            <TableHead className="hidden lg:table-cell">Derniere connexion</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -134,12 +134,12 @@ export default function SuperAdminUsersPage() {
                                         {roleLabel(u.role)}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="font-mono text-xs text-gray-500">
+                                <TableCell className="hidden lg:table-cell font-mono text-xs text-gray-500">
                                     {u.admin_region_id && <div>Entreprise regionale: {u.admin_region_id}</div>}
                                     {u.shop_id && <div>Commerce: {u.shop_id}</div>}
                                     {u.city_id && <div>Commune: {u.city_id}</div>}
                                 </TableCell>
-                                <TableCell className="text-sm text-gray-500">
+                                <TableCell className="hidden lg:table-cell text-sm text-gray-500">
                                     {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Jamais'}
                                 </TableCell>
                                 <TableCell className="text-right">

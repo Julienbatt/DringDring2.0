@@ -130,8 +130,8 @@ export default function TariffsPage() {
                 </Button>
             </div>
 
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                <Table>
+            <div className="table-scroll bg-white rounded-lg border shadow-sm">
+                <Table className="min-w-[800px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
                             <TableHead className="w-[300px]">Nom de la Grille</TableHead>

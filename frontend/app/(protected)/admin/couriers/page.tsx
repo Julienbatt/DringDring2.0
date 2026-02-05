@@ -112,8 +112,8 @@ export default function AdminCouriersPage() {
                 />
             </div>
 
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                <Table>
+            <div className="table-scroll bg-white rounded-lg border shadow-sm">
+                <Table className="min-w-[900px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
                             <TableHead className="w-[80px]">Matr.</TableHead>

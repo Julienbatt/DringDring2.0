@@ -83,14 +83,14 @@ export default function HQShopsPage() {
         />
       </div>
 
-      <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <Table>
+      <div className="table-scroll bg-white rounded-xl border shadow-sm">
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-gray-50">
               <TableHead>Commerce</TableHead>
               <TableHead>Commune</TableHead>
-              <TableHead>Adresse</TableHead>
-              <TableHead>Contact</TableHead>
+              <TableHead className="hidden lg:table-cell">Adresse</TableHead>
+              <TableHead className="hidden lg:table-cell">Contact</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -116,13 +116,13 @@ export default function HQShopsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-gray-600">{shop.city_name || '-'}</TableCell>
-                  <TableCell className="text-gray-600">
+                  <TableCell className="hidden lg:table-cell text-gray-600">
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 mt-0.5 text-gray-400" />
                       {shop.address || '-'}
                     </div>
                   </TableCell>
-                  <TableCell className="text-gray-600">
+                  <TableCell className="hidden lg:table-cell text-gray-600">
                     <div className="space-y-1">
                       <div>{shop.contact_person || '-'}</div>
                       <div className="flex items-center gap-2 text-sm text-gray-500">

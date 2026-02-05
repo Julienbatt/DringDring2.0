@@ -741,16 +741,16 @@ export default function BillingPage() {
                     </select>
                 </div>
                 <div className="table-scroll">
-                    <Table className="min-w-[900px]">
+                    <Table className="min-w-[980px]">
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Payeur</TableHead>
-                            <TableHead>Commerce</TableHead>
-                            <TableHead>Client</TableHead>
-                            <TableHead>Commune partenaire</TableHead>
-                            <TableHead className="text-right">Sacs</TableHead>
-                            <TableHead className="text-right">Montant a facturer (CHF)</TableHead>
+                            <TableHead className="whitespace-nowrap">Date</TableHead>
+                            <TableHead className="min-w-[220px]">Payeur</TableHead>
+                            <TableHead className="min-w-[200px]">Commerce</TableHead>
+                            <TableHead className="min-w-[160px]">Client</TableHead>
+                            <TableHead className="min-w-[220px]">Commune partenaire</TableHead>
+                            <TableHead className="text-right whitespace-nowrap">Sacs</TableHead>
+                            <TableHead className="text-right whitespace-nowrap w-[160px]">Montant a facturer (CHF)</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -771,13 +771,13 @@ export default function BillingPage() {
                                 const payeurLabel = doc?.recipient_name ?? recipientTypeLabels[row.recipient_type] ?? row.recipient_type
                                 return (
                                     <TableRow key={row.id}>
-                                        <TableCell>{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
-                                        <TableCell>{payeurLabel}</TableCell>
-                                        <TableCell>{row.shop_name || '-'}</TableCell>
-                                        <TableCell>{row.client_name || '-'}</TableCell>
-                                        <TableCell>{row.commune_name || '-'}</TableCell>
-                                        <TableCell className="text-right">{row.bags ?? '-'}</TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="whitespace-nowrap">{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
+                                        <TableCell className="max-w-[260px] truncate" title={payeurLabel}>{payeurLabel}</TableCell>
+                                        <TableCell className="max-w-[220px] truncate" title={row.shop_name || ''}>{row.shop_name || '-'}</TableCell>
+                                        <TableCell className="max-w-[180px] truncate" title={row.client_name || ''}>{row.client_name || '-'}</TableCell>
+                                        <TableCell className="max-w-[260px] truncate" title={row.commune_name || ''}>{row.commune_name || '-'}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap tabular-nums">{row.bags ?? '-'}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap tabular-nums font-semibold">
                                             CHF {amountDue.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                                         </TableCell>
                                     </TableRow>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
 import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle } from 'lucide-react'
+import { StatusBadge } from '@/components/StatusBadge'
 
 type DispatchDelivery = {
   id: string
@@ -123,6 +124,14 @@ export default function CourierDispatchPage() {
     }
   }
 
+  const getStatus = (delivery: DispatchDelivery) => {
+    if (delivery.status === 'cancelled') return 'cancelled'
+    if (delivery.status === 'delivered') return 'delivered'
+    if (delivery.status === 'picked_up') return 'picked_up'
+    if (delivery.courier_id) return 'assigned'
+    return 'unassigned'
+  }
+
   const getWhatsAppLink = (delivery: DispatchDelivery, courier: Courier) => {
     if (!courier.phone_number) return '#'
     const cleanNumber = courier.phone_number.replace(/\D/g, '')
@@ -232,15 +241,18 @@ export default function CourierDispatchPage() {
                       <div className="text-sm text-gray-600">{delivery.shop_address}</div>
                     )}
                   </div>
-                  <a
-                    href={getMapLink(delivery.shop_address || '', '')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                  >
-                    <MapPin className="h-4 w-4" />
-                    Retrait
-                  </a>
+                  <div className="flex flex-col items-end gap-2">
+                    <StatusBadge status={getStatus(delivery)} size="xs" />
+                    <a
+                      href={getMapLink(delivery.shop_address || '', '')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Retrait
+                    </a>
+                  </div>
                 </div>
 
                 <div>
@@ -340,9 +352,7 @@ export default function CourierDispatchPage() {
                       </button>
                     </div>
                   ) : (
-                    <span className="ml-auto text-xs font-semibold text-gray-500">
-                      {delivery.status === 'cancelled' ? 'Annulee' : 'Livree'}
-                    </span>
+                    <StatusBadge className="ml-auto" status={getStatus(delivery)} size="xs" />
                   )}
                 </div>
 

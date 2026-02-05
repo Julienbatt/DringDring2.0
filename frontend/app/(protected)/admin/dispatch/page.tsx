@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
+import { StatusBadge } from '@/components/StatusBadge'
 
 // Types
 type DispatchDelivery = {
@@ -77,6 +78,14 @@ export default function DispatchPage() {
     const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
     const [monthPickerOpen, setMonthPickerOpen] = useState(false)
     const [pickerYear, setPickerYear] = useState(() => Number(getCurrentMonth().split('-')[0]))
+
+    const getDeliveryStatus = (delivery: DispatchDelivery) => {
+        if (delivery.status === 'cancelled') return 'cancelled'
+        if (delivery.status === 'delivered') return 'delivered'
+        if (delivery.status === 'picked_up') return 'picked_up'
+        if (delivery.courier_id) return 'assigned'
+        return 'unassigned'
+    }
 
     // Allow admin_region or super_admin (with optional context drill-down).
     useEffect(() => {
@@ -529,15 +538,7 @@ export default function DispatchPage() {
                                 const isHighlighted = highlightedIds.has(delivery.id)
                                 const highlightClass = isHighlighted ? 'bg-amber-50/80' : ''
                                 const isPickedUp = delivery.status === 'picked_up'
-                                const statusText = isCancelled
-                                    ? 'Annulee'
-                                    : isDelivered
-                                        ? 'Livree'
-                                        : isPickedUp
-                                            ? 'Collecte'
-                                            : hasCourier
-                                                ? 'En cours'
-                                            : 'Non assignee'
+                                const statusForBadge = getDeliveryStatus(delivery)
                                 const notesShort = delivery.notes ? delivery.notes.slice(0, 60) : ''
                                 return (
                                     <tr
@@ -557,9 +558,7 @@ export default function DispatchPage() {
                                             <div>{delivery.client_address}</div>
                                             <div>{delivery.client_city}</div>
                                             <div className="mt-2 flex flex-col gap-1 text-xs text-gray-500 lg:hidden">
-                                                <span className="inline-flex w-fit items-center rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-                                                    {statusText}
-                                                </span>
+                                                <StatusBadge status={statusForBadge} size="xs" />
                                                 {assignedCourier?.name && (
                                                     <span>Coursier: {assignedCourier.name}</span>
                                                 )}
@@ -572,19 +571,7 @@ export default function DispatchPage() {
                                             {delivery.notes || '-'}
                                         </td>
                                         <td className={`hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm ${highlightClass}`}>
-                                            <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    isCancelled
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : isDelivered
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : hasCourier
-                                                                ? 'bg-emerald-100 text-emerald-800'
-                                                                : 'bg-yellow-100 text-yellow-800'
-                                                }`}
-                                            >
-                                                {isCancelled ? 'Annulee' : isDelivered ? 'Livree' : isPickedUp ? 'Collecte' : hasCourier ? 'En cours' : 'Non assigne'}
-                                            </span>
+                                            <StatusBadge status={statusForBadge} size="xs" />
                                         </td>
                                         <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 ${highlightClass}`}>
                                             {canAssign && (
@@ -675,13 +662,6 @@ export default function DispatchPage() {
                         )}
                         {recentOps.map((delivery) => {
                             const assignedCourier = couriers.find(c => c.id === delivery.courier_id)
-                            const statusLabel = delivery.status === 'cancelled'
-                                ? 'Annulee'
-                                : delivery.status === 'delivered'
-                                    ? 'Livree'
-                                    : delivery.courier_id
-                                        ? 'Assignee'
-                                        : 'En attente'
                             return (
                                 <div key={delivery.id} className="flex items-center justify-between rounded border border-gray-100 px-3 py-2 text-sm">
                                     <div className="space-y-1">
@@ -690,8 +670,9 @@ export default function DispatchPage() {
                                             {format(new Date(delivery.delivery_date), 'dd MMM, HH:mm', { locale: fr })} - {delivery.client_name || 'Client'}
                                         </div>
                                     </div>
-                                    <div className="text-xs text-gray-500">
-                                        {statusLabel}{assignedCourier ? ` avec ${assignedCourier.name}` : ''}
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <StatusBadge status={getDeliveryStatus(delivery)} size="xs" />
+                                        {assignedCourier ? <span>avec {assignedCourier.name}</span> : null}
                                     </div>
                                 </div>
                             )

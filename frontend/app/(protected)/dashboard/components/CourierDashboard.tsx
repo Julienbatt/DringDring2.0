@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useCourierDeliveries } from '../hooks/useCourierDeliveries'
 import { useCourierActions } from '../hooks/useCourierActions'
+import { StatusBadge } from '@/components/StatusBadge'
 
 function getToday() {
     const now = new Date()
@@ -94,6 +95,13 @@ export default function CourierDashboard() {
                             const isPickedUp = delivery.status === 'picked_up'
                             const isCancelled = delivery.status === 'cancelled'
                             const isPending = !isDelivered
+                            const statusForBadge = isCancelled
+                                ? 'cancelled'
+                                : isDelivered
+                                    ? 'delivered'
+                                    : isPickedUp
+                                        ? 'picked_up'
+                                        : 'assigned'
 
                             return (
                                 <div
@@ -105,11 +113,7 @@ export default function CourierDashboard() {
                                         <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                                             {delivery.time_window}
                                         </span>
-                                        <div className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                                            isCancelled ? 'bg-red-100 text-red-700' : isDelivered ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                                        }`}>
-                                            {isCancelled ? 'ANNULÉE' : isDelivered ? 'LIVRÉE' : 'À RÉCUPÉRER'}
-                                        </div>
+                                        <StatusBadge status={statusForBadge} size="xs" />
                                     </div>
 
                                     <div className="p-4 sm:p-5 flex flex-col gap-5">

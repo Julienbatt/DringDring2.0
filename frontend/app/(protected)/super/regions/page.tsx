@@ -192,8 +192,8 @@ export default function RegionsPage() {
                 </Dialog>
             </div>
 
-            <div className="rounded-md border">
-                <Table>
+            <div className="table-scroll rounded-md border bg-white">
+                <Table className="min-w-[800px]">
                     <TableHeader>
                         <TableRow>
                             <TableHead>Nom</TableHead>

@@ -366,9 +366,17 @@ def aggregate_billing_run(
                     LEFT JOIN hq h ON h.id = s.hq_id
                     JOIN delivery_logistics l ON l.delivery_id = d.id
                     JOIN delivery_financial f ON f.delivery_id = d.id
+                    LEFT JOIN LATERAL (
+                        SELECT ds.status
+                        FROM delivery_status ds
+                        WHERE ds.delivery_id = d.id
+                        ORDER BY ds.updated_at DESC
+                        LIMIT 1
+                    ) ls ON true
                     WHERE d.delivery_date >= %s::date
                       AND d.delivery_date < (%s::date + INTERVAL '1 month')
                       AND c.admin_region_id = %s
+                      AND COALESCE(ls.status, '') <> 'cancelled'
                     ORDER BY d.delivery_date
                     """,
                     (period_month, period_month, admin_region_id),

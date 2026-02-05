@@ -6,6 +6,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 .venv/
+.venv311/
 
 # Node
 node_modules/
@@ -15,4 +16,3 @@ npm-debug.log*
 # Env
 .env
 .env.local
-
