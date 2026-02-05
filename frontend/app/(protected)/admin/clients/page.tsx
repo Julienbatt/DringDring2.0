@@ -97,16 +97,16 @@ export default function ClientsPage() {
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
+            <div className="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
+                <div className="min-w-[160px] rounded-lg border bg-white px-4 py-3 shadow-sm">
                     <div className="text-xs uppercase tracking-wide text-gray-400">Total</div>
                     <div className="mt-1 text-2xl font-semibold text-gray-900">{clients.length}</div>
                 </div>
-                <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
+                <div className="min-w-[160px] rounded-lg border bg-white px-4 py-3 shadow-sm">
                     <div className="text-xs uppercase tracking-wide text-gray-400">Clients CMS</div>
                     <div className="mt-1 text-2xl font-semibold text-emerald-700">{cmsCount}</div>
                 </div>
-                <div className="rounded-lg border bg-white px-4 py-3 shadow-sm">
+                <div className="min-w-[180px] rounded-lg border bg-white px-4 py-3 shadow-sm">
                     <div className="text-xs uppercase tracking-wide text-gray-400">Clients standards</div>
                     <div className="mt-1 text-2xl font-semibold text-gray-900">{standardCount}</div>
                 </div>
@@ -122,7 +122,73 @@ export default function ClientsPage() {
                 />
             </div>
 
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden md:hidden">
+                {filteredClients.length === 0 ? (
+                    <div className="h-32 flex items-center justify-center text-gray-500">
+                        {searchTerm ? 'Aucun client ne correspond.' : 'Aucun client trouve.'}
+                    </div>
+                ) : (
+                    <div className="divide-y">
+                        {filteredClients.map((client) => (
+                            <button
+                                key={client.id}
+                                className="w-full text-left p-4 hover:bg-gray-50/50 transition-colors"
+                                onClick={() => handleEdit(client)}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                            <User className="w-4 h-4 text-gray-500" />
+                                            {client.name}
+                                        </div>
+                                        {client.phone && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-500 ml-6 mt-1">
+                                                <Phone className="w-3 h-3" />
+                                                {client.phone}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {client.is_cms ? (
+                                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                                            CMS
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">Standard</span>
+                                    )}
+                                </div>
+
+                                <div className="mt-3 text-sm text-gray-700">
+                                    <div>{client.address}</div>
+                                    {(client.floor || client.door_code) && (
+                                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+                                            {client.floor && (
+                                                <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
+                                                    <Building className="w-3 h-3" /> Etage: {client.floor}
+                                                </span>
+                                            )}
+                                            {client.door_code && (
+                                                <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
+                                                    <Key className="w-3 h-3" /> Code: {client.door_code}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="w-4 h-4 text-gray-400" />
+                                        {client.postal_code} {client.city_real_name || client.city_name}
+                                    </div>
+                                    <span className="text-xs font-medium text-emerald-700">Modifier</span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden hidden md:block">
                 <Table>
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
