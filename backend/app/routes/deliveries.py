@@ -252,7 +252,7 @@ def create_delivery(
         print(f"SQL Error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-    return {"delivery_id": str(delivery_id)}
+    return {"delivery_id": str(delivery_id), "short_code": short_code}
 
 
 @router.post("/shop", status_code=status.HTTP_201_CREATED)

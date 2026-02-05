@@ -7,6 +7,7 @@ import ClientAutocomplete from '@/components/ClientAutocomplete'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { createClient } from '@/lib/supabase/client'
 import { apiPost, apiGet, apiPatch, API_BASE_URL } from '@/lib/api'
+import { toast } from 'sonner'
 import { useShopClients } from '../hooks/useShopClients'
 import { useShopDeliveries } from '../hooks/useShopDeliveries'
 import { useShopPeriods } from '../hooks/useShopPeriods'
@@ -306,6 +307,18 @@ export default function ShopReport() {
   }
 
   useEffect(() => {
+    if (!tariffType) {
+      setPreview(null)
+      setPreviewError(null)
+      return
+    }
+
+    if (!tariffType) {
+      setSubmitError('Configuration tarifaire indisponible')
+      setSubmitting(false)
+      return
+    }
+
     const bagCount = tariffType === 'order_amount' ? 1 : Number(formState.bags)
 
     // [NEW] Block preview if frozen
@@ -449,7 +462,15 @@ export default function ShopReport() {
             : (formState.basket_value ? Number(formState.basket_value) : null),
           notes: formState.notes,
         }
-        await apiPost('/deliveries/shop', payload, session.access_token)
+        const created = await apiPost<{ delivery_id: string; short_code?: string }>(
+          '/deliveries/shop',
+          payload,
+          session.access_token
+        )
+        if (created?.short_code) {
+          setLastShortCode(created.short_code)
+          toast.success(`Livraison creee. Code: ${created.short_code}`)
+        }
       }
       setFormState((prev) => ({
         ...prev,
@@ -524,6 +545,7 @@ export default function ShopReport() {
   const [tariffType, setTariffType] = useState<'bags' | 'order_amount' | null>(null)
   const [configLoading, setConfigLoading] = useState(true)
   const [configError, setConfigError] = useState<string | null>(null)
+  const [lastShortCode, setLastShortCode] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch shop configuration on mount
@@ -628,6 +650,11 @@ export default function ShopReport() {
         )}
         {configError && (
           <div className="text-sm text-red-600">{configError}</div>
+        )}
+        {lastShortCode && (
+          <div className="text-sm text-emerald-700">
+            Code de livraison: <span className="font-semibold">{lastShortCode}</span>
+          </div>
         )}
         {submitError && (
           <div className="text-sm text-red-600">{submitError}</div>
@@ -807,7 +834,7 @@ export default function ShopReport() {
               <option value="16:00-20:00">16:00-20:00</option>
             </select>
           </label>
-          {!configLoading && tariffType !== 'order_amount' && (
+          {!configLoading && tariffType === 'bags' && (
             <label className="text-sm text-gray-600">
               Sacs
               <select
@@ -843,7 +870,7 @@ export default function ShopReport() {
 
           {!configLoading && tariffType === 'order_amount' && (
             <label className="text-sm text-gray-600">
-              Valeur des courses (CHF)
+              Montant commande (CHF)
               <input
                 className="mt-1 w-full rounded border px-2 py-1"
                 type="number"
@@ -859,7 +886,7 @@ export default function ShopReport() {
             </label>
           )}
 
-          {!configLoading && tariffType !== 'order_amount' && (
+          {!configLoading && tariffType === 'bags' && (
             <label className="text-sm text-gray-600">
               Valeur des courses (CHF)
               <input

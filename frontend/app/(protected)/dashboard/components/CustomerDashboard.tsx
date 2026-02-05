@@ -53,9 +53,9 @@ export default function CustomerDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 md:px-8">
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 sm:gap-8 px-4 pb-16 pt-6 sm:px-6 md:px-8">
                 <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-                    <div className="flex flex-col gap-6 p-6 md:p-8">
+                    <div className="flex flex-col gap-6 p-4 sm:p-6 md:p-8">
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export default function CustomerDashboard() {
                                 </Link>
                             </div>
                         </div>
-                        <div className="grid gap-4 md:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">En cours</p>
                                 <p className="text-2xl font-semibold text-slate-900">{activeDeliveries.length}</p>
@@ -112,7 +112,7 @@ export default function CustomerDashboard() {
                                 </p>
                             </div>
                         </div>
-                        <div className="grid gap-4 md:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
                                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Commerce favori</p>
                                 <p className="text-base font-semibold text-slate-900">
@@ -166,7 +166,7 @@ export default function CustomerDashboard() {
                 ) : (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">Livraisons en cours</h2>
+                            <h2 className="text-base sm:text-lg font-semibold text-slate-900">Livraisons en cours</h2>
                             <Link href="/customer/deliveries" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
                                 Voir l&apos;historique
                             </Link>
@@ -187,13 +187,13 @@ export default function CustomerDashboard() {
 
                             return (
                                 <div key={delivery.delivery_id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md">
-                                    <div className="p-6 md:p-8">
+                                    <div className="p-4 sm:p-6 md:p-8">
                                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                             <div>
                                                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
                                                     Commande du {formatDate(delivery.delivery_date)}
                                                 </div>
-                                                <h2 className="text-2xl font-semibold text-slate-900">{delivery.shop_name}</h2>
+                                                <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">{delivery.shop_name}</h2>
                                                 <p className="mt-1 text-sm text-slate-500">{delivery.bags} sac{delivery.bags > 1 ? 's' : ''}</p>
                                             </div>
                                             <div className="flex flex-col items-end gap-2">

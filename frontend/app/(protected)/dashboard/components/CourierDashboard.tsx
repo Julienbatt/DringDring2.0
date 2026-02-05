@@ -27,19 +27,19 @@ export default function CourierDashboard() {
     }
 
     return (
-        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 bg-gray-50 min-h-screen">
-            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 bg-gray-50 z-10 py-2 border-b">
+        <div className="p-3 sm:p-4 md:p-6 max-w-4xl mx-auto space-y-5 bg-gray-50 min-h-screen">
+            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4 md:sticky md:top-0 bg-gray-50 z-10 py-3 border-b">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Espace Coursier</h1>
                     <p className="text-sm text-gray-500">Feuille de route du {new Date(selectedDate).toLocaleDateString('fr-CH')}</p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex w-full sm:w-auto items-center gap-2">
                     <input
                         type="date"
                         value={selectedDate}
                         onChange={handleDateChange}
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                        className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                     />
                 </div>
             </header>
@@ -59,7 +59,7 @@ export default function CourierDashboard() {
             ) : (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-1">
-                        <h2 className="text-lg font-semibold text-gray-800">
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-800">
                             {data.length} Missions
                         </h2>
                         <button
@@ -90,14 +90,14 @@ export default function CourierDashboard() {
                                         </div>
                                     </div>
 
-                                    <div className="p-5 flex flex-col gap-6">
+                                    <div className="p-4 sm:p-5 flex flex-col gap-5">
                                         {/* Pickup Section */}
                                         <div className={`relative pl-6 border-l-2 ${isPending ? 'border-blue-500' : 'border-gray-300'}`}>
                                             <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 ${isPending ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300'}`}></div>
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="text-sm font-medium text-gray-500 mb-1">Retrait</h3>
-                                                    <p className="font-bold text-gray-900 text-lg">{delivery.shop_name}</p>
+                                                    <p className="font-bold text-gray-900 text-base sm:text-lg">{delivery.shop_name}</p>
                                                     <p className="text-sm text-gray-600">{delivery.shop_address}</p>
                                                 </div>
                                                 <a
@@ -130,7 +130,7 @@ export default function CourierDashboard() {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="text-sm font-medium text-gray-500 mb-1">Livraison</h3>
-                                                    <p className="font-bold text-gray-900 text-lg">{delivery.client_name || 'Client'}</p>
+                                                    <p className="font-bold text-gray-900 text-base sm:text-lg">{delivery.client_name || 'Client'}</p>
                                                     <p className="text-sm text-gray-600">
                                                         {delivery.client_address}<br />
                                                         {delivery.client_postal_code} {delivery.client_city}
