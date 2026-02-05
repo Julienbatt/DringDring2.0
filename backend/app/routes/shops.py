@@ -158,7 +158,7 @@ def list_hqs(
             phone_select = "phone" if has_column("hq", "phone") else "NULL::text as phone"
 
             cur.execute(
-                f\"SELECT id::text as id, name, {address_select}, {contact_select}, {email_select}, {phone_select} FROM hq ORDER BY name LIMIT %s OFFSET %s\",
+                f"SELECT id::text as id, name, {address_select}, {contact_select}, {email_select}, {phone_select} FROM hq ORDER BY name LIMIT %s OFFSET %s",
                 (limit, offset),
             )
             columns = [desc[0] for desc in cur.description]
