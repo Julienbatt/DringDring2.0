@@ -253,9 +253,6 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                             />
                             <Label htmlFor="can_dispatch" className="cursor-pointer">Peut faire le dispatch (mode remplacement)</Label>
                         </div>
-                        <div className="text-[11px] text-gray-400">
-                            Dispatch toggle v1 · valeur: {formData.can_dispatch ? 'on' : 'off'}
-                        </div>
                     </div>
 
                     <DialogFooter className="pt-4">

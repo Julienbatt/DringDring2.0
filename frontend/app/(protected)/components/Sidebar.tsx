@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../providers/AuthProvider'
@@ -21,7 +22,9 @@ import {
     ListTodo,
     UserCircle,
     Tags,
-    LifeBuoy
+    LifeBuoy,
+    Menu,
+    X
 } from 'lucide-react'
 
 // Map roles to navigation items based on SPECIFICATION
@@ -105,6 +108,7 @@ const getNavItems = (role: string, adminContextRegion: any, canDispatch: boolean
 export default function Sidebar() {
     const { user, loading, adminContextRegion, setAdminContext } = useAuth()
     const pathname = usePathname()
+    const [mobileOpen, setMobileOpen] = useState(false)
 
     if (loading) return <div className="w-64 bg-gray-900 h-screen animate-pulse"></div>
 
@@ -113,13 +117,46 @@ export default function Sidebar() {
     const settingsHref = role === 'customer' ? '/customer/profile' : '/settings'
 
     return (
-        <div className="fixed inset-y-0 left-0 z-50 flex h-screen w-16 sm:w-52 md:w-60 lg:w-64 flex-col bg-slate-100 text-slate-900 transition-transform duration-300">
+        <>
+            {/* Mobile toggle */}
+            <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow sm:hidden"
+                aria-label="Ouvrir le menu"
+            >
+                <Menu className="h-5 w-5" />
+            </button>
+
+            {/* Backdrop */}
+            {mobileOpen && (
+                <button
+                    type="button"
+                    onClick={() => setMobileOpen(false)}
+                    className="fixed inset-0 z-40 bg-black/30 sm:hidden"
+                    aria-label="Fermer le menu"
+                />
+            )}
+
+            <div
+                className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col bg-slate-100 text-slate-900 transition-transform duration-300 ${
+                    mobileOpen ? 'translate-x-0' : '-translate-x-full'
+                } sm:translate-x-0 sm:w-52 md:w-60 lg:w-64`}
+            >
             {/* Header */}
-            <div className="flex h-16 items-center justify-center border-b border-slate-200 bg-slate-100 px-2">
-                <div className="flex items-center gap-2">
-                    <BrandLogo width={140} height={42} className="h-8 w-auto max-w-[72px] sm:max-w-none" priority />
+                <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-slate-100 px-4">
+                    <div className="flex items-center gap-2">
+                        <BrandLogo width={140} height={42} className="h-8 w-auto max-w-[140px]" priority />
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setMobileOpen(false)}
+                        className="sm:hidden inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-white"
+                        aria-label="Fermer le menu"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
                 </div>
-            </div>
 
             {/* Context Banner (Drill Down) */}
             {adminContextRegion && (
@@ -155,9 +192,10 @@ export default function Sidebar() {
                                     ? 'bg-emerald-600 text-white shadow-md'
                                     : 'text-slate-700 hover:bg-white hover:text-slate-900'
                             }`}
+                            onClick={() => setMobileOpen(false)}
                         >
                             <Icon className={`mr-0 sm:mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                            <span className="hidden sm:inline">{item.label}</span>
+                            <span className="inline">{item.label}</span>
                         </Link>
                     )
                 })}
@@ -169,7 +207,7 @@ export default function Sidebar() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
                         {user?.email?.substring(0, 2).toUpperCase()}
                     </div>
-                    <div className="hidden sm:block flex-1 overflow-hidden">
+                    <div className="block flex-1 overflow-hidden">
                         <p className="text-sm font-medium truncate">{user?.email}</p>
                         <p className="text-xs text-slate-500">{roleLabel(role)}</p>
                     </div>
@@ -178,12 +216,14 @@ export default function Sidebar() {
                     href={settingsHref}
                     title="Parametres"
                     className="flex items-center justify-center sm:justify-start rounded px-2 py-2 text-sm text-slate-700 transition hover:bg-white hover:text-slate-900"
+                    onClick={() => setMobileOpen(false)}
                 >
                     <Settings className="w-4 h-4 mr-0 sm:mr-2" />
-                    <span className="hidden sm:inline">Parametres</span>
+                    <span className="inline">Parametres</span>
                 </Link>
                 {/* Log out is handled by supabase auth usually, but we could add a button here later */}
             </div>
-        </div>
+            </div>
+        </>
     )
 }

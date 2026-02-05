@@ -11,15 +11,15 @@ export default function ProtectedLayout({
 }) {
   return (
     <AuthProvider>
-      <div className="flex h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
         {/* Sidebar */}
-        <div className="w-64 flex-shrink-0">
-          <Sidebar />
-        </div>
+        <Sidebar />
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <AdminContextGate>{children}</AdminContextGate>
+        <div className="min-w-0 pl-0 sm:pl-52 md:pl-60 lg:pl-64">
+          <div className="min-h-screen overflow-y-auto px-4 py-6 sm:px-6 md:px-8">
+            <AdminContextGate>{children}</AdminContextGate>
+          </div>
         </div>
       </div>
     </AuthProvider>
