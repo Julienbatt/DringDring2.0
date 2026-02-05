@@ -174,6 +174,7 @@ export default function ShopReport() {
     notes: '',
   })
   const [deliveryDateDisplay, setDeliveryDateDisplay] = useState(() => formatSwissDate(getToday()))
+  const [formResetKey, setFormResetKey] = useState(0)
   const [isCreatingClient, setIsCreatingClient] = useState(false)
   const [newClient, setNewClient] = useState({
     name: '', address: '', postal_code: '', city_id: '', floor: '', door_code: '',
@@ -281,7 +282,6 @@ export default function ShopReport() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null)
-  const [formResetKey, setFormResetKey] = useState(0)
   const [tariffType, setTariffType] = useState<'bags' | 'order_amount' | null>(null)
   const [configLoading, setConfigLoading] = useState(true)
   const [configError, setConfigError] = useState<string | null>(null)
