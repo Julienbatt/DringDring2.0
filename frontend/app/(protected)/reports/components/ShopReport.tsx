@@ -259,6 +259,7 @@ export default function ShopReport() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null)
+  const [formResetKey, setFormResetKey] = useState(0)
   const [tariffType, setTariffType] = useState<'bags' | 'order_amount' | null>(null)
   const [configLoading, setConfigLoading] = useState(true)
   const [configError, setConfigError] = useState<string | null>(null)
@@ -486,6 +487,7 @@ export default function ShopReport() {
         basket_value: '',
         notes: '',
       }))
+      setFormResetKey((prev) => prev + 1)
       await refresh()
     } catch (e: any) {
       setSubmitError(editingDeliveryId ? 'Impossible de modifier la livraison' : 'Impossible de creer la livraison')
@@ -506,6 +508,7 @@ export default function ShopReport() {
       basket_value: '',
       notes: '',
     }))
+    setFormResetKey((prev) => prev + 1)
   }
 
   const handleEditDelivery = (row: any) => {
@@ -666,6 +669,7 @@ export default function ShopReport() {
           <label className="text-sm text-gray-600 md:col-span-2">
             Client
             <ClientAutocomplete
+              key={`client-${formResetKey}`}
               clients={clients ?? []}
               value={formState.client_id}
               onChange={(clientId) => {
