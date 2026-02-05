@@ -155,7 +155,7 @@ export default function CourierDispatchPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       <header className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur border-b">
-        <div className="flex flex-col gap-3 px-2 sm:px-0 py-3">
+        <div className="flex flex-col gap-3 px-2 sm:px-0 py-3 pt-8 sm:pt-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h1 className="text-xl font-bold text-gray-900">Dispatch mobile</h1>
@@ -299,7 +299,7 @@ export default function CourierDispatchPage() {
                         onClick={async () => {
                           if (!session?.access_token) return
                           try {
-                            await api.post(`/deliveries/${delivery.id}/status?status=picked_up`, {}, session.access_token)
+                            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=picked_up`, {}, session.access_token)
                             fetchDeliveries()
                           } catch (err) {
                             alert("Erreur lors de la collecte")
@@ -313,7 +313,7 @@ export default function CourierDispatchPage() {
                         onClick={async () => {
                           if (!session?.access_token) return
                           try {
-                            await api.post(`/deliveries/${delivery.id}/status?status=delivered`, {}, session.access_token)
+                            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=delivered`, {}, session.access_token)
                             fetchDeliveries()
                           } catch (err) {
                             alert("Erreur lors de la livraison")
@@ -327,7 +327,7 @@ export default function CourierDispatchPage() {
                         onClick={async () => {
                           if (!session?.access_token) return
                           try {
-                            await api.post(`/deliveries/${delivery.id}/status?status=cancelled`, {}, session.access_token)
+                            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=cancelled`, {}, session.access_token)
                             fetchDeliveries()
                           } catch (err) {
                             alert("Erreur lors de l'annulation")

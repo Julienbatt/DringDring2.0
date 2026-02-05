@@ -213,12 +213,12 @@ export default function DispatchPage() {
         }
     }
 
-    const handleMarkDelivered = async (delivery: DispatchDelivery) => {
+    const handleUpdateStatus = async (delivery: DispatchDelivery, status: 'picked_up' | 'delivered' | 'cancelled') => {
         try {
-            await api.patch(`/dispatch/deliveries/${delivery.id}/complete`, {}, session?.access_token)
+            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=${status}`, {}, session?.access_token)
             setDeliveries(prev => prev.map(d => (
                 d.id === delivery.id
-                    ? { ...d, status: 'delivered' }
+                    ? { ...d, status }
                     : d
             )))
         } catch (err) {
@@ -263,9 +263,8 @@ export default function DispatchPage() {
     }
 
     const handleCancelDelivery = async (delivery: DispatchDelivery) => {
-        const reason = window.prompt("Raison de l'annulation (optionnelle) ?") ?? ''
         try {
-            await api.post(`/deliveries/admin/${delivery.id}/cancel`, { reason }, session?.access_token)
+            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=cancelled`, {}, session?.access_token)
             setDeliveries(prev => prev.map(d => (
                 d.id === delivery.id
                     ? { ...d, status: 'cancelled' }
@@ -529,12 +528,15 @@ export default function DispatchPage() {
                                 const canCancel = canEdit
                                 const isHighlighted = highlightedIds.has(delivery.id)
                                 const highlightClass = isHighlighted ? 'bg-amber-50/80' : ''
+                                const isPickedUp = delivery.status === 'picked_up'
                                 const statusText = isCancelled
                                     ? 'Annulee'
                                     : isDelivered
                                         ? 'Livree'
-                                        : hasCourier
-                                            ? 'En cours'
+                                        : isPickedUp
+                                            ? 'Collecte'
+                                            : hasCourier
+                                                ? 'En cours'
                                             : 'Non assignee'
                                 const notesShort = delivery.notes ? delivery.notes.slice(0, 60) : ''
                                 return (
@@ -581,7 +583,7 @@ export default function DispatchPage() {
                                                                 : 'bg-yellow-100 text-yellow-800'
                                                 }`}
                                             >
-                                                {isCancelled ? 'Annulee' : isDelivered ? 'Livree' : hasCourier ? 'En cours' : 'Non assigne'}
+                                                {isCancelled ? 'Annulee' : isDelivered ? 'Livree' : isPickedUp ? 'Collecte' : hasCourier ? 'En cours' : 'Non assigne'}
                                             </span>
                                         </td>
                                         <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 ${highlightClass}`}>
@@ -594,12 +596,20 @@ export default function DispatchPage() {
                                                     {delivery.courier_id ? 'Changer' : 'Assigner'}
                                                 </button>
                                             )}
-                                            {!isDelivered && !isCancelled && hasCourier && (
+                                            {!isDelivered && !isCancelled && hasCourier && !isPickedUp && (
                                                 <button
-                                                    onClick={() => handleMarkDelivered(delivery)}
+                                                    onClick={() => handleUpdateStatus(delivery, 'picked_up')}
+                                                    className="text-blue-600 hover:text-blue-800"
+                                                >
+                                                    Collecte
+                                                </button>
+                                            )}
+                                            {!isDelivered && !isCancelled && hasCourier && isPickedUp && (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(delivery, 'delivered')}
                                                     className="text-slate-600 hover:text-slate-800"
                                                 >
-                                                    Terminer
+                                                    Livrer
                                                 </button>
                                             )}
                                             {canEdit && (

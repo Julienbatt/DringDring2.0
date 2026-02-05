@@ -193,6 +193,61 @@ def complete_delivery(
 
     return {"status": "success"}
 
+@router.patch("/deliveries/{delivery_id}/status")
+def update_dispatch_status(
+    delivery_id: UUID,
+    status: str = Query(..., pattern="^(picked_up|delivered|cancelled|issue)$"),
+    user: MeResponse = Depends(require_dispatch_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    user_region_id = user.admin_region_id
+
+    with get_db_connection(jwt_claims) as conn:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT c.admin_region_id, d.courier_id,
+                        COALESCE((
+                            SELECT status
+                            FROM delivery_status
+                            WHERE delivery_id = d.id
+                            ORDER BY updated_at DESC
+                            LIMIT 1
+                        ), 'created') AS current_status
+                    FROM delivery d
+                    JOIN shop s ON s.id = d.shop_id
+                    JOIN city c ON c.id = s.city_id
+                    WHERE d.id = %s
+                    """,
+                    (str(delivery_id),),
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise HTTPException(status_code=404, detail="Delivery not found")
+
+                delivery_region_id, courier_id, current_status = row
+
+                if user.role != 'super_admin':
+                    if not user_region_id or str(delivery_region_id) != str(user_region_id):
+                        raise HTTPException(status_code=403, detail="Not in your region")
+
+                if current_status in ("delivered", "cancelled") and status != current_status:
+                    raise HTTPException(status_code=409, detail="Delivery already completed")
+
+                if status in ("picked_up", "delivered") and not courier_id:
+                    raise HTTPException(status_code=409, detail="Courier not assigned")
+
+                cur.execute(
+                    """
+                    INSERT INTO delivery_status (delivery_id, status)
+                    VALUES (%s, %s)
+                    """,
+                    (str(delivery_id), status),
+                )
+
+    return {"status": "success", "delivery_id": str(delivery_id), "status_value": status}
+
 @router.patch("/deliveries/{delivery_id}/assign")
 def assign_courier(
     delivery_id: UUID,
