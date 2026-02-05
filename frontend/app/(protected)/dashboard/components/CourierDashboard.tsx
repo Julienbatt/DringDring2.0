@@ -92,6 +92,7 @@ export default function CourierDashboard() {
                         {data.map((delivery) => {
                             const isDelivered = delivery.status === 'delivered'
                             const isPickedUp = delivery.status === 'picked_up'
+                            const isCancelled = delivery.status === 'cancelled'
                             const isPending = !isDelivered
 
                             return (
@@ -104,8 +105,10 @@ export default function CourierDashboard() {
                                         <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                                             {delivery.time_window}
                                         </span>
-                                        <div className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${isDelivered ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {isDelivered ? 'LIVRÉE' : 'À RÉCUPÉRER'}
+                                        <div className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                            isCancelled ? 'bg-red-100 text-red-700' : isDelivered ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                        }`}>
+                                            {isCancelled ? 'ANNULÉE' : isDelivered ? 'LIVRÉE' : 'À RÉCUPÉRER'}
                                         </div>
                                     </div>
 
@@ -137,12 +140,12 @@ export default function CourierDashboard() {
                                                 Sacs: {delivery.bags}
                                             </div>
 
-                                            {isPending && (
+                                            {isPending && !isCancelled && (
                                                 <div className="mt-4 text-sm text-gray-500">
                                                     Statut en attente de livraison.
                                                 </div>
                                             )}
-                                            {!isDelivered && (
+                                            {!isDelivered && !isCancelled && (
                                                 <div className="mt-4 flex flex-wrap items-center gap-2">
                                                     {!isPickedUp ? (
                                                         <button
@@ -170,6 +173,11 @@ export default function CourierDashboard() {
                                                     <span className="text-xs text-gray-500">
                                                         {isPickedUp ? 'Collecté' : 'À collecter'}
                                                     </span>
+                                                </div>
+                                            )}
+                                            {isCancelled && (
+                                                <div className="mt-4 text-sm font-medium text-red-600">
+                                                    Livraison annulée.
                                                 </div>
                                             )}
                                         </div>
