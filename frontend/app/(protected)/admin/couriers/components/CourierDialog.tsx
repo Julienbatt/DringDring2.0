@@ -13,7 +13,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch' // Need to check if Switch exists, else Checkbox
-import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '../../../providers/AuthProvider'
@@ -29,6 +28,7 @@ export type CourierData = {
     phone_number?: string | null
     vehicle_type?: string | null
     active: boolean
+    can_dispatch?: boolean
 }
 
 type CourierDialogProps = {
@@ -66,7 +66,8 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
         email: '',
         phone_number: '',
         vehicle_type: 'bike',
-        active: true
+        active: true,
+        can_dispatch: false,
     })
 
     useEffect(() => {
@@ -76,6 +77,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                 email: courierToEdit.email || '',
                 phone_number: courierToEdit.phone_number || '',
                 vehicle_type: courierToEdit.vehicle_type || 'bike',
+                can_dispatch: courierToEdit.can_dispatch ?? false,
             })
         } else {
             setFormData({
@@ -85,7 +87,8 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                 email: '',
                 phone_number: '',
                 vehicle_type: 'bike',
-                active: true
+                active: true,
+                can_dispatch: false,
             })
         }
     }, [courierToEdit, open])
@@ -233,14 +236,25 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                         </Select>
                     </div>
 
-                    <div className="flex items-center space-x-2 pt-2 bg-gray-50 p-3 rounded">
-                        <div className="flex items-center space-x-2 pt-2 bg-gray-50 p-3 rounded">
+                    <div className="space-y-3 bg-gray-50 p-3 rounded">
+                        <div className="flex items-center space-x-2">
                             <Switch
                                 id="active"
                                 checked={formData.active}
                                 onCheckedChange={(c) => setFormData({ ...formData, active: c })}
                             />
                             <Label htmlFor="active" className="cursor-pointer">Compte Actif (Peut recevoir des courses)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="can_dispatch"
+                                checked={!!formData.can_dispatch}
+                                onCheckedChange={(c) => setFormData({ ...formData, can_dispatch: c })}
+                            />
+                            <Label htmlFor="can_dispatch" className="cursor-pointer">Peut faire le dispatch (mode remplacement)</Label>
+                        </div>
+                        <div className="text-[11px] text-gray-400">
+                            Dispatch toggle v1 · valeur: {formData.can_dispatch ? 'on' : 'off'}
                         </div>
                     </div>
 
