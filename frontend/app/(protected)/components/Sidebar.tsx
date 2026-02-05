@@ -139,7 +139,7 @@ export default function Sidebar() {
             )}
 
             <div
-                className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col bg-slate-100 text-slate-900 transition-transform duration-300 ${
+                className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col bg-slate-100 text-slate-900 transition-transform duration-300 pb-[env(safe-area-inset-bottom)] ${
                     mobileOpen ? 'translate-x-0' : '-translate-x-full'
                 } sm:translate-x-0 sm:w-52 md:w-60 lg:w-64`}
             >
@@ -199,10 +199,21 @@ export default function Sidebar() {
                         </Link>
                     )
                 })}
+                <button
+                    type="button"
+                    onClick={async () => {
+                        setMobileOpen(false)
+                        await signOut()
+                    }}
+                    className="sm:hidden mt-4 flex w-full items-center justify-center rounded-lg px-2 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900"
+                >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Se deconnecter
+                </button>
             </nav>
 
             {/* Footer / User Profile */}
-            <div className="border-t border-slate-200 bg-slate-100 p-3 lg:p-4">
+            <div className="border-t border-slate-200 bg-slate-100 p-3 lg:p-4 mt-auto">
                 <div className="mb-3 flex items-center gap-3 justify-center sm:justify-start">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
                         {user?.email?.substring(0, 2).toUpperCase()}
