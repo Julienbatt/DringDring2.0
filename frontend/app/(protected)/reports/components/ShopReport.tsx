@@ -259,6 +259,10 @@ export default function ShopReport() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null)
+  const [tariffType, setTariffType] = useState<'bags' | 'order_amount' | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
+  const [configError, setConfigError] = useState<string | null>(null)
+  const [lastShortCode, setLastShortCode] = useState<string | null>(null)
 
   const {
     data: deliveries,
@@ -541,11 +545,6 @@ export default function ShopReport() {
       setSubmitError(message)
     }
   }
-
-  const [tariffType, setTariffType] = useState<'bags' | 'order_amount' | null>(null)
-  const [configLoading, setConfigLoading] = useState(true)
-  const [configError, setConfigError] = useState<string | null>(null)
-  const [lastShortCode, setLastShortCode] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch shop configuration on mount
