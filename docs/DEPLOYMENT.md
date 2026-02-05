@@ -15,6 +15,36 @@ Notes:
 - Any change to `NEXT_PUBLIC_API_URL` requires a Vercel redeploy.
 - If a custom API domain is not ready (SSL pending), use the Render URL temporarily.
 
+### 1.1) GitHub + Vercel: how we log in and trigger deploys
+**GitHub login (SSH)**
+1) Generate a key:
+   ```
+   ssh-keygen -t ed25519 -C "you@example.com"
+   ```
+2) Add the key to the agent:
+   ```
+   eval "$(ssh-agent -s)"
+   ssh-add ~/.ssh/id_ed25519
+   ```
+3) Add the public key to GitHub:
+   - GitHub → Settings → SSH and GPG keys → New SSH key
+   - Paste the contents of `~/.ssh/id_ed25519.pub`
+
+**Vercel Git deploy (frontend)**
+1) Vercel → Project → Settings → Git  
+   - Repo connected: `Julienbatt/DringDring2.0`
+2) Vercel → Settings → Build & Deployment  
+   - **Root Directory** = `frontend`  
+   - Framework = Next.js
+3) Vercel → Settings → Environment Variables  
+   - Make sure `NEXT_PUBLIC_*` are set for **Production**
+4) Deploy on new commits
+   - A push to `main` should auto-deploy.
+   - If not: Deployments → Redeploy → **Clear cache**
+
+If Vercel shows “vercel deploy” as the source, it’s a CLI deploy, not Git.  
+Use Git-connected deploys so changes follow the repository.
+
 ## 2) Backend (Render)
 Recommended start command:
 ```
