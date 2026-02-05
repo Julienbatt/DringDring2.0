@@ -863,19 +863,15 @@ export default function ShopReport() {
             />
           </label>
           <label className="text-sm text-gray-600">
-            Plage horaire
-            <select
+            Heure precise
+            <input
               className="mt-1 w-full rounded border px-2 py-1"
+              type="time"
               name="time_window"
               value={formState.time_window}
               onChange={handleChange}
               required
-            >
-              <option value="">Selectionner</option>
-              <option value="08:00-12:00">08:00-12:00</option>
-              <option value="12:00-16:00">12:00-16:00</option>
-              <option value="16:00-20:00">16:00-20:00</option>
-            </select>
+            />
           </label>
           {!configLoading && tariffType === 'bags' && (
             <label className="text-sm text-gray-600">

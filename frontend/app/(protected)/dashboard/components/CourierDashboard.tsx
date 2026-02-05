@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useCourierDeliveries } from '../hooks/useCourierDeliveries'
+import { useCourierActions } from '../hooks/useCourierActions'
 
 function getToday() {
     const now = new Date()
@@ -16,6 +17,7 @@ function formatTime(isoString: string | null) {
 export default function CourierDashboard() {
     const [selectedDate, setSelectedDate] = useState(getToday())
     const { data, loading, error, refresh } = useCourierDeliveries(selectedDate)
+    const { updateStatus, updating } = useCourierActions()
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSelectedDate(e.target.value)
@@ -89,6 +91,7 @@ export default function CourierDashboard() {
                     <div className="grid gap-6">
                         {data.map((delivery) => {
                             const isDelivered = delivery.status === 'delivered'
+                            const isPickedUp = delivery.status === 'picked_up'
                             const isPending = !isDelivered
 
                             return (
@@ -137,6 +140,36 @@ export default function CourierDashboard() {
                                             {isPending && (
                                                 <div className="mt-4 text-sm text-gray-500">
                                                     Statut en attente de livraison.
+                                                </div>
+                                            )}
+                                            {!isDelivered && (
+                                                <div className="mt-4 flex flex-wrap items-center gap-2">
+                                                    {!isPickedUp ? (
+                                                        <button
+                                                            onClick={async () => {
+                                                                const ok = await updateStatus(delivery.delivery_id, 'picked_up')
+                                                                if (ok) refresh()
+                                                            }}
+                                                            disabled={updating === delivery.delivery_id}
+                                                            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                                                        >
+                                                            Collecte
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={async () => {
+                                                                const ok = await updateStatus(delivery.delivery_id, 'delivered')
+                                                                if (ok) refresh()
+                                                            }}
+                                                            disabled={updating === delivery.delivery_id}
+                                                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                                                        >
+                                                            Livré
+                                                        </button>
+                                                    )}
+                                                    <span className="text-xs text-gray-500">
+                                                        {isPickedUp ? 'Collecté' : 'À collecter'}
+                                                    </span>
                                                 </div>
                                             )}
                                         </div>
