@@ -93,6 +93,16 @@ Recommended order for a fresh database (includes latest billing + stats work):
 42. `backend/migrations/update_billing_documents_v45.sql`
 43. `backend/migrations/update_billing_views_v46.sql`
 44. `backend/migrations/update_delivery_logistics_basket_value_v47.sql`
+45. `backend/migrations/update_delivery_financial_cms_subsidy_v48.sql`
+46. `backend/migrations/update_courier_dispatch_v1.sql`
+47. `backend/migrations/update_client_email_v49.sql`
+48. `backend/migrations/update_billing_indexes_v49.sql`
+49. `backend/migrations/update_security_v45.sql`
+50. `backend/migrations/update_security_v46.sql`
+
+Notes:
+- There are two migrations with suffix `v49` (`update_client_email_v49.sql` and `update_billing_indexes_v49.sql`).
+- On an existing DB, run both once; they touch different objects.
 
 Legacy tariff upgrade (only if your DB still has `public.tariff` + `tariff_version.tariff_id`):
 

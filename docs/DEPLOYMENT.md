@@ -56,6 +56,7 @@ Required env vars (minimum):
 - `SUPABASE_JWT_SECRET`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_KEY`
+- `FRONTEND_URL` (used for invite redirects, example: `https://staging.dringdring.me`)
 
 Database connection:
 - Prefer Supabase **Session Pooler** URI (IPv4, port **6543**) for Render and local tooling.
@@ -93,7 +94,7 @@ Otherwise the browser shows `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` and login loops
 
 ## 4) Migrations
 Run migrations in order (see `backend/README.md`).
-Important recent ones: v41 - v47 (billing + views + basket value).
+Important recent ones: v41 - v49 (billing + views + basket value + invite fields + dispatch/cms updates).
 
 ## 5) Health checks
 - Backend: `/api/v1/health`
@@ -115,6 +116,7 @@ Best practice: separate projects for **staging** and **prod**:
      - `SUPABASE_URL` = **prod**
      - `SUPABASE_SERVICE_KEY` = **prod**
      - `SUPABASE_JWT_SECRET` = **prod**
+     - `FRONTEND_URL` = `https://dringdring.me`
      - `CORS_ORIGINS_STR` = `https://dringdring.me`
 3) **Vercel (frontend prod)**: create a new project or prod env
    - Set env:

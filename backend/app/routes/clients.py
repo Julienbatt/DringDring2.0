@@ -105,6 +105,14 @@ def validate_city_in_region(cur, city_id: str, admin_region_id: str) -> str:
     return city_name
 
 
+def get_city_name_and_region(cur, city_id: str) -> tuple[str, str]:
+    cur.execute("SELECT name, admin_region_id::text FROM city WHERE id = %s", (city_id,))
+    row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=400, detail="Invalid city_id")
+    return row[0], row[1]
+
+
 def resolve_city_for_client(cur, postal_code: str, city_name: str):
     """
     Resolve city using postal_code first, then city name.
@@ -139,6 +147,43 @@ def resolve_city_for_client(cur, postal_code: str, city_name: str):
         if row:
             return row
     return None
+
+
+def ensure_unique_active_client_email_in_region(
+    cur,
+    email: Optional[str],
+    admin_region_id: Optional[str],
+    exclude_client_id: Optional[str] = None,
+):
+    if not email or not admin_region_id:
+        return
+
+    normalized_email = email.strip().lower()
+    if not normalized_email:
+        return
+
+    query = """
+        SELECT c.id::text
+        FROM client c
+        JOIN city ci ON ci.id = c.city_id
+        WHERE c.active = true
+          AND ci.admin_region_id::text = %s
+          AND lower(c.email) = %s
+    """
+    params: list = [admin_region_id, normalized_email]
+
+    if exclude_client_id:
+        query += " AND c.id::text <> %s"
+        params.append(exclude_client_id)
+
+    query += " LIMIT 1"
+    cur.execute(query, tuple(params))
+    existing = cur.fetchone()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Un client actif avec cet email existe deja dans cette region",
+        )
 
 
 def normalize_phone(phone: Optional[str]) -> Optional[str]:
@@ -180,6 +225,8 @@ def invite_customer_account(user_email: str, client_id: str):
             "client_id": client_id,
         },
     }
+    if settings.FRONTEND_URL:
+        payload["redirect_to"] = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
     response = httpx.post(url, headers=headers, json=payload, timeout=10)
     if response.status_code < 400:
         return True, None
@@ -221,16 +268,19 @@ def update_client(
             # Validate city ownership for admin_region; super_admin can target any city.
             if user.role != 'super_admin':
                 city_name = validate_city_in_region(cur, client.city_id, admin_region_id)
+                target_admin_region_id = str(admin_region_id)
             else:
-                cur.execute("SELECT name FROM city WHERE id = %s", (client.city_id,))
-                city_row = cur.fetchone()
-                if not city_row:
-                    raise HTTPException(status_code=400, detail="Invalid city_id")
-                city_name = city_row[0]
+                city_name, target_admin_region_id = get_city_name_and_region(cur, client.city_id)
 
             normalized_phone = normalize_phone(client.phone)
             if not is_valid_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+            ensure_unique_active_client_email_in_region(
+                cur,
+                client.email,
+                target_admin_region_id,
+                exclude_client_id=client_id,
+            )
 
             cur.execute(
                 """
@@ -451,6 +501,11 @@ def create_my_client(
             normalized_phone = normalize_phone(payload.phone)
             if not is_valid_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+            ensure_unique_active_client_email_in_region(
+                cur,
+                payload.email,
+                str(admin_region_id),
+            )
 
             client_id = str(uuid.uuid4())
             cur.execute(
@@ -608,16 +663,18 @@ def create_client(
         with conn.cursor() as cur:
             if user.role != 'super_admin':
                 city_name = validate_city_in_region(cur, client.city_id, admin_region_id)
+                target_admin_region_id = str(admin_region_id)
             else:
-                cur.execute("SELECT name FROM city WHERE id = %s", (client.city_id,))
-                city_row = cur.fetchone()
-                if not city_row:
-                    raise HTTPException(status_code=400, detail="Invalid city_id")
-                city_name = city_row[0]
+                city_name, target_admin_region_id = get_city_name_and_region(cur, client.city_id)
 
             normalized_phone = normalize_phone(client.phone)
             if not is_valid_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+            ensure_unique_active_client_email_in_region(
+                cur,
+                client.email,
+                target_admin_region_id,
+            )
 
             client_id = str(uuid.uuid4())
             cur.execute(
@@ -713,6 +770,11 @@ def create_shop_client(
             normalized_phone = normalize_phone(client.phone)
             if not is_valid_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+            ensure_unique_active_client_email_in_region(
+                cur,
+                client.email,
+                str(admin_region_id),
+            )
 
             client_id = str(uuid.uuid4())
             cur.execute(

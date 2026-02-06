@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str
     SUPABASE_URL: str
     SUPABASE_SERVICE_KEY: str
+    FRONTEND_URL: str | None = None
     BILLING_CREDITOR_NAME: str | None = None
     BILLING_CREDITOR_IBAN: str | None = None
     BILLING_CREDITOR_ADDRESS: str | None = None

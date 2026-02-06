@@ -1,7 +1,10 @@
 from contextlib import contextmanager
 import time
+import logging
 import psycopg
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def get_db_connection(jwt_claims: str):
@@ -34,9 +37,9 @@ def get_db_connection(jwt_claims: str):
     try:
         # Forcer IPv4 avec AF_INET
         ipv4 = socket.getaddrinfo(host, None, socket.AF_INET)[0][4][0]
-        print(f"Resolved {host} -> IPv4: {ipv4}")
+        logger.debug("Resolved %s -> IPv4: %s", host, ipv4)
     except socket.gaierror:
-        print(f"Unable to resolve {host} to IPv4, using hostname fallback...")
+        logger.warning("Unable to resolve %s to IPv4, using hostname fallback", host)
         ipv4 = host  # Fallback to hostname on failure.
     
     # Construire la connection string avec hostaddr

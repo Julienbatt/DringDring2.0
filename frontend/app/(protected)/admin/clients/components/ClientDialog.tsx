@@ -49,6 +49,7 @@ type ClientDialogProps = {
 export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: ClientDialogProps) {
     const { session, adminContextRegion } = useAuth()
     const [loading, setLoading] = useState(false)
+    const [confirmDelete, setConfirmDelete] = useState(false)
     const [cities, setCities] = useState<{ id: string; name: string }[]>([])
     const [createAccount, setCreateAccount] = useState(false)
 
@@ -139,6 +140,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                 lng: clientToEdit.lng ?? null,
             })
             setCreateAccount(false)
+            setConfirmDelete(false)
         } else {
             setFormData({
                 name: '',
@@ -154,6 +156,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                 is_cms: false
             })
             setCreateAccount(false)
+            setConfirmDelete(false)
         }
     }, [clientToEdit, open])
 
@@ -230,8 +233,6 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
 
     const handleDelete = async () => {
         if (!session?.access_token || !clientToEdit?.id) return
-        const confirmed = window.confirm("Supprimer ce client ?")
-        if (!confirmed) return
         setLoading(true)
         try {
             await apiDelete(`/clients/${clientToEdit.id}`, session.access_token)
@@ -243,6 +244,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             toast.error(error.message || "Erreur lors de la suppression")
         } finally {
             setLoading(false)
+            setConfirmDelete(false)
         }
     }
 
@@ -412,10 +414,35 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                     <DialogFooter className="pt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2">
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-                            {isEditing && (
-                                <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading}>
+                            {isEditing && !confirmDelete && (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={() => setConfirmDelete(true)}
+                                    disabled={loading}
+                                >
                                     Supprimer
                                 </Button>
+                            )}
+                            {isEditing && confirmDelete && (
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setConfirmDelete(false)}
+                                        disabled={loading}
+                                    >
+                                        Annuler suppression
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        onClick={handleDelete}
+                                        disabled={loading}
+                                    >
+                                        Confirmer suppression
+                                    </Button>
+                                </>
                             )}
                         </div>
                         <Button type="submit" disabled={loading}>
