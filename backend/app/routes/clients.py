@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
+from datetime import datetime
 from pydantic import BaseModel
 import uuid
 import logging
@@ -32,7 +33,7 @@ class ClientBase(BaseModel):
     active: bool = True
     account_invite_status: Optional[str] = None
     account_invite_error: Optional[str] = None
-    account_invited_at: Optional[str] = None
+    account_invited_at: Optional[datetime] = None
 
 class ClientCreate(ClientBase):
     create_account: bool = False
