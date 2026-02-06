@@ -34,6 +34,8 @@ class Settings(BaseSettings):
         "https://dringdring.me",
     ]
     CORS_ORIGINS_STR: str | None = None
+    # Keep DringDring domains always authorized even if CORS_ORIGINS_STR is partial on staging.
+    CORS_ALLOW_ORIGIN_REGEX: str = r"^https://([a-z0-9-]+\.)?dringdring\.me$"
     API_V1_STR: str = "/api/v1"
 
     class Config:
@@ -44,6 +46,12 @@ settings = Settings()
 
 
 def get_cors_origins() -> list[str]:
-    if not settings.CORS_ORIGINS_STR:
-        return settings.CORS_ORIGINS
-    return [origin.strip() for origin in settings.CORS_ORIGINS_STR.split(",") if origin.strip()]
+    # Merge configured list with defaults instead of replacing them.
+    origins = set(settings.CORS_ORIGINS)
+    if settings.CORS_ORIGINS_STR:
+        origins.update(
+            origin.strip()
+            for origin in settings.CORS_ORIGINS_STR.split(",")
+            if origin.strip()
+        )
+    return sorted(origins)
