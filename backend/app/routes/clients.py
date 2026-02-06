@@ -192,16 +192,17 @@ def delete_client(
 
 @router.get("/shop", response_model=List[ClientResponse])
 def list_shop_clients(
-    limit: int = 500,
+    limit: int | None = None,
     offset: int = 0,
     user: MeResponse = Depends(require_shop_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    if limit < 1:
-        limit = 1
     if offset < 0:
         offset = 0
-    limit = min(limit, 2000)
+    if limit is not None:
+        if limit < 1:
+            limit = 1
+        limit = min(limit, 20000)
     shop_id = user.shop_id
     if not shop_id:
         raise HTTPException(status_code=400, detail="Shop id missing")
@@ -211,8 +212,7 @@ def list_shop_clients(
             admin_region_id = get_shop_admin_region(cur, shop_id)
 
             # Select all clients in that Admin Region
-            cur.execute(
-                """
+            query = """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms, 
                        c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
                 FROM client c
@@ -220,10 +220,12 @@ def list_shop_clients(
                 WHERE cc.admin_region_id = %s
                   AND c.active = true
                 ORDER BY c.name
-                LIMIT %s OFFSET %s
-                """,
-                (admin_region_id, limit, offset),
-            )
+            """
+            params = [admin_region_id]
+            if limit is not None:
+                query += " LIMIT %s OFFSET %s"
+                params.extend([limit, offset])
+            cur.execute(query, tuple(params))
             columns = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
             return [dict(zip(columns, row)) for row in rows]
@@ -231,16 +233,17 @@ def list_shop_clients(
 @router.get("/admin", response_model=List[ClientResponse])
 def list_admin_clients(
     admin_region_id: Optional[str] = None,
-    limit: int = 500,
+    limit: int | None = None,
     offset: int = 0,
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    if limit < 1:
-        limit = 1
     if offset < 0:
         offset = 0
-    limit = min(limit, 2000)
+    if limit is not None:
+        if limit < 1:
+            limit = 1
+        limit = min(limit, 20000)
     if user.role != 'super_admin':
         if not user.admin_region_id:
             raise HTTPException(status_code=400, detail="Admin region id missing")
@@ -260,9 +263,8 @@ def list_admin_clients(
                 WHERE city.admin_region_id = %s
                   AND c.active = true
                 ORDER BY c.name
-                LIMIT %s OFFSET %s
                 """
-                params = (target_region_id, limit, offset)
+                params = [target_region_id]
             else:
                 query = """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
@@ -272,9 +274,12 @@ def list_admin_clients(
                 JOIN city ON c.city_id = city.id
                 WHERE c.active = true
                 ORDER BY city.name, c.name
-                LIMIT %s OFFSET %s
                 """
-                params = (limit, offset)
+                params = []
+
+            if limit is not None:
+                query += " LIMIT %s OFFSET %s"
+                params.extend([limit, offset])
 
             cur.execute(query, params)
             columns = [desc[0] for desc in cur.description]
