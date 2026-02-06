@@ -30,6 +30,8 @@ class Settings(BaseSettings):
         "http://localhost:3001",
         "http://127.0.0.1:3001",
         "http://172.18.160.1:3000",
+        "https://staging.dringdring.me",
+        "https://dringdring.me",
     ]
     CORS_ORIGINS_STR: str | None = None
     API_V1_STR: str = "/api/v1"
