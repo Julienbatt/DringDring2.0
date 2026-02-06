@@ -109,13 +109,13 @@ export default function ShopsPage() {
             </div>
 
             <div className="table-scroll bg-white rounded-lg border shadow-sm">
-                <Table className="min-w-[900px]">
+                <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[300px]">Commerce et localisation</TableHead>
-                            <TableHead className="hidden lg:table-cell">Contact</TableHead>
-                            <TableHead className="hidden lg:table-cell">Configuration</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="w-[35%]">Commerce et localisation</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[30%]">Contact</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[25%]">Configuration</TableHead>
+                            <TableHead className="w-[10%] text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

@@ -91,12 +91,12 @@ export default function AdminHqsPage() {
       </div>
 
       <div className="table-scroll bg-white rounded-lg border shadow-sm">
-        <Table className="min-w-[720px]">
+        <Table className="w-full table-fixed min-w-[860px]">
           <TableHeader className="bg-gray-50/50">
             <TableRow>
-              <TableHead className="w-[300px]">HQ et localisation</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[40%]">HQ et localisation</TableHead>
+              <TableHead className="w-[45%]">Contact</TableHead>
+              <TableHead className="w-[15%] text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

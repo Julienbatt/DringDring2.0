@@ -113,16 +113,16 @@ export default function AdminCouriersPage() {
             </div>
 
             <div className="table-scroll bg-white rounded-lg border shadow-sm">
-                <Table className="min-w-[900px]">
+                <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[80px]">Matr.</TableHead>
-                            <TableHead>Identité</TableHead>
+                            <TableHead className="w-[9%] whitespace-nowrap">Matr.</TableHead>
+                            <TableHead className="w-[19%]">Identité</TableHead>
                             {isSuperAdmin && <TableHead>Région</TableHead>}
-                            <TableHead>Contact</TableHead>
-                            <TableHead>Véhicule</TableHead>
-                            <TableHead>Statut</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[20%]' : 'w-[30%]'}>Contact</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[14%]' : 'w-[18%]'}>Véhicule</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[14%]' : 'w-[14%]'}>Statut</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[12%] text-right whitespace-nowrap' : 'w-[10%] text-right whitespace-nowrap'}>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

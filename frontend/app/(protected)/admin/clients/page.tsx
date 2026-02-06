@@ -204,15 +204,15 @@ export default function ClientsPage() {
                 )}
             </div>
 
-            <div className="bg-white rounded-lg border shadow-sm overflow-x-auto hidden md:block">
-                <Table className="min-w-[900px]">
+            <div className="bg-white rounded-lg border shadow-sm hidden md:block">
+                <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[300px]">Identite et contact</TableHead>
-                            <TableHead>Adresse et acces</TableHead>
-                            <TableHead>Localisation</TableHead>
-                            <TableHead className="text-center">Profil</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="w-[26%]">Identite et contact</TableHead>
+                            <TableHead className="w-[30%]">Adresse et acces</TableHead>
+                            <TableHead className="w-[28%]">Localisation</TableHead>
+                            <TableHead className="w-[8%] text-center whitespace-nowrap">Profil</TableHead>
+                            <TableHead className="w-[8%] text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -229,23 +229,23 @@ export default function ClientsPage() {
                                     className="hover:bg-gray-50/50 transition-colors cursor-pointer"
                                     onClick={() => handleEdit(client)}
                                 >
-                                    <TableCell>
+                                    <TableCell className="align-top">
                                         <div className="flex flex-col gap-1">
-                                            <div className="font-semibold text-gray-900 flex items-center gap-2">
+                                            <div className="font-semibold text-gray-900 flex items-center gap-2 min-w-0">
                                                 <User className="w-4 h-4 text-gray-500" />
-                                                {client.name}
+                                                <span className="truncate">{client.name}</span>
                                             </div>
                                             {client.phone && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-500 ml-6">
+                                                <div className="flex items-center gap-2 text-sm text-gray-500 ml-6 min-w-0">
                                                     <Phone className="w-3 h-3" />
-                                                    {client.phone}
+                                                    <span className="truncate">{client.phone}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="align-top">
                                         <div className="flex flex-col gap-1 text-sm">
-                                            <div className="text-gray-900">{client.address}</div>
+                                            <div className="text-gray-900 break-words">{client.address}</div>
                                             {(client.floor || client.door_code) && (
                                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                                     {client.floor && (
@@ -262,10 +262,10 @@ export default function ClientsPage() {
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <TableCell className="align-top">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
                                             <MapPin className="w-4 h-4 text-gray-400" />
-                                            {client.postal_code} {client.city_real_name || client.city_name}
+                                            <span className="truncate">{client.postal_code} {client.city_real_name || client.city_name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">

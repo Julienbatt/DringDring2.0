@@ -151,13 +151,13 @@ export default function AdminCitiesPage() {
             </div>
 
             <div className="table-scroll bg-white rounded-lg border shadow-sm">
-                <Table className="min-w-[900px]">
+                <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[200px]">Commune partenaire</TableHead>
-                            <TableHead className="hidden lg:table-cell">Contact Administratif</TableHead>
-                            <TableHead className="hidden lg:table-cell">Coordonnees</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="w-[34%]">Commune partenaire</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[24%]">Contact Administratif</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[30%]">Coordonnees</TableHead>
+                            <TableHead className="w-[12%] text-right whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
