@@ -141,6 +141,7 @@ export default function CustomerProfilePage() {
                 name: clientDraft.name,
                 address: clientDraft.address,
                 postal_code: clientDraft.postal_code,
+                city_name: clientDraft.city_name,
                 lat: clientDraft.lat ?? null,
                 lng: clientDraft.lng ?? null,
                 phone: clientDraft.phone ? normalizePhone(clientDraft.phone) : null,
@@ -165,6 +166,7 @@ export default function CustomerProfilePage() {
             ...prev,
             address: formatted,
             postal_code: address.zip,
+            city_name: address.city,
             lat: address.lat ?? prev.lat ?? null,
             lng: address.lng ?? prev.lng ?? null,
         }))
@@ -372,8 +374,8 @@ export default function CustomerProfilePage() {
                                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Commune partenaire</label>
                                 <input
                                     value={clientDraft.city_name}
-                                    disabled
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500"
+                                    onChange={(e) => setClientDraft({ ...clientDraft, city_name: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
                                 />
                             </div>
                             <div className="md:col-span-2">

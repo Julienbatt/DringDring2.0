@@ -45,6 +45,7 @@ class ClientSelfUpdate(BaseModel):
     name: str
     address: str
     postal_code: str
+    city_name: str
     lat: Optional[float] = None
     lng: Optional[float] = None
     phone: Optional[str] = None
@@ -604,6 +605,16 @@ def update_my_client(
             normalized_phone = normalize_phone(payload.phone)
             if not is_valid_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+            resolved = resolve_city_for_client(cur, payload.postal_code, payload.city_name)
+            if not resolved:
+                raise HTTPException(status_code=400, detail="Commune introuvable pour ce NPA/Ville")
+            city_id, city_name, admin_region_id = resolved
+            ensure_unique_active_client_email_in_region(
+                cur,
+                payload.email,
+                str(admin_region_id),
+                exclude_client_id=client_id,
+            )
 
             cur.execute(
                 """
@@ -611,6 +622,8 @@ def update_my_client(
                 SET name = %s,
                     address = %s,
                     postal_code = %s,
+                    city_id = %s,
+                    city_name = %s,
                     phone = %s,
                     floor = %s,
                     door_code = %s,
@@ -623,6 +636,8 @@ def update_my_client(
                     payload.name,
                     payload.address,
                     payload.postal_code,
+                    city_id,
+                    city_name,
                     normalized_phone,
                     payload.floor,
                     payload.door_code,
@@ -631,6 +646,14 @@ def update_my_client(
                     payload.email,
                     client_id,
                 ),
+            )
+            cur.execute(
+                """
+                UPDATE public.profiles
+                SET city_id = %s, admin_region_id = %s
+                WHERE id = %s
+                """,
+                (city_id, admin_region_id, user.user_id),
             )
             cur.execute(
                 """
