@@ -24,6 +24,14 @@ Lancer la suite de tests (`pytest`) :
 python -m pytest tests -v
 ```
 
+Quality checks:
+
+```bash
+python scripts/check_migrations.py
+python -m compileall -q app
+PYTHONPATH=. python -m pytest tests -q
+```
+
 ## Seeding (Données de test)
 
 Pour peupler la base de données avec des utilisateurs et des configurations de test :
