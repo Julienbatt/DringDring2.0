@@ -54,6 +54,7 @@ export default function DispatchPage() {
     const previousDeliveryIdsRef = useRef<Set<string>>(new Set())
     const hasLoadedOnceRef = useRef(false)
     const lastFetchAtRef = useRef(0)
+    const highlightTimeoutsRef = useRef<Map<string, number>>(new Map())
 
     // Assignment Modal State
     const [selectedDelivery, setSelectedDelivery] = useState<DispatchDelivery | null>(null)
@@ -155,6 +156,14 @@ export default function DispatchPage() {
                         highlightIds.forEach((id) => next.add(id))
                         return next
                     })
+                    highlightIds.forEach((id) => {
+                        if (highlightTimeoutsRef.current.has(id)) return
+                        const timeoutId = window.setTimeout(() => {
+                            clearHighlight(id)
+                            highlightTimeoutsRef.current.delete(id)
+                        }, 120000)
+                        highlightTimeoutsRef.current.set(id, timeoutId)
+                    })
                 }
             } else {
                 hasLoadedOnceRef.current = true
@@ -185,6 +194,11 @@ export default function DispatchPage() {
             next.delete(deliveryId)
             return next
         })
+        const timeoutId = highlightTimeoutsRef.current.get(deliveryId)
+        if (timeoutId) {
+            window.clearTimeout(timeoutId)
+            highlightTimeoutsRef.current.delete(deliveryId)
+        }
     }
 
     const handleAssignConfirm = async (courierId: string) => {

@@ -35,9 +35,7 @@ export default function ClientAutocomplete({
   useEffect(() => {
     if (selectedClient) {
       setQuery(
-        `${selectedClient.name}${
-          selectedClient.city_name ? ` - ${selectedClient.city_name}` : ''
-        }`
+        `${selectedClient.name}`
       )
     }
   }, [selectedClient])
@@ -55,9 +53,10 @@ export default function ClientAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(query.toLowerCase())
-  )
+  const filteredClients = clients.filter((client) => {
+    const haystack = `${client.name} ${client.city_name || ''}`.toLowerCase()
+    return haystack.includes(query.toLowerCase())
+  })
 
   return (
     <div className="relative" ref={containerRef}>

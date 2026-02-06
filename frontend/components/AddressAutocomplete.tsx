@@ -163,8 +163,22 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
                 city = cityPart
             }
         } else {
-            // Fallback
-            street = cleanLabel
+            // Fallback for labels without comma: "Rue des Sémaphores 3b 1950 Sion"
+            const matchNoComma = cleanLabel.match(/^(.*)\s(\d{4})\s(.+)$/)
+            if (matchNoComma) {
+                const streetPart = matchNoComma[1].trim()
+                zip = matchNoComma[2]
+                city = matchNoComma[3]
+                const matchNumber = streetPart.match(/^(.*)\s+(\d+[a-zA-Z]*)$/)
+                if (matchNumber) {
+                    street = matchNumber[1].trim()
+                    number = matchNumber[2].trim()
+                } else {
+                    street = streetPart
+                }
+            } else {
+                street = cleanLabel
+            }
         }
 
         return { street, number, zip, city }
