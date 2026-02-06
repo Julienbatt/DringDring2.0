@@ -426,7 +426,7 @@ export default function HqReport() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e8f8f2,_#f7fbf9_40%,_#ffffff_75%)]">
-      <div className="mx-auto max-w-6xl px-6 py-10 space-y-10">
+      <div className="w-full px-6 py-10 space-y-10">
         <header className="relative overflow-hidden rounded-3xl border bg-white/90 shadow-sm">
           <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-emerald-100/70 blur-3xl" />
           <div className="absolute -left-24 -bottom-20 h-56 w-56 rounded-full bg-amber-100/60 blur-3xl" />

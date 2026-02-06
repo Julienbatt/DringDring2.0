@@ -39,7 +39,7 @@ export default function CustomerSupportPage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-16 pt-6 md:px-8">
+            <div className="flex w-full flex-col gap-6 px-4 pb-16 pt-6 md:px-8">
                 <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                     <div className="space-y-3">
                         <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">Support</p>

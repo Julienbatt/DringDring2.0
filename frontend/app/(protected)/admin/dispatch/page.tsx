@@ -385,7 +385,7 @@ export default function DispatchPage() {
     if (error) return <div className="p-8 text-red-600">{error}</div>
 
     return (
-        <div className="mx-auto max-w-6xl p-6">
+        <div className="w-full p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Dispatch et operations</h1>
                 <div className="flex items-center gap-3">
@@ -550,7 +550,7 @@ export default function DispatchPage() {
                                 const canAssign = !isDelivered && !isCancelled
                                 const canCancel = canEdit
                                 const isHighlighted = highlightedIds.has(delivery.id)
-                                const highlightClass = isHighlighted ? 'bg-amber-50/80' : ''
+                                const highlightClass = isHighlighted ? 'bg-amber-100/80' : ''
                                 const isPickedUp = delivery.status === 'picked_up'
                                 const statusForBadge = getDeliveryStatus(delivery)
                                 const notesShort = delivery.notes ? delivery.notes.slice(0, 60) : ''
@@ -558,10 +558,15 @@ export default function DispatchPage() {
                                     <tr
                                         key={delivery.id}
                                         onClick={() => clearHighlight(delivery.id)}
-                                        className={isHighlighted ? 'bg-amber-50/80 animate-pulse' : undefined}
+                                        className={isHighlighted ? 'bg-amber-100/80 animate-pulse ring-2 ring-amber-300/70 ring-inset shadow-sm' : undefined}
                                     >
-                                        <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${highlightClass} ${isHighlighted ? 'border-l-4 border-amber-300' : ''}`}>
+                                        <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${highlightClass} ${isHighlighted ? 'border-l-4 border-amber-400' : ''}`}>
                                             <div className="font-medium">{format(new Date(delivery.delivery_date), 'EEE dd MMM', { locale: fr })}</div>
+                                            {isHighlighted && (
+                                                <span className="mt-1 inline-flex items-center rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+                                                    Nouveau
+                                                </span>
+                                            )}
                                             <div className="text-gray-500">{delivery.time_window}</div>
                                         </td>
                                         <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${highlightClass}`}>

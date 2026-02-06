@@ -46,7 +46,7 @@ export default function RoleNav() {
 
   return (
     <div className="border-b bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3 text-sm">
+      <div className="flex w-full items-center justify-between px-6 py-3 text-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <BrandLogo width={120} height={36} className="h-7 w-auto" />

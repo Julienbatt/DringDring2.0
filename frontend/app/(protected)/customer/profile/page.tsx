@@ -235,7 +235,7 @@ export default function CustomerProfilePage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 md:px-8">
+            <div className="flex w-full flex-col gap-8 px-4 pb-16 pt-6 md:px-8">
                 <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
                     <div className="flex flex-col justify-between gap-6 p-6 md:p-10">
                         <div className="space-y-4">

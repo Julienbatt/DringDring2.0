@@ -90,7 +90,7 @@ export default function CustomerDeliveriesPage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-16 pt-6 md:px-8">
+            <div className="flex w-full flex-col gap-8 px-4 pb-16 pt-6 md:px-8">
                 <header className="space-y-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                         <div>
