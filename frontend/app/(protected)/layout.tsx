@@ -18,7 +18,7 @@ export default function ProtectedLayout({
         {/* Main Content Area */}
         <div className="min-w-0 pl-0 sm:pl-52 md:pl-60 lg:pl-64">
           <div className="min-h-screen overflow-y-auto px-4 py-6 sm:px-6 md:px-8">
-            <div className="mx-auto w-full max-w-6xl">
+            <div className="w-full max-w-none">
               <AdminContextGate>{children}</AdminContextGate>
             </div>
           </div>

@@ -30,9 +30,13 @@ export type ClientData = {
     // city_real_name? : Often redundant if city_id is used for tariff scope, but let's keep it if needed for free text? 
     // Specification implies strict territory. Let's use city_id selection from available cities in region.
     phone?: string | null
+    email?: string | null
     floor?: string | null
     door_code?: string | null
     is_cms: boolean
+    account_invite_status?: string | null
+    account_invite_error?: string | null
+    account_invited_at?: string | null
 }
 
 type ClientDialogProps = {
@@ -46,6 +50,46 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     const { session, adminContextRegion } = useAuth()
     const [loading, setLoading] = useState(false)
     const [cities, setCities] = useState<{ id: string; name: string }[]>([])
+    const [createAccount, setCreateAccount] = useState(false)
+
+    const normalizePhone = (value: string) => {
+        const cleaned = value.replace(/\s+/g, '')
+        if (!cleaned) return ''
+        if (cleaned.startsWith('+')) return cleaned
+        if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`
+        if (cleaned.startsWith('0')) return `+41${cleaned.slice(1)}`
+        if (cleaned.startsWith('41')) return `+${cleaned}`
+        return cleaned
+    }
+    const isValidSwissPhone = (value: string) => {
+        if (!value) return true
+        if (!value.startsWith('+41')) return false
+        const digits = value.replace(/\D/g, '')
+        return digits.length === 11
+    }
+    const formatSwissPhone = (value: string) => {
+        const digits = value.replace(/\D/g, '')
+        if (!digits) return ''
+        let rest = ''
+        if (digits.startsWith('41')) {
+            rest = digits.slice(2)
+        } else if (digits.startsWith('0')) {
+            rest = digits.slice(1)
+        } else {
+            rest = digits
+        }
+        rest = rest.slice(0, 9)
+        const seg1 = rest.slice(0, 2)
+        const seg2 = rest.slice(2, 5)
+        const seg3 = rest.slice(5, 7)
+        const seg4 = rest.slice(7, 9)
+        let formatted = '+41'
+        if (seg1) formatted += ` ${seg1}`
+        if (seg2) formatted += ` ${seg2}`
+        if (seg3) formatted += ` ${seg3}`
+        if (seg4) formatted += ` ${seg4}`
+        return formatted
+    }
 
     const [formData, setFormData] = useState<ClientData>({
         name: '',
@@ -55,6 +99,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
         lat: null,
         lng: null,
         phone: '',
+        email: '',
         floor: '',
         door_code: '',
         is_cms: false
@@ -85,6 +130,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                 ...clientToEdit,
                 address: sanitizeAddress(clientToEdit.address || ''),
                 phone: clientToEdit.phone || '',
+                email: clientToEdit.email || '',
                 floor: clientToEdit.floor || '',
                 door_code: clientToEdit.door_code || '',
                 // Ensure postal_code is string
@@ -92,6 +138,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                 lat: clientToEdit.lat ?? null,
                 lng: clientToEdit.lng ?? null,
             })
+            setCreateAccount(false)
         } else {
             setFormData({
                 name: '',
@@ -101,10 +148,12 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                 lat: null,
                 lng: null,
                 phone: '',
+                email: '',
                 floor: '',
                 door_code: '',
                 is_cms: false
             })
+            setCreateAccount(false)
         }
     }, [clientToEdit, open])
 
@@ -129,22 +178,32 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             toast.error("La commune partenaire est obligatoire")
             return
         }
+        if (!clientToEdit?.id && createAccount && !(formData.email || '').trim()) {
+            toast.error("Renseignez un email pour creer un compte client")
+            return
+        }
 
         setLoading(true)
         try {
+            if (formData.phone && !isValidSwissPhone(normalizePhone(formData.phone))) {
+                toast.error("Numero invalide. Format attendu: +41...")
+                setLoading(false)
+                return
+            }
             const payload = {
                 ...formData,
                 // Clean empty strings to null for backend if preferred, or keep as string. 
-                phone: formData.phone || null,
+                phone: formData.phone ? normalizePhone(formData.phone) : null,
+                email: (formData.email || '').trim() || null,
                 floor: formData.floor || null,
-                door_code: formData.door_code || null
+                door_code: formData.door_code || null,
             }
 
             if (clientToEdit?.id) {
                 await apiPut(`/clients/${clientToEdit.id}`, payload, session.access_token)
                 toast.success("Client mis à jour")
             } else {
-                await apiPost('/clients', payload, session.access_token)
+                await apiPost('/clients', { ...payload, create_account: createAccount }, session.access_token)
                 toast.success("Client créé")
             }
             onSuccess()
@@ -158,6 +217,16 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     }
 
     const isEditing = !!clientToEdit?.id
+    const inviteStatus = clientToEdit?.account_invite_status || null
+    const inviteError = clientToEdit?.account_invite_error || null
+
+    const inviteStatusLabel = () => {
+        if (!inviteStatus) return 'Non renseigné'
+        if (inviteStatus === 'invited') return 'Compte invité'
+        if (inviteStatus === 'failed') return 'Invite échouée'
+        if (inviteStatus === 'not_requested') return 'Pas de compte'
+        return inviteStatus
+    }
 
     const handleDelete = async () => {
         if (!session?.access_token || !clientToEdit?.id) return
@@ -250,7 +319,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded-md border border-gray-100">
+                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-md border border-gray-100">
                         <div className="space-y-2">
                             <Label htmlFor="floor">Étage</Label>
                             <Input
@@ -269,17 +338,67 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                 placeholder="1234A"
                             />
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="phone">Téléphone</Label>
                             <Input
                                 id="phone"
                                 type="tel"
                                 value={formData.phone || ''}
-                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                placeholder="079..."
+                                onChange={e => setFormData({ ...formData, phone: formatSwissPhone(e.target.value) })}
+                                placeholder="+4179..."
+                                onBlur={(e) => {
+                                    const formatted = normalizePhone(e.target.value)
+                                    setFormData((prev) => ({ ...prev, phone: formatted }))
+                                }}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email (optionnel)</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={formData.email || ''}
+                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                placeholder="prenom.nom@email.ch"
                             />
                         </div>
                     </div>
+
+                    {!isEditing && (
+                        <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                            <div className="flex items-start space-x-2">
+                                <Checkbox
+                                    id="create-account"
+                                    checked={createAccount}
+                                    onCheckedChange={(c) => setCreateAccount(c as boolean)}
+                                    disabled={!formData.email}
+                                />
+                                <Label htmlFor="create-account" className="font-medium">
+                                    Creer un compte client (optionnel)
+                                </Label>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                                Un compte est cree uniquement si un email est renseigne. Sinon, le client reste joignable
+                                par telephone ou sur le terrain.
+                            </p>
+                        </div>
+                    )}
+
+                    {isEditing && (
+                        <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
+                            <div className="text-sm font-medium text-gray-700">
+                                Compte client: {inviteStatusLabel()}
+                            </div>
+                            {inviteStatus === 'failed' && inviteError && (
+                                <p className="mt-1 text-xs text-red-600">
+                                    {inviteError}
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     <div className="flex items-center space-x-2 pt-2">
                         <Checkbox

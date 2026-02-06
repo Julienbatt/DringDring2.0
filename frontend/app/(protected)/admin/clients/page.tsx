@@ -28,9 +28,13 @@ type Client = {
     city_real_name?: string
     city_name?: string
     phone?: string
+    email?: string
     floor?: string
     door_code?: string
     is_cms: boolean
+    account_invite_status?: string | null
+    account_invite_error?: string | null
+    account_invited_at?: string | null
 }
 
 export default function ClientsPage() {
@@ -38,6 +42,8 @@ export default function ClientsPage() {
     const [clients, setClients] = useState<Client[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const pageSize = 100
 
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedClient, setSelectedClient] = useState<ClientData | null>(null)
@@ -79,6 +85,16 @@ export default function ClientsPage() {
         (client.city_real_name || client.city_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.postal_code.includes(searchTerm)
     )
+    const totalFiltered = filteredClients.length
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize))
+    const safePage = Math.min(currentPage, totalPages)
+    const pageStart = (safePage - 1) * pageSize
+    const pageEnd = pageStart + pageSize
+    const pagedClients = filteredClients.slice(pageStart, pageEnd)
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm, clients.length])
 
     if (loading) return <LoadingSkeleton />
 
@@ -123,13 +139,13 @@ export default function ClientsPage() {
             </div>
 
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden md:hidden">
-                {filteredClients.length === 0 ? (
+                {pagedClients.length === 0 ? (
                     <div className="h-32 flex items-center justify-center text-gray-500">
                         {searchTerm ? 'Aucun client ne correspond.' : 'Aucun client trouve.'}
                     </div>
                 ) : (
                     <div className="divide-y">
-                        {filteredClients.map((client) => (
+                        {pagedClients.map((client) => (
                             <button
                                 key={client.id}
                                 className="w-full text-left p-4 hover:bg-gray-50/50 transition-colors"
@@ -188,8 +204,8 @@ export default function ClientsPage() {
                 )}
             </div>
 
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden hidden md:block">
-                <Table>
+            <div className="bg-white rounded-lg border shadow-sm overflow-x-auto hidden md:block">
+                <Table className="min-w-[900px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
                             <TableHead className="w-[300px]">Identite et contact</TableHead>
@@ -200,14 +216,14 @@ export default function ClientsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredClients.length === 0 ? (
+                        {pagedClients.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-32 text-center text-gray-500">
                                     {searchTerm ? 'Aucun client ne correspond.' : 'Aucun client trouve.'}
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            filteredClients.map((client) => (
+                            pagedClients.map((client) => (
                                 <TableRow
                                     key={client.id}
                                     className="hover:bg-gray-50/50 transition-colors cursor-pointer"
@@ -277,6 +293,37 @@ export default function ClientsPage() {
                         )}
                     </TableBody>
                 </Table>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-gray-500">
+                    {totalFiltered === 0
+                        ? '0 client'
+                        : `Affichage ${pageStart + 1}-${Math.min(pageEnd, totalFiltered)} sur ${totalFiltered}`}
+                </div>
+                {totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={safePage === 1}
+                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        >
+                            Precedent
+                        </Button>
+                        <span className="text-sm text-gray-500">
+                            Page {safePage} / {totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={safePage === totalPages}
+                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        >
+                            Suivant
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <ClientDialog

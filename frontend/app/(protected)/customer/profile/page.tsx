@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { apiGet, apiPut } from '@/lib/api'
+import { apiGet, apiPost, apiPut } from '@/lib/api'
 import { useMe } from '../../hooks/useMe'
 import { useAuth } from '../../providers/AuthProvider'
 import { toast } from 'sonner'
@@ -22,6 +22,7 @@ const emptyClient = {
     floor: '',
     door_code: '',
     phone: '',
+    email: '',
     active: true,
 }
 
@@ -34,8 +35,49 @@ export default function CustomerProfilePage() {
     const [clientDraft, setClientDraft] = useState<ClientProfile>(emptyClient)
     const [clientLoading, setClientLoading] = useState(false)
     const [clientSaving, setClientSaving] = useState(false)
+    const [creatingClient, setCreatingClient] = useState(false)
+    const [createDraft, setCreateDraft] = useState<ClientProfile>(emptyClient)
     const [newPassword, setNewPassword] = useState('')
     const [updating, setUpdating] = useState(false)
+
+    const normalizePhone = (value: string) => {
+        const cleaned = value.replace(/\s+/g, '')
+        if (!cleaned) return ''
+        if (cleaned.startsWith('+')) return cleaned
+        if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`
+        if (cleaned.startsWith('0')) return `+41${cleaned.slice(1)}`
+        if (cleaned.startsWith('41')) return `+${cleaned}`
+        return cleaned
+    }
+    const isValidSwissPhone = (value: string) => {
+        if (!value) return true
+        if (!value.startsWith('+41')) return false
+        const digits = value.replace(/\D/g, '')
+        return digits.length === 11
+    }
+    const formatSwissPhone = (value: string) => {
+        const digits = value.replace(/\D/g, '')
+        if (!digits) return ''
+        let rest = ''
+        if (digits.startsWith('41')) {
+            rest = digits.slice(2)
+        } else if (digits.startsWith('0')) {
+            rest = digits.slice(1)
+        } else {
+            rest = digits
+        }
+        rest = rest.slice(0, 9)
+        const seg1 = rest.slice(0, 2)
+        const seg2 = rest.slice(2, 5)
+        const seg3 = rest.slice(5, 7)
+        const seg4 = rest.slice(7, 9)
+        let formatted = '+41'
+        if (seg1) formatted += ` ${seg1}`
+        if (seg2) formatted += ` ${seg2}`
+        if (seg3) formatted += ` ${seg3}`
+        if (seg4) formatted += ` ${seg4}`
+        return formatted
+    }
 
     useEffect(() => {
         const loadClient = async () => {
@@ -89,6 +131,10 @@ export default function CustomerProfilePage() {
         e.preventDefault()
         if (!session?.access_token || !client) return
 
+        if (clientDraft.phone && !isValidSwissPhone(normalizePhone(clientDraft.phone))) {
+            toast.error('Numero invalide. Format attendu: +41...')
+            return
+        }
         setClientSaving(true)
         try {
             const payload = {
@@ -97,9 +143,10 @@ export default function CustomerProfilePage() {
                 postal_code: clientDraft.postal_code,
                 lat: clientDraft.lat ?? null,
                 lng: clientDraft.lng ?? null,
-                phone: clientDraft.phone,
+                phone: clientDraft.phone ? normalizePhone(clientDraft.phone) : null,
                 floor: clientDraft.floor,
                 door_code: clientDraft.door_code,
+                email: clientDraft.email,
             }
             const updated = await apiPut<ClientProfile>('/clients/me', payload, session.access_token)
             setClient(updated)
@@ -121,6 +168,55 @@ export default function CustomerProfilePage() {
             lat: address.lat ?? prev.lat ?? null,
             lng: address.lng ?? prev.lng ?? null,
         }))
+    }
+
+    const handleCreateAddressSelect = (address: { street: string; number: string; zip: string; city: string; lat?: number; lng?: number }) => {
+        const formatted = `${address.street} ${address.number}`.trim()
+        setCreateDraft((prev) => ({
+            ...prev,
+            address: formatted,
+            postal_code: address.zip,
+            city_name: address.city,
+            lat: address.lat ?? prev.lat ?? null,
+            lng: address.lng ?? prev.lng ?? null,
+        }))
+    }
+
+    const handleClientCreate = async (e: FormEvent) => {
+        e.preventDefault()
+        if (!session?.access_token) return
+        if (!createDraft.name || !createDraft.postal_code || !createDraft.city_name) {
+            toast.error('Nom, NPA et ville sont obligatoires')
+            return
+        }
+        if (createDraft.phone && !isValidSwissPhone(normalizePhone(createDraft.phone))) {
+            toast.error('Numero invalide. Format attendu: +41...')
+            return
+        }
+        setCreatingClient(true)
+        try {
+            const payload = {
+                name: createDraft.name,
+                address: createDraft.address,
+                postal_code: createDraft.postal_code,
+                city_name: createDraft.city_name,
+                lat: createDraft.lat ?? null,
+                lng: createDraft.lng ?? null,
+                phone: createDraft.phone ? normalizePhone(createDraft.phone) : null,
+                floor: createDraft.floor,
+                door_code: createDraft.door_code,
+                email: createDraft.email || null,
+            }
+            const created = await apiPost<ClientProfile>('/clients/me', payload, session.access_token)
+            setClient(created)
+            setClientDraft(created)
+            setCreateDraft(created)
+            toast.success('Fiche client créée')
+        } catch (error: any) {
+            toast.error(`Erreur: ${error.message}`)
+        } finally {
+            setCreatingClient(false)
+        }
     }
 
     const handleLogout = async () => {
@@ -164,9 +260,104 @@ export default function CustomerProfilePage() {
                     {clientLoading ? (
                         <div className="mt-4 text-sm text-slate-500">Chargement des informations client...</div>
                     ) : !client ? (
-                        <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                            Aucune fiche client n'est associee a ce compte.
-                        </div>
+                        <form onSubmit={handleClientCreate} className="mt-4 grid gap-4 md:grid-cols-2">
+                            <div className="md:col-span-2 text-sm text-slate-500">
+                                Aucune fiche client n&apos;est associee a ce compte. Creez-la pour acceder a vos livraisons.
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Nom</label>
+                                <input
+                                    value={createDraft.name}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, name: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email (optionnel)</label>
+                                <input
+                                    value={createDraft.email}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, email: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Recherche adresse (Suisse)</label>
+                                <div className="mt-2">
+                                    <AddressAutocomplete onSelect={handleCreateAddressSelect} />
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Adresse</label>
+                                <input
+                                    value={createDraft.address}
+                                    onChange={(e) =>
+                                        setCreateDraft({
+                                            ...createDraft,
+                                            address: e.target.value,
+                                            lat: null,
+                                            lng: null,
+                                        })
+                                    }
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Code postal</label>
+                                <input
+                                    value={createDraft.postal_code}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, postal_code: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Ville</label>
+                                <input
+                                    value={createDraft.city_name}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, city_name: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Telephone</label>
+                                <input
+                                    value={createDraft.phone}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, phone: formatSwissPhone(e.target.value) })}
+                                    onBlur={(event) =>
+                                        setCreateDraft((prev) => ({
+                                            ...prev,
+                                            phone: normalizePhone(event.target.value),
+                                        }))
+                                    }
+                                    placeholder="+4179..."
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Etage</label>
+                                <input
+                                    value={createDraft.floor}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, floor: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Code porte</label>
+                                <input
+                                    value={createDraft.door_code}
+                                    onChange={(e) => setCreateDraft({ ...createDraft, door_code: e.target.value })}
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div className="md:col-span-2 flex justify-end pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={creatingClient}
+                                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                    {creatingClient ? 'Creation...' : 'Creer ma fiche client'}
+                                </button>
+                            </div>
+                        </form>
                     ) : (
                         <form onSubmit={handleClientUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
@@ -218,8 +409,23 @@ export default function CustomerProfilePage() {
                                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Telephone</label>
                                 <input
                                     value={clientDraft.phone}
-                                    onChange={(e) => setClientDraft({ ...clientDraft, phone: e.target.value })}
-                                    placeholder="Non renseigne"
+                                    onChange={(e) => setClientDraft({ ...clientDraft, phone: formatSwissPhone(e.target.value) })}
+                                    onBlur={(event) =>
+                                        setClientDraft((prev) => ({
+                                            ...prev,
+                                            phone: normalizePhone(event.target.value),
+                                        }))
+                                    }
+                                    placeholder="+4179..."
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email</label>
+                                <input
+                                    value={clientDraft.email}
+                                    onChange={(e) => setClientDraft({ ...clientDraft, email: e.target.value })}
+                                    placeholder="optionnel"
                                     className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
                                 />
                             </div>

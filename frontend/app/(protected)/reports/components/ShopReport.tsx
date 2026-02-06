@@ -179,10 +179,50 @@ export default function ShopReport() {
   const [newClient, setNewClient] = useState({
     name: '', address: '', postal_code: '', city_id: '', floor: '', door_code: '',
     phone: '',
+    email: '',
+    create_account: false,
     is_cms: false
   })
   const [newClientSubmitting, setNewClientSubmitting] = useState(false)
   const [cities, setCities] = useState<{ id: string; name: string }[]>([])
+  const normalizePhone = (value: string) => {
+    const cleaned = value.replace(/\s+/g, '')
+    if (!cleaned) return ''
+    if (cleaned.startsWith('+')) return cleaned
+    if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`
+    if (cleaned.startsWith('0')) return `+41${cleaned.slice(1)}`
+    if (cleaned.startsWith('41')) return `+${cleaned}`
+    return cleaned
+  }
+  const isValidSwissPhone = (value: string) => {
+    if (!value) return true
+    if (!value.startsWith('+41')) return false
+    const digits = value.replace(/\D/g, '')
+    return digits.length === 11
+  }
+  const formatSwissPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '')
+    if (!digits) return ''
+    let rest = ''
+    if (digits.startsWith('41')) {
+      rest = digits.slice(2)
+    } else if (digits.startsWith('0')) {
+      rest = digits.slice(1)
+    } else {
+      rest = digits
+    }
+    rest = rest.slice(0, 9)
+    const seg1 = rest.slice(0, 2)
+    const seg2 = rest.slice(2, 5)
+    const seg3 = rest.slice(5, 7)
+    const seg4 = rest.slice(7, 9)
+    let formatted = '+41'
+    if (seg1) formatted += ` ${seg1}`
+    if (seg2) formatted += ` ${seg2}`
+    if (seg3) formatted += ` ${seg3}`
+    if (seg4) formatted += ` ${seg4}`
+    return formatted
+  }
 
   useEffect(() => {
     const monthParam = searchParams.get('month')
@@ -251,6 +291,14 @@ export default function ShopReport() {
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (newClient.create_account && !newClient.email.trim()) {
+      alert("Renseignez un email pour creer un compte client")
+      return
+    }
+    if (newClient.phone && !isValidSwissPhone(normalizePhone(newClient.phone))) {
+      alert("Numero invalide. Format attendu: +41...")
+      return
+    }
     setNewClientSubmitting(true)
     try {
       const supabase = createClient()
@@ -259,6 +307,8 @@ export default function ShopReport() {
 
       const res = await apiPost<{ id: string }>('/clients/shop', {
         ...newClient,
+        email: newClient.email.trim() || null,
+        phone: newClient.phone ? normalizePhone(newClient.phone) : null,
         active: true
       }, data.session.access_token)
 
@@ -268,7 +318,16 @@ export default function ShopReport() {
       setFormState(prev => ({ ...prev, client_id: res.id }))
       setIsCreatingClient(false)
       setNewClient({
-        name: '', address: '', postal_code: '', city_id: '', floor: '', door_code: '', phone: '', is_cms: false
+        name: '',
+        address: '',
+        postal_code: '',
+        city_id: '',
+        floor: '',
+        door_code: '',
+        phone: '',
+        email: '',
+        create_account: false,
+        is_cms: false
       })
     } catch (err) {
       alert("Erreur creation client")
@@ -791,12 +850,59 @@ export default function ShopReport() {
                       <input
                         className="w-full border rounded px-2 py-1 mt-1"
                         value={newClient.phone}
-                        onChange={e => setNewClient({ ...newClient, phone: e.target.value })}
-                        placeholder="079..."
+                        onChange={e => setNewClient({ ...newClient, phone: formatSwissPhone(e.target.value) })}
+                        placeholder="+4179..."
+                        onBlur={(event) =>
+                          setNewClient((prev) => ({
+                            ...prev,
+                            phone: normalizePhone(event.target.value),
+                          }))
+                        }
                       />
                     </label>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-sm">
+                      Email (optionnel)
+                      <input
+                        className="w-full border rounded px-2 py-1 mt-1"
+                        type="email"
+                        value={newClient.email}
+                        onChange={e => setNewClient({ ...newClient, email: e.target.value })}
+                        placeholder="prenom.nom@email.ch"
+                      />
+                    </label>
+                    <label className="block text-sm">
+                      Compte client
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          checked={newClient.create_account}
+                          onChange={e =>
+                            setNewClient({ ...newClient, create_account: e.target.checked })
+                          }
+                          disabled={!newClient.email}
+                        />
+                        <span className="text-xs text-gray-500">
+                          Créer un compte si email renseigné
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <label className="block text-sm">
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="checkbox"
+                        checked={newClient.is_cms}
+                        onChange={e => setNewClient({ ...newClient, is_cms: e.target.checked })}
+                      />
+                      <span className="text-xs text-gray-600">
+                        Bénéficiaire CMS (tarif réduit)
+                      </span>
+                    </div>
+                  </label>
 
                 </div>
 
@@ -863,7 +969,7 @@ export default function ShopReport() {
             />
           </label>
           <label className="text-sm text-gray-600">
-            Heure precise
+            Heure de livraison
             <input
               className="mt-1 w-full rounded border px-2 py-1"
               type="time"

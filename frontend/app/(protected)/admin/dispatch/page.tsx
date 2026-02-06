@@ -801,7 +801,7 @@ export default function DispatchPage() {
                                 />
                             </label>
                             <label className="block text-sm">
-                                Heure precise
+                                Heure de livraison
                                 <input
                                     type="time"
                                     className="mt-1 w-full rounded border px-2 py-1"

@@ -2,13 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
 import uuid
+import logging
+
+import httpx
 
 from app.core.guards import require_shop_user, require_admin_user, require_customer_user
-from app.core.security import get_current_user_claims
+from app.core.config import settings
+from app.core.security import get_current_user_claims, get_current_user
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
 
 router = APIRouter(prefix="/clients", tags=["clients"])
+logger = logging.getLogger(__name__)
 
 # --- Schemas ---
 
@@ -23,9 +28,16 @@ class ClientBase(BaseModel):
     floor: Optional[str] = None
     door_code: Optional[str] = None
     phone: Optional[str] = None
+    email: Optional[str] = None
     active: bool = True
+    account_invite_status: Optional[str] = None
+    account_invite_error: Optional[str] = None
+    account_invited_at: Optional[str] = None
 
 class ClientCreate(ClientBase):
+    create_account: bool = False
+
+class ClientUpdate(ClientBase):
     pass
 
 class ClientSelfUpdate(BaseModel):
@@ -35,6 +47,19 @@ class ClientSelfUpdate(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
     phone: Optional[str] = None
+    email: Optional[str] = None
+    floor: Optional[str] = None
+    door_code: Optional[str] = None
+
+class ClientSelfCreate(BaseModel):
+    name: str
+    address: str
+    postal_code: str
+    city_name: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
     floor: Optional[str] = None
     door_code: Optional[str] = None
 
@@ -78,12 +103,93 @@ def validate_city_in_region(cur, city_id: str, admin_region_id: str) -> str:
     
     return city_name
 
+
+def resolve_city_for_client(cur, postal_code: str, city_name: str):
+    """
+    Resolve city using postal_code first, then city name.
+    If multiple matches exist (city name), return the first one (alphabetical).
+    """
+    if postal_code:
+        cur.execute(
+            """
+            SELECT c.id, c.name, c.admin_region_id
+            FROM city_postal_code pc
+            JOIN city c ON c.id = pc.city_id
+            WHERE pc.postal_code = %s
+            LIMIT 1
+            """,
+            (postal_code,),
+        )
+        row = cur.fetchone()
+        if row:
+            return row
+    if city_name:
+        cur.execute(
+            """
+            SELECT c.id, c.name, c.admin_region_id
+            FROM city c
+            WHERE lower(c.name) = lower(%s)
+            ORDER BY c.name
+            LIMIT 1
+            """,
+            (city_name,),
+        )
+        row = cur.fetchone()
+        if row:
+            return row
+    return None
+
+
+def normalize_phone(phone: Optional[str]) -> Optional[str]:
+    if not phone:
+        return None
+    cleaned = "".join(ch for ch in phone if ch.isdigit() or ch == "+")
+    if cleaned.startswith("00"):
+        cleaned = f"+{cleaned[2:]}"
+    if cleaned.startswith("0"):
+        cleaned = f"+41{cleaned[1:]}"
+    if cleaned.startswith("41"):
+        cleaned = f"+{cleaned}"
+    return cleaned
+
+
+def is_valid_phone(phone: Optional[str]) -> bool:
+    if not phone:
+        return True
+    if not phone.startswith("+41"):
+        return False
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    return len(digits) == 11
+
+
+def invite_customer_account(user_email: str, client_id: str):
+    if not user_email or not settings.SUPABASE_SERVICE_KEY or not settings.SUPABASE_URL:
+        return False, "Supabase service key missing"
+
+    url = f"{settings.SUPABASE_URL}/auth/v1/invite"
+    headers = {
+        "apikey": settings.SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "email": user_email,
+        "data": {
+            "role": "customer",
+            "client_id": client_id,
+        },
+    }
+    response = httpx.post(url, headers=headers, json=payload, timeout=10)
+    if response.status_code < 400:
+        return True, None
+    return False, response.text
+
 # --- Routes ---
 
 @router.put("/{client_id}", response_model=dict)
 def update_client(
     client_id: str,
-    client: ClientCreate,
+    client: ClientUpdate,
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
@@ -121,11 +227,15 @@ def update_client(
                     raise HTTPException(status_code=400, detail="Invalid city_id")
                 city_name = city_row[0]
 
+            normalized_phone = normalize_phone(client.phone)
+            if not is_valid_phone(normalized_phone):
+                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+
             cur.execute(
                 """
                 UPDATE client
                 SET name = %s, address = %s, postal_code = %s, city_id = %s, city_name = %s,
-                    active = %s, is_cms = %s, floor = %s, door_code = %s, phone = %s
+                    active = %s, is_cms = %s, floor = %s, door_code = %s, phone = %s, email = %s
                     , lat = %s, lng = %s
                 WHERE id = %s
                 """,
@@ -139,7 +249,8 @@ def update_client(
                     client.is_cms,
                     client.floor,
                     client.door_code,
-                    client.phone,
+                    normalized_phone,
+                    client.email,
                     client.lat,
                     client.lng,
                     client_id,
@@ -214,7 +325,8 @@ def list_shop_clients(
             # Select all clients in that Admin Region
             query = """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms, 
-                       c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
+                       c.floor, c.door_code, c.phone, c.email, c.active, c.lat, c.lng,
+                       c.account_invite_status, c.account_invite_error, c.account_invited_at
                 FROM client c
                 JOIN city cc ON c.city_id = cc.id
                 WHERE cc.admin_region_id = %s
@@ -256,7 +368,8 @@ def list_admin_clients(
             if target_region_id:
                 query = """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
-                       c.floor, c.door_code, c.phone, c.active, c.lat, c.lng,
+                       c.floor, c.door_code, c.phone, c.email, c.active, c.lat, c.lng,
+                       c.account_invite_status, c.account_invite_error, c.account_invited_at,
                        city.name as city_real_name
                 FROM client c
                 JOIN city ON c.city_id = city.id
@@ -268,7 +381,8 @@ def list_admin_clients(
             else:
                 query = """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_id::text as city_id, c.city_name, c.is_cms,
-                       c.floor, c.door_code, c.phone, c.active, c.lat, c.lng,
+                       c.floor, c.door_code, c.phone, c.email, c.active, c.lat, c.lng,
+                       c.account_invite_status, c.account_invite_error, c.account_invited_at,
                        city.name as city_real_name
                 FROM client c
                 JOIN city ON c.city_id = city.id
@@ -301,7 +415,7 @@ def get_my_client(
             cur.execute(
                 """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms,
-                       c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
+                       c.floor, c.door_code, c.phone, c.email, c.active, c.lat, c.lng
                 FROM client c
                 WHERE c.id = %s
                 """,
@@ -313,6 +427,77 @@ def get_my_client(
 
             columns = [desc[0] for desc in cur.description]
             return dict(zip(columns, row))
+
+
+@router.post("/me", response_model=ClientResponse)
+def create_my_client(
+    payload: ClientSelfCreate,
+    user: MeResponse = Depends(get_current_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    if user.role != "customer":
+        raise HTTPException(status_code=403, detail="Customer access required")
+    if user.client_id:
+        raise HTTPException(status_code=400, detail="Client already linked")
+
+    with get_db_connection(jwt_claims) as conn:
+        with conn.cursor() as cur:
+            resolved = resolve_city_for_client(cur, payload.postal_code, payload.city_name)
+            if not resolved:
+                raise HTTPException(status_code=400, detail="Commune introuvable pour ce NPA/Ville")
+            city_id, city_name, admin_region_id = resolved
+
+            normalized_phone = normalize_phone(payload.phone)
+            if not is_valid_phone(normalized_phone):
+                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+
+            client_id = str(uuid.uuid4())
+            cur.execute(
+                """
+                INSERT INTO client (id, name, address, postal_code, city_name, city_id, active, is_cms, floor, door_code, phone, email, lat, lng)
+                VALUES (%s, %s, %s, %s, %s, %s, true, false, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    client_id,
+                    payload.name,
+                    payload.address,
+                    payload.postal_code,
+                    city_name,
+                    city_id,
+                    payload.floor,
+                    payload.door_code,
+                    normalized_phone,
+                    payload.email,
+                    payload.lat,
+                    payload.lng,
+                ),
+            )
+            cur.execute(
+                """
+                UPDATE public.profiles
+                SET client_id = %s, city_id = %s, admin_region_id = %s
+                WHERE id = %s
+                """,
+                (client_id, city_id, admin_region_id, user.user_id),
+            )
+            conn.commit()
+
+            return {
+                "id": client_id,
+                "name": payload.name,
+                "address": payload.address,
+                "postal_code": payload.postal_code,
+                "city_id": str(city_id),
+                "city_name": city_name,
+                "is_cms": False,
+                "floor": payload.floor,
+                "door_code": payload.door_code,
+                "phone": normalized_phone,
+                "email": payload.email,
+                "active": True,
+                "lat": payload.lat,
+                "lng": payload.lng,
+            }
 
 @router.get("/me/support")
 def get_my_client_support(
@@ -360,6 +545,10 @@ def update_my_client(
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
+            normalized_phone = normalize_phone(payload.phone)
+            if not is_valid_phone(normalized_phone):
+                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+
             cur.execute(
                 """
                 UPDATE client
@@ -370,25 +559,27 @@ def update_my_client(
                     floor = %s,
                     door_code = %s,
                     lat = %s,
-                    lng = %s
+                    lng = %s,
+                    email = %s
                 WHERE id = %s
                 """,
                 (
                     payload.name,
                     payload.address,
                     payload.postal_code,
-                    payload.phone,
+                    normalized_phone,
                     payload.floor,
                     payload.door_code,
                     payload.lat,
                     payload.lng,
+                    payload.email,
                     client_id,
                 ),
             )
             cur.execute(
                 """
                 SELECT c.id::text as id, c.name, COALESCE(c.address, '') as address, c.postal_code, c.city_name, c.city_id::text as city_id, c.is_cms,
-                       c.floor, c.door_code, c.phone, c.active, c.lat, c.lng
+                       c.floor, c.door_code, c.phone, c.email, c.active, c.lat, c.lng
                 FROM client c
                 WHERE c.id = %s
                 """,
@@ -423,11 +614,15 @@ def create_client(
                     raise HTTPException(status_code=400, detail="Invalid city_id")
                 city_name = city_row[0]
 
+            normalized_phone = normalize_phone(client.phone)
+            if not is_valid_phone(normalized_phone):
+                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+
             client_id = str(uuid.uuid4())
             cur.execute(
                 """
-                INSERT INTO client (id, name, address, postal_code, city_name, city_id, active, is_cms, floor, door_code, phone, lat, lng)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO client (id, name, address, postal_code, city_name, city_id, active, is_cms, floor, door_code, phone, email, lat, lng, account_invite_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     client_id,
@@ -440,14 +635,60 @@ def create_client(
                     client.is_cms,
                     client.floor,
                     client.door_code,
-                    client.phone,
+                    normalized_phone,
+                    client.email,
                     client.lat,
                     client.lng,
+                    "not_requested",
                 ),
             )
             conn.commit()
 
-    return {"id": client_id, "message": "Client created successfully"}
+    user_created = False
+    user_error = None
+    user_email = client.email.strip() if client.email else None
+    if client.create_account and user_email:
+        try:
+            user_created, user_error = invite_customer_account(user_email, client_id)
+            if not user_created and user_error:
+                logger.warning("Client invite failed: %s", user_error)
+        except Exception as exc:  # pragma: no cover - external call
+            user_error = str(exc)
+            logger.warning("Client invite error: %s", exc)
+
+    if client.create_account:
+        with get_db_connection(jwt_claims) as conn:
+            with conn.cursor() as cur:
+                if user_created:
+                    cur.execute(
+                        """
+                        UPDATE client
+                        SET account_invite_status = 'invited',
+                            account_invite_error = NULL,
+                            account_invited_at = now()
+                        WHERE id = %s
+                        """,
+                        (client_id,),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        UPDATE client
+                        SET account_invite_status = 'failed',
+                            account_invite_error = %s
+                        WHERE id = %s
+                        """,
+                        (user_error,),
+                    )
+                conn.commit()
+
+    return {
+        "id": client_id,
+        "message": "Client created successfully",
+        "user_created": user_created,
+        "user_email": user_email,
+        "user_error": user_error,
+    }
 
 @router.post("/shop", response_model=dict)
 def create_shop_client(
@@ -468,15 +709,63 @@ def create_shop_client(
             admin_region_id = get_shop_admin_region(cur, shop_id)
             city_name = validate_city_in_region(cur, client.city_id, admin_region_id)
 
+            normalized_phone = normalize_phone(client.phone)
+            if not is_valid_phone(normalized_phone):
+                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+
             client_id = str(uuid.uuid4())
             cur.execute(
                 """
-                INSERT INTO client (id, name, address, postal_code, city_name, city_id, active, is_cms, floor, door_code, phone, lat, lng)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO client (id, name, address, postal_code, city_name, city_id, active, is_cms, floor, door_code, phone, email, lat, lng, account_invite_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (client_id, client.name, client.address, client.postal_code, city_name, client.city_id, client.active, client.is_cms,
-                 client.floor, client.door_code, client.phone, client.lat, client.lng)
+                 client.floor, client.door_code, normalized_phone, client.email, client.lat, client.lng, "not_requested")
             )
             conn.commit()
 
-    return {"id": client_id, "message": "Client created successfully"}
+    user_created = False
+    user_error = None
+    user_email = client.email.strip() if client.email else None
+    if client.create_account and user_email:
+        try:
+            user_created, user_error = invite_customer_account(user_email, client_id)
+            if not user_created and user_error:
+                logger.warning("Client invite failed: %s", user_error)
+        except Exception as exc:  # pragma: no cover - external call
+            user_error = str(exc)
+            logger.warning("Client invite error: %s", exc)
+
+    if client.create_account:
+        with get_db_connection(jwt_claims) as conn:
+            with conn.cursor() as cur:
+                if user_created:
+                    cur.execute(
+                        """
+                        UPDATE client
+                        SET account_invite_status = 'invited',
+                            account_invite_error = NULL,
+                            account_invited_at = now()
+                        WHERE id = %s
+                        """,
+                        (client_id,),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        UPDATE client
+                        SET account_invite_status = 'failed',
+                            account_invite_error = %s
+                        WHERE id = %s
+                        """,
+                        (user_error,),
+                    )
+                conn.commit()
+
+    return {
+        "id": client_id,
+        "message": "Client created successfully",
+        "user_created": user_created,
+        "user_email": user_email,
+        "user_error": user_error,
+    }
