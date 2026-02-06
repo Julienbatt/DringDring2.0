@@ -130,6 +130,19 @@ def require_hq_or_admin_user_for_shop(
             )
         return identity
 
+    if identity.role == "hq":
+        if not identity.hq_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="HQ access required",
+            )
+        if str(identity.hq_id) != str(shop_hq_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="HQ access required",
+            )
+        return identity
+
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Admin region access required",
