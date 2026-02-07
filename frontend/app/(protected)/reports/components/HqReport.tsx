@@ -380,6 +380,26 @@ export default function HqReport() {
       : deliveriesChangePct >= 0
         ? 'text-emerald-600'
         : 'text-rose-600'
+  const hqSummaryText = [
+    `DringDring - Resume HQ (${formatMonth(summaryMonth)})`,
+    `Groupe: ${hqName}`,
+    `Subvention HQ: ${formatCHF(totalSubventionValue)}`,
+    `Volume traite: ${formatCHF(totalVolumeValue)}`,
+    `Livraisons: ${totalDeliveries}`,
+    `Subvention/livraison: ${formatCHF(averageSubventionPerDelivery)}`,
+    `Part CMS: ${cmsSharePct.toFixed(1)}% (${cmsDeliveries} livraisons)`,
+    `Clients servis: ${uniqueClients} | Commerces actifs: ${activeShops} | Communes couvertes: ${activeCities}`,
+    `Impact vert: ${co2SavedKg.toFixed(1)} kg CO2, ${distanceKm.toFixed(1)} km a velo`,
+  ].join('\n')
+
+  const handleCopySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(hqSummaryText)
+      toast.success('Resume copie')
+    } catch {
+      toast.error('Copie impossible')
+    }
+  }
 
   const handleExport = async () => {
     const params = new URLSearchParams()
@@ -544,6 +564,12 @@ export default function HqReport() {
                   className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
                 >
                   PDF groupe
+                </button>
+                <button
+                  onClick={handleCopySummary}
+                  className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700 shadow-sm hover:bg-emerald-100"
+                >
+                  Copier resume
                 </button>
               </div>
             </div>

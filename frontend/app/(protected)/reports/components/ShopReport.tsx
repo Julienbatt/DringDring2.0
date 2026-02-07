@@ -680,6 +680,23 @@ export default function ShopReport() {
       : kpiDeliveriesTrend >= 0
         ? 'text-emerald-600'
         : 'text-rose-600'
+  const shopSummaryText = [
+    `DringDring - Resume commerce (${selectedMonth})`,
+    `Livraisons: ${kpiTotalDeliveries}`,
+    `Clients actifs: ${kpiUniqueClients} (nouveaux: ${newClients})`,
+    `Part CMS: ${kpiCmsShare.toFixed(1)}%`,
+    `Panier moyen: ${formatCHF(kpiBasketAvg)}`,
+    `Evolution livraisons: ${trendLabel}`,
+  ].join('\n')
+
+  const handleCopySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(shopSummaryText)
+      toast.success('Resume copie')
+    } catch {
+      toast.error('Copie impossible')
+    }
+  }
 
   return (
     <div className="p-8 space-y-8">
@@ -769,6 +786,24 @@ export default function ShopReport() {
             </div>
             <div className="text-xs text-emerald-700/80">Valeur commande moyenne</div>
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Resume pret a partager</h2>
+            <p className="text-xs text-slate-600">
+              Copie rapide pour votre reporting interne ou communication HQ.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopySummary}
+            className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+          >
+            Copier
+          </button>
         </div>
       </section>
 

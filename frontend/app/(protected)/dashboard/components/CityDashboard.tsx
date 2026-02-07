@@ -36,6 +36,7 @@ type ShopRow = {
 
 export default function CityDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
+  const [isCopyingSummary, setIsCopyingSummary] = useState(false)
   const { data: stats, loading: statsLoading, error: statsError } = useCityStats(selectedMonth)
   const { data: ecoStats, loading: ecoLoading } = useEcoStats(selectedMonth)
   const { data: rawShopRows } = useCityBillingShops(selectedMonth)
@@ -68,6 +69,26 @@ export default function CityDashboard() {
     deliveriesChangePct === null || deliveriesChangePct === undefined
       ? 'n/a'
       : `${deliveriesChangePct > 0 ? '+' : ''}${deliveriesChangePct.toFixed(1)}%`
+  const citySummaryText = [
+    `DringDring - Resume ville (${formatMonth(selectedMonth)})`,
+    `Livraisons: ${totalDeliveries}`,
+    `Beneficiaires: ${uniqueClients}`,
+    `Commerces actifs: ${activeShops}`,
+    `Subvention communale: ${formatCHF(totalSubvention)}`,
+    `Part CMS: ${cmsSharePct.toFixed(1)}% (${cmsDeliveries} livraisons)`,
+    `Rythme: ${deliveriesPerDay.toFixed(1)} livraisons/jour actif (evol. ${trendLabel})`,
+    `Impact environnemental: ${co2Saved.toFixed(1)} kg CO2 evites, ${kmByBike.toFixed(1)} km a velo`,
+  ].join('\n')
+
+  const handleCopySummary = async () => {
+    try {
+      await navigator.clipboard.writeText(citySummaryText)
+      setIsCopyingSummary(true)
+      window.setTimeout(() => setIsCopyingSummary(false), 1500)
+    } catch {
+      setIsCopyingSummary(false)
+    }
+  }
 
   return (
     <div className="p-8 space-y-6">
@@ -156,6 +177,24 @@ export default function CityDashboard() {
             {statsLoading ? '...' : formatCHF(totalSubvention)}
           </div>
           <div className="text-xs text-slate-500">Budget engage</div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Resume pret a partager</h2>
+            <p className="text-xs text-slate-600">
+              Texte court pour email, dossier communal ou point de suivi.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopySummary}
+            className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+          >
+            {isCopyingSummary ? 'Copie' : 'Copier'}
+          </button>
         </div>
       </section>
 
@@ -248,4 +287,3 @@ export default function CityDashboard() {
     </div>
   )
 }
-
