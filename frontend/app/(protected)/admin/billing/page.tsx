@@ -96,6 +96,12 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${month}`
 }
 
+function formatMonth(value: string) {
+    const date = new Date(value.length === 7 ? `${value}-01` : value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
+}
+
 export default function BillingPage() {
     const { adminContextRegion, user } = useAuth()
     const searchParams = useSearchParams()
@@ -363,6 +369,9 @@ export default function BillingPage() {
 
     const filteredExternalAmount = filteredExternalDocuments.reduce((acc, row) => acc + (Number(row.amount_ttc) || 0), 0)
     const filteredExternalDeliveries = filteredExternalDocuments.reduce((acc, row) => acc + (row.deliveries || 0), 0)
+    const externalPayers = filteredExternalDocuments.length
+    const totalDocuments = documents.length
+    const hasAnyData = documents.length > 0 || details.length > 0
 
     const vatRateValue = vatRate ?? 0.081
     const totalBilledTtc = externalDocuments.reduce((sum, row) => sum + Number(row.amount_ttc || 0), 0)
@@ -393,6 +402,9 @@ export default function BillingPage() {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Facturation regionale</h1>
                     <p className="text-muted-foreground">Gestion des clotures mensuelles</p>
+                    <p className="text-xs text-emerald-700 mt-1">
+                        Periode analysee: {formatMonth(selectedMonth)}.
+                    </p>
                 </div>
 
                 <div className="flex w-full flex-col gap-3 xl:w-auto xl:items-end">
@@ -534,12 +546,24 @@ export default function BillingPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            {!loading && !hasAnyData ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
+                    <h2 className="text-sm font-semibold text-slate-900">
+                        Aucune donnee de facturation pour {formatMonth(selectedMonth)}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                        Lance un recalcul puis verifie qu&apos;il existe des livraisons consolidees sur la periode.
+                    </p>
+                </div>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <div className="text-sm font-medium text-muted-foreground">Total facture TTC (periode)</div>
                     <div className="text-2xl font-bold">
                         CHF {totalBilledTtc.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                     </div>
+                    <div className="text-xs text-muted-foreground mt-1">Factures externes</div>
                 </div>
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <div className="text-sm font-medium text-muted-foreground">
@@ -548,11 +572,19 @@ export default function BillingPage() {
                     <div className="text-2xl font-bold">
                         CHF {totalBilledVat.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                     </div>
+                    <div className="text-xs text-muted-foreground mt-1">Charge fiscale de la periode</div>
                 </div>
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <div className="text-sm font-medium text-muted-foreground">Total HT (periode)</div>
                     <div className="text-2xl font-bold">
                         CHF {totalBilledHt.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                    </div>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-6">
+                    <div className="text-sm font-medium text-emerald-800">Payeurs externes actifs</div>
+                    <div className="text-2xl font-bold text-slate-900">{externalPayers}</div>
+                    <div className="text-xs text-emerald-700 mt-1">
+                        {filteredExternalDeliveries} livraisons | {totalDocuments} documents
                     </div>
                 </div>
             </div>
@@ -619,7 +651,7 @@ export default function BillingPage() {
                                         CHF {Number(row.amount_ttc).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline">En cours</Badge>
+                                        <Badge variant="outline">{row.status || 'En cours'}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -683,7 +715,7 @@ export default function BillingPage() {
                                         CHF {Number(row.amount_ttc).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline">En cours</Badge>
+                                        <Badge variant="outline">{row.status || 'En cours'}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
