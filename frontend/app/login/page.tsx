@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Lock, LogIn, ArrowRight } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -19,6 +20,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+    const { t } = useLanguage()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -31,21 +33,21 @@ export default function LoginPage() {
             })
 
             if (error) {
-                toast.error('Identifiants incorrects. Veuillez reessayer.')
+                toast.error(t('login.badCreds'))
                 return
             }
 
             if (!data.session) {
-                toast.error('Erreur de session. Veuillez actualiser.')
+                toast.error(t('login.sessionError'))
                 return
             }
 
-            toast.success('Bon retour parmi nous !')
+            toast.success(t('login.welcomeBack'))
             router.refresh()
             router.push('/dashboard')
         } catch (err: unknown) {
             console.error('Login Error:', err)
-            toast.error('Une erreur systeme est survenue.')
+            toast.error(t('login.systemError'))
         } finally {
             setLoading(false)
         }
@@ -61,7 +63,7 @@ export default function LoginPage() {
                     <div className="flex justify-center">
                         <BrandLogo width={180} height={54} className="h-12 w-auto" priority />
                     </div>
-                    <p className="text-slate-500">Portail unifie d acces</p>
+                    <p className="text-slate-500">{t('login.portal')}</p>
                 </div>
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -75,31 +77,31 @@ export default function LoginPage() {
                         />
                     </div>
                     <div className="space-y-3 p-4 text-sm text-slate-600">
-                        <p className="text-base font-semibold text-slate-900">Vous achetez, nous livrons</p>
+                        <p className="text-base font-semibold text-slate-900">{t('login.posterTitle')}</p>
                         <ul className="list-disc space-y-1 pl-4">
-                            <li>Vous vous rendez chez un de nos commerces partenaires ou vous passez commande en ligne ou par telephone.</li>
-                            <li>Vous faites vos courses.</li>
-                            <li>Vous laissez vos courses a la caisse ou au service client.</li>
-                            <li>Vos courses vous seront livrees a velo directement chez vous depuis le commerce partenaire.</li>
+                            <li>{t('login.posterBullet1')}</li>
+                            <li>{t('login.posterBullet2')}</li>
+                            <li>{t('login.posterBullet3')}</li>
+                            <li>{t('login.posterBullet4')}</li>
                         </ul>
                     </div>
                 </div>
 
                 <Card className="border-0 shadow-xl bg-white/90 backdrop-blur">
                     <CardHeader>
-                        <CardTitle>Connexion</CardTitle>
+                        <CardTitle>{t('login.title')}</CardTitle>
                         <CardDescription>
-                            Accedez a votre espace client, commerce, commune ou admin.
+                            {t('login.desc')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">{t('login.email')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="nom@exemple.ch"
+                                    placeholder={t('login.emailPlaceholder')}
                                     className="bg-white"
                                     value={email} onChange={(e) => setEmail(e.target.value)}
                                     required
@@ -107,16 +109,16 @@ export default function LoginPage() {
                             </div>
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Mot de passe</Label>
+                                    <Label htmlFor="password">{t('login.password')}</Label>
                                     <Link
                                         href="#"
                                         className="text-xs text-emerald-700 hover:underline"
                                         onClick={(e) => {
                                             e.preventDefault()
-                                            toast.info('Contactez votre administrateur.')
+                                            toast.info(t('login.contactAdmin'))
                                         }}
                                     >
-                                        Oubli ?
+                                        {t('login.forgot')}
                                     </Link>
                                 </div>
                                 <Input
@@ -129,21 +131,21 @@ export default function LoginPage() {
                             </div>
                             <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
                                 <LogIn className="w-4 h-4 mr-2" />
-                                {loading ? 'Connexion...' : 'Se connecter'}
+                                {loading ? t('login.submitting') : t('login.submit')}
                             </Button>
                         </form>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4 bg-gray-50/50 p-6 border-t">
                         <div className="text-center text-sm text-gray-500">
-                            Nouveau client ?
+                            {t('login.newCustomer')}
                         </div>
                         <Link href="/register" className="w-full">
                             <Button variant="outline" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                                Creer un compte client <ArrowRight className="w-4 h-4 ml-2" />
+                                {t('login.createAccount')} <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                         </Link>
                         <p className="text-xs text-center text-gray-400 mt-2">
-                            Les partenaires (commerces, communes partenaires) doivent utiliser les identifiants fournis par l administration.
+                            {t('login.alreadyPartner')}
                         </p>
                     </CardFooter>
                 </Card>

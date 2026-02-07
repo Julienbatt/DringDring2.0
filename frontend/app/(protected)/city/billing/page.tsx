@@ -10,6 +10,8 @@ import { apiGet, API_BASE_URL } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { formatCurrencyCHF, formatDate, formatMonthYear } from '@/lib/i18n/format'
 
 type CitySummaryRow = {
   city_id: string
@@ -55,14 +57,9 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${month}`
 }
 
-function formatMonth(value: string) {
-  const date = new Date(value.length === 7 ? `${value}-01` : value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
-}
-
 export default function CityBillingPage() {
   const { user } = useAuth()
+  const { locale, t } = useLanguage()
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [summary, setSummary] = useState<CitySummaryRow | null>(null)
   const [shops, setShops] = useState<CityShopRow[]>([])
@@ -99,7 +96,7 @@ export default function CityBillingPage() {
       setShops(shopRows)
     } catch (error) {
       console.error('Failed to load city billing', error)
-      toast.error('Erreur lors du chargement des donnees')
+      toast.error(t('billing.city.loadError'))
     } finally {
       setLoading(false)
     }
@@ -120,7 +117,7 @@ export default function CityBillingPage() {
       setDeliveries(rows)
     } catch (error) {
       console.error('Failed to load city deliveries', error)
-      toast.error('Erreur lors du chargement des details')
+      toast.error(t('billing.city.loadDetailsError'))
     } finally {
       setDetailLoading(false)
     }
@@ -151,7 +148,7 @@ export default function CityBillingPage() {
       window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('CSV export failed', error)
-      toast.error("Erreur lors de l'export CSV")
+      toast.error(t('billing.city.exportError'))
     }
   }
 
@@ -182,7 +179,7 @@ export default function CityBillingPage() {
       window.URL.revokeObjectURL(urlObject)
     } catch (error) {
       console.error('PDF download failed', error)
-      toast.error('Erreur lors du telechargement PDF')
+      toast.error(t('billing.city.pdfError'))
     }
   }
 
@@ -206,9 +203,9 @@ export default function CityBillingPage() {
     return (
       <div className="p-8">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
-          <h1 className="text-xl font-semibold text-slate-900">Acces commune incomplet</h1>
+          <h1 className="text-xl font-semibold text-slate-900">{t('billing.city.incompleteAccess')}</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Aucun identifiant de commune n&apos;est associe a votre compte. Contactez l&apos;administration regionale.
+            {t('billing.city.incompleteAccessBody')}
           </p>
         </div>
       </div>
@@ -219,10 +216,10 @@ export default function CityBillingPage() {
     <div className="p-8 space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Facturation communale</h1>
-          <p className="text-muted-foreground">Resume et detail des livraisons par commerce</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t('billing.city.title')}</h1>
+          <p className="text-muted-foreground">{t('billing.city.subtitle')}</p>
           <p className="text-xs text-emerald-700 mt-1">
-            Periode analysee: {formatMonth(selectedMonth)}.
+            {t('billing.city.period')}: {formatMonthYear(`${selectedMonth}-01`, locale)}.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -233,11 +230,11 @@ export default function CityBillingPage() {
           />
           <Button variant="outline" onClick={downloadCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            {t('billing.city.exportCsv')}
           </Button>
           <Button variant="default" onClick={downloadPdf}>
             <FileText className="mr-2 h-4 w-4" />
-            PDF officiel
+            {t('billing.city.officialPdf')}
           </Button>
         </div>
       </div>
@@ -245,48 +242,47 @@ export default function CityBillingPage() {
       {!loading && !summary && shops.length === 0 && deliveries.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
           <h2 className="text-sm font-semibold text-slate-900">
-            Aucune donnee disponible sur {formatMonth(selectedMonth)}
+            {t('billing.city.noDataTitle')} {formatMonthYear(`${selectedMonth}-01`, locale)}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Cette vue se remplit automatiquement lorsqu&apos;il y a des livraisons consolidees
-            pour votre commune sur la periode.
+            {t('billing.city.noDataBody')}
           </p>
         </div>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Volume total</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('billing.city.totalVolume')}</div>
           <div className="text-2xl font-bold">
-            CHF {Number(summary?.total_volume_chf || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+            {formatCurrencyCHF(Number(summary?.total_volume_chf || 0), locale)}
           </div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Livraisons</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('billing.city.deliveries')}</div>
           <div className="text-2xl font-bold">{summary?.total_deliveries || 0}</div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Subvention communale</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('billing.city.citySubsidy')}</div>
           <div className="text-2xl font-bold">
-            CHF {Number(summary?.total_amount_due || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+            {formatCurrencyCHF(Number(summary?.total_amount_due || 0), locale)}
           </div>
-          <div className="text-xs text-muted-foreground mt-1">Budget mobilise sur la periode</div>
+          <div className="text-xs text-muted-foreground mt-1">{t('billing.city.periodBudget')}</div>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Livraisons CMS</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('billing.city.cmsDeliveries')}</div>
           <div className="text-2xl font-bold">{cmsDeliveries}</div>
           <div className="text-xs text-muted-foreground">
-            {cmsSharePct.toFixed(1)}% des livraisons
+            {cmsSharePct.toFixed(1)}% {t('billing.city.ofDeliveries')}
           </div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Public prioritaire</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('billing.city.priorityAudience')}</div>
           <div className="text-2xl font-bold">CMS</div>
           <div className="text-xs text-muted-foreground">
-            Personnes agees ou a mobilite reduite
+            {t('billing.city.priorityAudienceDesc')}
           </div>
         </div>
       </div>
@@ -295,22 +291,22 @@ export default function CityBillingPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Commerce</TableHead>
-              <TableHead>Commune</TableHead>
-              <TableHead className="text-right">Livraisons</TableHead>
-              <TableHead className="text-right">Subvention (CHF)</TableHead>
-              <TableHead className="text-right">Total CHF</TableHead>
+              <TableHead>{t('billing.city.shop')}</TableHead>
+              <TableHead>{t('billing.city.city')}</TableHead>
+              <TableHead className="text-right">{t('billing.city.deliveries')}</TableHead>
+              <TableHead className="text-right">{t('billing.city.subsidyChf')}</TableHead>
+              <TableHead className="text-right">{t('billing.city.totalChf')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">Chargement...</TableCell>
+                <TableCell colSpan={5} className="h-24 text-center">{t('billing.city.loading')}</TableCell>
               </TableRow>
             ) : shops.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  Aucune donnee pour cette periode.
+                  {t('billing.city.noDataForPeriod')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -320,10 +316,10 @@ export default function CityBillingPage() {
                   <TableCell>{row.city_name}</TableCell>
                   <TableCell className="text-right">{row.total_deliveries}</TableCell>
                   <TableCell className="text-right">
-                    CHF {Number(row.total_subvention_due || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                    {formatCurrencyCHF(Number(row.total_subvention_due || 0), locale)}
                   </TableCell>
                   <TableCell className="text-right">
-                    CHF {Number(row.total_volume_chf || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                    {formatCurrencyCHF(Number(row.total_volume_chf || 0), locale)}
                   </TableCell>
                 </TableRow>
               ))
@@ -335,9 +331,9 @@ export default function CityBillingPage() {
       <div className="rounded-md border bg-white p-4 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <div className="text-lg font-semibold">Detail des courses</div>
+            <div className="text-lg font-semibold">{t('billing.city.deliveryDetails')}</div>
             <div className="text-sm text-muted-foreground">
-              Filtrez par commerce ou public pour consulter le detail.
+              {t('billing.city.deliveryDetailsHint')}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -346,7 +342,7 @@ export default function CityBillingPage() {
               value={selectedShopId}
               onChange={(e) => setSelectedShopId(e.target.value)}
             >
-              <option value="all">Tous les commerces</option>
+              <option value="all">{t('billing.city.allShops')}</option>
               {shops.map((row) => (
                 <option key={row.shop_id} value={row.shop_id}>
                   {row.shop_name}
@@ -360,9 +356,9 @@ export default function CityBillingPage() {
                 setAudienceFilter(e.target.value as 'all' | 'cms' | 'non_cms')
               }
             >
-              <option value="all">Tous les publics</option>
-              <option value="cms">Public CMS</option>
-              <option value="non_cms">Public standard</option>
+              <option value="all">{t('billing.city.allAudiences')}</option>
+              <option value="cms">{t('billing.city.cmsAudience')}</option>
+              <option value="non_cms">{t('billing.city.standardAudience')}</option>
             </select>
           </div>
         </div>
@@ -371,53 +367,53 @@ export default function CityBillingPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Commerce</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Adresse</TableHead>
-                <TableHead>NPA</TableHead>
-                <TableHead>Commune</TableHead>
-                <TableHead>Public</TableHead>
-                <TableHead className="text-right">Sacs</TableHead>
-                <TableHead className="text-right">Total CHF</TableHead>
-                <TableHead className="text-right">Part commune</TableHead>
-                <TableHead className="text-right">Part entreprise regionale</TableHead>
-                <TableHead className="text-right">Part client</TableHead>
+                <TableHead>{t('billing.city.date')}</TableHead>
+                <TableHead>{t('billing.city.shop')}</TableHead>
+                <TableHead>{t('billing.city.client')}</TableHead>
+                <TableHead>{t('billing.city.address')}</TableHead>
+                <TableHead>{t('billing.city.postalCode')}</TableHead>
+                <TableHead>{t('billing.city.city')}</TableHead>
+                <TableHead>{t('billing.city.audience')}</TableHead>
+                <TableHead className="text-right">{t('billing.city.bags')}</TableHead>
+                <TableHead className="text-right">{t('billing.city.totalChf')}</TableHead>
+                <TableHead className="text-right">{t('billing.city.cityShare')}</TableHead>
+                <TableHead className="text-right">{t('billing.city.regionShare')}</TableHead>
+                <TableHead className="text-right">{t('billing.city.clientShare')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {detailLoading ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-20 text-center">Chargement...</TableCell>
+                  <TableCell colSpan={12} className="h-20 text-center">{t('billing.city.loading')}</TableCell>
                 </TableRow>
               ) : visibleDetails.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={12} className="h-20 text-center text-muted-foreground">
-                    Aucune livraison pour cette periode.
+                    {t('billing.city.noDeliveriesForPeriod')}
                   </TableCell>
                 </TableRow>
               ) : (
                 visibleDetails.map((row) => (
                   <TableRow key={row.delivery_id}>
-                    <TableCell>{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
+                    <TableCell>{formatDate(row.delivery_date, locale)}</TableCell>
                     <TableCell>{row.shop_name}</TableCell>
                     <TableCell>{row.client_name || '-'}</TableCell>
                     <TableCell>{row.address || '-'}</TableCell>
                     <TableCell>{row.postal_code || '-'}</TableCell>
                     <TableCell>{row.delivery_city || row.city_name}</TableCell>
-                    <TableCell>{row.is_cms ? 'CMS' : 'Standard'}</TableCell>
+                    <TableCell>{row.is_cms ? 'CMS' : t('billing.city.standard')}</TableCell>
                     <TableCell className="text-right">{row.bags ?? '-'}</TableCell>
                     <TableCell className="text-right">
-                      CHF {Number(row.total_price || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                      {formatCurrencyCHF(Number(row.total_price || 0), locale)}
                     </TableCell>
                       <TableCell className="text-right">
-                        CHF {Number(row.share_city || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        {formatCurrencyCHF(Number(row.share_city || 0), locale)}
                       </TableCell>
                       <TableCell className="text-right">
-                        CHF {Number(row.share_admin_region || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        {formatCurrencyCHF(Number(row.share_admin_region || 0), locale)}
                       </TableCell>
                     <TableCell className="text-right">
-                      CHF {Number(row.share_client || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                      {formatCurrencyCHF(Number(row.share_client || 0), locale)}
                     </TableCell>
                   </TableRow>
                 ))

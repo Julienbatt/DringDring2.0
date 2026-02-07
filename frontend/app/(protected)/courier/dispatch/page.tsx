@@ -5,6 +5,7 @@ import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
 import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type DispatchDelivery = {
   id: string
@@ -47,6 +48,7 @@ const getMapLink = (address: string, city: string) => {
 
 export default function CourierDispatchPage() {
   const { user, session, loading: authLoading } = useAuth()
+  const { t } = useLanguage()
   const [selectedDate, setSelectedDate] = useState(getToday())
   const [deliveries, setDeliveries] = useState<DispatchDelivery[]>([])
   const [couriers, setCouriers] = useState<Courier[]>([])
@@ -77,11 +79,11 @@ export default function CourierDispatchPage() {
       setCouriers(formattedCouriers)
     } catch (err) {
       console.error(err)
-      setError('Impossible de charger le dispatch.')
+      setError(t('dispatch.mobile.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [session, selectedDate])
+  }, [session, selectedDate, t])
 
   useEffect(() => {
     if (!user || !canDispatch) return
@@ -111,7 +113,7 @@ export default function CourierDispatchPage() {
       setActiveTab('assigned')
     } catch (err) {
       console.error(err)
-      alert("Erreur lors de l'assignation")
+      alert(t('dispatch.mobile.assignError'))
     }
   }
 
@@ -126,7 +128,7 @@ export default function CourierDispatchPage() {
       return true
     } catch (err) {
       console.error(err)
-      alert("Erreur lors de l'assignation")
+      alert(t('dispatch.mobile.assignError'))
       return false
     }
   }
@@ -143,26 +145,26 @@ export default function CourierDispatchPage() {
     if (!courier.phone_number) return '#'
     const cleanNumber = courier.phone_number.replace(/\D/g, '')
     const message = [
-      delivery.short_code ? `Code: ${delivery.short_code}` : null,
-      `Nouvelle course: ${delivery.shop_name}`,
-      `Retrait: ${delivery.shop_address || '-'}`,
-      `Livraison: ${delivery.client_address}, ${delivery.client_city}`,
-      `Horaire: ${delivery.time_window}`,
-      `Sacs: ${delivery.bags ?? '-'}`,
+      delivery.short_code ? `${t('dispatch.mobile.code')}: ${delivery.short_code}` : null,
+      `${t('dispatch.mobile.waNewDelivery')}: ${delivery.shop_name}`,
+      `${t('dispatch.mobile.pickup')}: ${delivery.shop_address || '-'}`,
+      `${t('dispatch.mobile.delivery')}: ${delivery.client_address}, ${delivery.client_city}`,
+      `${t('dispatch.mobile.schedule')}: ${delivery.time_window}`,
+      `${t('dispatch.mobile.bags')}: ${delivery.bags ?? '-'}`,
     ].filter(Boolean).join('\n')
     return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`
   }
 
   if (authLoading) {
-    return <div className="p-6 text-gray-500">Chargement...</div>
+    return <div className="p-6 text-gray-500">{t('dispatch.mobile.loading')}</div>
   }
 
   if (!canDispatch) {
     return (
       <div className="p-6 bg-white rounded-xl border shadow-sm">
-        <h1 className="text-xl font-semibold text-gray-900">Dispatch</h1>
+        <h1 className="text-xl font-semibold text-gray-900">{t('dispatch.mobile.dispatch')}</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Ce compte n&apos;est pas autorise au dispatch.
+          {t('dispatch.mobile.noAccess')}
         </p>
       </div>
     )
@@ -174,15 +176,15 @@ export default function CourierDispatchPage() {
         <div className="flex flex-col gap-3 px-2 sm:px-0 py-3 pt-8 sm:pt-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Dispatch mobile</h1>
-              <p className="text-xs text-gray-500">Assignez-vous les courses en attente</p>
+              <h1 className="text-xl font-bold text-gray-900">{t('dispatch.mobile.title')}</h1>
+              <p className="text-xs text-gray-500">{t('dispatch.mobile.subtitle')}</p>
             </div>
             <button
               onClick={fetchDeliveries}
               className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
             >
               <RefreshCw className="h-4 w-4" />
-              Actualiser
+              {t('dispatch.mobile.refresh')}
             </button>
           </div>
 
@@ -203,7 +205,7 @@ export default function CourierDispatchPage() {
                 activeTab === 'todo' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'
               }`}
             >
-              A prendre ({todo.length})
+              {t('dispatch.mobile.todo')} ({todo.length})
             </button>
             <button
               type="button"
@@ -212,7 +214,7 @@ export default function CourierDispatchPage() {
                 activeTab === 'assigned' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'
               }`}
             >
-              En cours ({assigned.length})
+              {t('dispatch.mobile.assigned')} ({assigned.length})
             </button>
             <button
               type="button"
@@ -221,21 +223,21 @@ export default function CourierDispatchPage() {
                 activeTab === 'done' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'
               }`}
             >
-              Termine ({done.length})
+              {t('dispatch.mobile.done')} ({done.length})
             </button>
           </div>
         </div>
       </header>
 
       {loading ? (
-        <div className="p-6 text-center text-gray-500">Chargement...</div>
+        <div className="p-6 text-center text-gray-500">{t('dispatch.mobile.loading')}</div>
       ) : error ? (
         <div className="p-4 rounded-lg border border-red-200 bg-red-50 text-red-700">{error}</div>
       ) : (
         <div className="space-y-4">
           {(activeTab === 'todo' ? todo : activeTab === 'assigned' ? assigned : done).length === 0 ? (
             <div className="p-8 rounded-xl border bg-white text-center text-gray-500">
-              Aucune course pour cette date.
+              {t('dispatch.mobile.noData')}
             </div>
           ) : (
             (activeTab === 'todo' ? todo : activeTab === 'assigned' ? assigned : done).map((delivery) => (
@@ -257,21 +259,21 @@ export default function CourierDispatchPage() {
                       className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                     >
                       <MapPin className="h-4 w-4" />
-                      Retrait
+                      {t('dispatch.mobile.pickup')}
                     </a>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-gray-500">Livraison</div>
-                  <div className="mt-1 text-base font-semibold text-gray-900">{delivery.client_name || 'Client'}</div>
+                  <div className="text-xs uppercase tracking-wider text-gray-500">{t('dispatch.mobile.delivery')}</div>
+                  <div className="mt-1 text-base font-semibold text-gray-900">{delivery.client_name || t('dispatch.mobile.client')}</div>
                   <div className="text-sm text-gray-600">
                     {delivery.client_address}, {delivery.client_city}
                   </div>
                   {(delivery.client_floor || delivery.client_door_code) && (
                     <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
-                      {delivery.client_floor && <span className="rounded bg-gray-100 px-2 py-1">Etage {delivery.client_floor}</span>}
-                      {delivery.client_door_code && <span className="rounded bg-gray-100 px-2 py-1">Code {delivery.client_door_code}</span>}
+                      {delivery.client_floor && <span className="rounded bg-gray-100 px-2 py-1">{t('dispatch.mobile.floor')} {delivery.client_floor}</span>}
+                      {delivery.client_door_code && <span className="rounded bg-gray-100 px-2 py-1">{t('dispatch.mobile.code')} {delivery.client_door_code}</span>}
                     </div>
                   )}
                 </div>
@@ -283,7 +285,7 @@ export default function CourierDispatchPage() {
                       className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                     >
                       <Phone className="h-4 w-4" />
-                      Appeler
+                      {t('dispatch.mobile.call')}
                     </a>
                   )}
                   <a
@@ -293,7 +295,7 @@ export default function CourierDispatchPage() {
                     className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
                   >
                     <MapPin className="h-4 w-4" />
-                    Itineraire
+                    {t('dispatch.mobile.route')}
                   </a>
                   {activeTab === 'todo' ? (
                     <div className="ml-auto flex items-center gap-2">
@@ -302,14 +304,14 @@ export default function CourierDispatchPage() {
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                       >
                         <CheckCircle2 className="h-4 w-4" />
-                        Prendre
+                        {t('dispatch.mobile.take')}
                       </button>
                       <button
                         onClick={() => setAssignTarget(delivery)}
                         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                       >
                         <Users className="h-4 w-4" />
-                        Assigner
+                        {t('dispatch.mobile.assign')}
                       </button>
                     </div>
                   ) : activeTab === 'assigned' ? (
@@ -321,12 +323,12 @@ export default function CourierDispatchPage() {
                             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=picked_up`, {}, session.access_token)
                             fetchDeliveries()
                           } catch {
-                            alert("Erreur lors de la collecte")
+                            alert(t('dispatch.mobile.pickupError'))
                           }
                         }}
                         className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                       >
-                        Collecte
+                        {t('dispatch.mobile.collect')}
                       </button>
                       <button
                         onClick={async () => {
@@ -335,12 +337,12 @@ export default function CourierDispatchPage() {
                             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=delivered`, {}, session.access_token)
                             fetchDeliveries()
                           } catch {
-                            alert("Erreur lors de la livraison")
+                            alert(t('dispatch.mobile.deliveryError'))
                           }
                         }}
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                       >
-                        Livre
+                        {t('dispatch.mobile.deliver')}
                       </button>
                       <button
                         onClick={async () => {
@@ -349,13 +351,13 @@ export default function CourierDispatchPage() {
                             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=cancelled`, {}, session.access_token)
                             fetchDeliveries()
                           } catch {
-                            alert("Erreur lors de l'annulation")
+                            alert(t('dispatch.mobile.cancelError'))
                           }
                         }}
                         className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
                       >
                         <XCircle className="h-4 w-4" />
-                        Annuler
+                        {t('dispatch.mobile.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -365,7 +367,7 @@ export default function CourierDispatchPage() {
 
                 {delivery.notes && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    Note: {delivery.notes}
+                    {t('dispatch.mobile.note')}: {delivery.notes}
                   </div>
                 )}
               </div>
@@ -379,14 +381,14 @@ export default function CourierDispatchPage() {
           <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white border shadow-xl">
             <div className="p-4 border-b flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold text-gray-900">Assigner la course</div>
+                <div className="text-sm font-semibold text-gray-900">{t('dispatch.mobile.assignDelivery')}</div>
                 <div className="text-xs text-gray-500">{assignTarget.shop_name}</div>
               </div>
-              <button className="text-sm text-gray-500" onClick={() => setAssignTarget(null)}>Fermer</button>
+              <button className="text-sm text-gray-500" onClick={() => setAssignTarget(null)}>{t('dispatch.mobile.close')}</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto">
               {couriers.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">Aucun coursier disponible.</div>
+                <div className="p-6 text-center text-gray-500">{t('dispatch.mobile.noCourier')}</div>
               ) : (
                 couriers.map((courier) => (
                   <div key={courier.id} className="flex items-center justify-between gap-3 px-4 py-3 border-b">
@@ -409,14 +411,14 @@ export default function CourierDispatchPage() {
                           }}
                           className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
-                          Assigner + WhatsApp
+                          {t('dispatch.mobile.assignWhatsapp')}
                         </button>
                       ) : (
                         <button
                           onClick={() => handleAssignCourier(assignTarget.id, courier.id)}
                           className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
                         >
-                          Assigner
+                          {t('dispatch.mobile.assign')}
                         </button>
                       )}
                     </div>

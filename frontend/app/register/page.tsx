@@ -13,6 +13,7 @@ import { AlertCircle, UserPlus, ArrowLeft } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { apiPost } from '@/lib/api'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export default function RegisterPage() {
     const [fullName, setFullName] = useState('')
@@ -30,6 +31,7 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const supabase = createClient()
+    const { t } = useLanguage()
 
     const normalizePhone = (value: string) => {
         const cleaned = value.replace(/\s+/g, '')
@@ -83,31 +85,31 @@ export default function RegisterPage() {
 
     const getErrorMessage = (error: unknown) => {
         if (error instanceof Error) return error.message
-        return 'Une erreur inattendue est survenue.'
+        return t('register.unexpected')
     }
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (!fullName.trim()) {
-            toast.error('Le nom complet est obligatoire')
+            toast.error(t('register.errName'))
             return
         }
         if (!address.trim() || !postalCode.trim() || !cityName.trim()) {
-            toast.error('Adresse, NPA et commune sont obligatoires')
+            toast.error(t('register.errAddress'))
             return
         }
         if (password !== confirmPassword) {
-            toast.error("Les mots de passe ne correspondent pas")
+            toast.error(t('register.errPwdMatch'))
             return
         }
         if (password.length < 6) {
-            toast.error("Le mot de passe doit faire au moins 6 caractères")
+            toast.error(t('register.errPwdLength'))
             return
         }
         const normalizedPhone = phone ? normalizePhone(phone) : ''
         if (normalizedPhone && !isValidSwissPhone(normalizedPhone)) {
-            toast.error('Numero invalide. Format attendu: +41...')
+            toast.error(t('register.errPhone'))
             return
         }
 
@@ -131,13 +133,13 @@ export default function RegisterPage() {
             }
 
             if (!data.user) {
-                toast.error("Impossible de creer le compte.")
+                toast.error(t('register.errCreate'))
                 return
             }
 
             const token = data.session?.access_token
             if (!token) {
-                toast.success("Compte cree. Verifiez votre email puis connectez-vous pour finaliser votre profil.")
+                toast.success(t('register.needEmailValidation'))
                 router.push('/login')
                 return
             }
@@ -159,7 +161,7 @@ export default function RegisterPage() {
                 token
             )
 
-            toast.success('Compte client cree avec succes')
+            toast.success(t('register.success'))
             router.push('/dashboard')
         } catch (err: unknown) {
             console.error('Registration Error:', err)
@@ -178,34 +180,34 @@ export default function RegisterPage() {
                             <UserPlus className="w-8 h-8 text-green-600" />
                         </div>
                     </div>
-                    <CardTitle className="text-2xl text-center font-bold">Créer un compte</CardTitle>
+                    <CardTitle className="text-2xl text-center font-bold">{t('register.title')}</CardTitle>
                     <CardDescription className="text-center">
-                        Inscription client DringDring.
+                        {t('register.desc')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleRegister} className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="fullName">Nom complet</Label>
+                            <Label htmlFor="fullName">{t('register.fullName')}</Label>
                             <Input
                                 id="fullName"
                                 type="text"
-                                placeholder="Prenom Nom"
+                                placeholder={t('register.fullNamePlaceholder')}
                                 value={fullName}
                                 onChange={e => setFullName(e.target.value)}
                                 required
                             />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                            <Label>Recherche adresse (Suisse)</Label>
+                            <Label>{t('register.addressSearch')}</Label>
                             <AddressAutocomplete onSelect={handleAddressSelect} />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="address">Adresse</Label>
+                            <Label htmlFor="address">{t('register.address')}</Label>
                             <Input
                                 id="address"
                                 type="text"
-                                placeholder="Rue, numero"
+                                placeholder={t('register.addressPlaceholder')}
                                 value={address}
                                 onChange={e => {
                                     setAddress(e.target.value)
@@ -216,49 +218,49 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="postalCode">NPA</Label>
+                            <Label htmlFor="postalCode">{t('register.postalCode')}</Label>
                             <Input
                                 id="postalCode"
                                 type="text"
-                                placeholder="1950"
+                                placeholder={t('register.postalCodePlaceholder')}
                                 value={postalCode}
                                 onChange={e => setPostalCode(e.target.value)}
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="cityName">Commune</Label>
+                            <Label htmlFor="cityName">{t('register.city')}</Label>
                             <Input
                                 id="cityName"
                                 type="text"
-                                placeholder="Sion"
+                                placeholder={t('register.cityPlaceholder')}
                                 value={cityName}
                                 onChange={e => setCityName(e.target.value)}
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="floor">Etage (optionnel)</Label>
+                            <Label htmlFor="floor">{t('register.floor')}</Label>
                             <Input
                                 id="floor"
                                 type="text"
-                                placeholder="3eme"
+                                placeholder={t('register.floorPlaceholder')}
                                 value={floor}
                                 onChange={e => setFloor(e.target.value)}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="doorCode">Digicode (optionnel)</Label>
+                            <Label htmlFor="doorCode">{t('register.doorCode')}</Label>
                             <Input
                                 id="doorCode"
                                 type="text"
-                                placeholder="1234A"
+                                placeholder={t('register.doorCodePlaceholder')}
                                 value={doorCode}
                                 onChange={e => setDoorCode(e.target.value)}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="phone">Telephone (optionnel)</Label>
+                            <Label htmlFor="phone">{t('register.phone')}</Label>
                             <Input
                                 id="phone"
                                 type="tel"
@@ -269,18 +271,18 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">{t('register.email')}</Label>
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="votre@email.ch"
+                                placeholder={t('register.emailPlaceholder')}
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
                                 required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Mot de passe</Label>
+                            <Label htmlFor="password">{t('register.password')}</Label>
                             <Input
                                 id="password"
                                 type="password"
@@ -290,7 +292,7 @@ export default function RegisterPage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="confirm">Confirmer le mot de passe</Label>
+                            <Label htmlFor="confirm">{t('register.confirmPassword')}</Label>
                             <Input
                                 id="confirm"
                                 type="password"
@@ -301,16 +303,16 @@ export default function RegisterPage() {
                         </div>
 
                         <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 md:col-span-2" disabled={loading}>
-                            {loading ? 'Création en cours...' : "S'inscrire"}
+                            {loading ? t('register.submitting') : t('register.submit')}
                         </Button>
                     </form>
 
                     <div className="mt-4 md:mt-6">
                         <Alert className="bg-blue-50 border-blue-100 text-blue-800">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertTitle className="text-sm font-semibold">Information</AlertTitle>
+                            <AlertTitle className="text-sm font-semibold">{t('register.infoTitle')}</AlertTitle>
                             <AlertDescription className="text-xs">
-                                Votre commune doit exister dans le reseau DringDring. En cas de doute, contactez le support.
+                                {t('register.infoBody')}
                             </AlertDescription>
                         </Alert>
                     </div>
@@ -322,11 +324,11 @@ export default function RegisterPage() {
                             <span className="w-full border-t" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-muted-foreground">Déjà inscrit ?</span>
+                            <span className="bg-white px-2 text-muted-foreground">{t('register.already')}</span>
                         </div>
                     </div>
                     <Link href="/login" className="flex items-center justify-center text-blue-600 hover:underline">
-                        <ArrowLeft className="w-4 h-4 mr-1" /> Retour à la connexion
+                        <ArrowLeft className="w-4 h-4 mr-1" /> {t('register.backToLogin')}
                     </Link>
                 </CardFooter>
             </Card>
