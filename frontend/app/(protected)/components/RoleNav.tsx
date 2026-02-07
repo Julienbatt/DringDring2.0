@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { label: 'Facturation HQ', href: '/hq/billing', roles: ['hq'] },
   { label: 'Facturation', href: '/city/billing', roles: ['city'] },
   { label: 'Facturation', href: '/shop/billing', roles: ['shop'] },
-  { label: 'Dossier service', href: '/resources/presentation', roles: ['admin_region', 'hq', 'shop', 'city'] },
+  { label: 'Pourquoi DringDring', href: '/resources/presentation', roles: ['admin_region', 'hq', 'shop', 'city'] },
   { label: 'Historique', href: '/customer/deliveries', roles: ['customer'] },
   { label: 'Mon compte', href: '/customer/profile', roles: ['customer'] },
   { label: 'Aide & support', href: '/customer/support', roles: ['customer'] },
