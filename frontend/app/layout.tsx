@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Raleway, Fira_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
 
 const dringSans = Raleway({
   variable: "--font-dringsans",
@@ -31,8 +32,10 @@ export default function RootLayout({
         className={`${dringSans.variable} ${dringMono.variable} antialiased font-sans`}
         suppressHydrationWarning
       >
-        {children}
-        <Toaster />
+        <LanguageProvider>
+          {children}
+          <Toaster />
+        </LanguageProvider>
       </body>
     </html>
   );

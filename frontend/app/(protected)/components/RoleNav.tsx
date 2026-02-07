@@ -4,30 +4,32 @@ import Link from 'next/link'
 import { useAuth } from '../providers/AuthProvider'
 import BrandLogo from '@/components/BrandLogo'
 import { roleLabel } from '@/lib/roleLabel'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', roles: ['admin_region', 'super_admin', 'courier', 'customer', 'city', 'hq'] },
-  { label: 'Livraisons', href: '/dashboard', roles: ['shop'] },
-  { label: 'Clients', href: '/admin/clients', roles: ['admin_region'] },
-  { label: 'Commerces', href: '/admin/shops', roles: ['admin_region'] },
-  { label: 'Communes partenaires', href: '/admin/cities', roles: ['admin_region'] },
-  { label: 'Coursiers', href: '/admin/couriers', roles: ['admin_region', 'super_admin'] },
-  { label: 'Facturation', href: '/admin/billing', roles: ['admin_region'] },
-  { label: 'Dispatch', href: '/admin/dispatch', roles: ['admin_region'] },
-  { label: 'Entreprises regionales de livraison', href: '/super/regions', roles: ['super_admin'] },
-  { label: 'Commerces', href: '/hq/shops', roles: ['hq'] },
-  { label: 'Facturation HQ', href: '/hq/billing', roles: ['hq'] },
-  { label: 'Facturation', href: '/city/billing', roles: ['city'] },
-  { label: 'Facturation', href: '/shop/billing', roles: ['shop'] },
-  { label: 'Pourquoi DringDring', href: '/resources/presentation', roles: ['admin_region', 'hq', 'shop', 'city'] },
-  { label: 'Historique', href: '/customer/deliveries', roles: ['customer'] },
-  { label: 'Mon compte', href: '/customer/profile', roles: ['customer'] },
-  { label: 'Aide & support', href: '/customer/support', roles: ['customer'] },
-  { label: 'Parametres', href: '/settings', roles: ['shop', 'admin_region', 'super_admin', 'courier', 'city', 'hq'] },
+  { labelKey: 'nav.dashboard', href: '/dashboard', roles: ['admin_region', 'super_admin', 'courier', 'customer', 'city', 'hq'] },
+  { labelKey: 'nav.deliveries', href: '/dashboard', roles: ['shop'] },
+  { labelKey: 'nav.clients', href: '/admin/clients', roles: ['admin_region'] },
+  { labelKey: 'nav.shops', href: '/admin/shops', roles: ['admin_region'] },
+  { labelKey: 'nav.partnerCities', href: '/admin/cities', roles: ['admin_region'] },
+  { labelKey: 'nav.couriers', href: '/admin/couriers', roles: ['admin_region', 'super_admin'] },
+  { labelKey: 'nav.billing', href: '/admin/billing', roles: ['admin_region'] },
+  { labelKey: 'nav.dispatch', href: '/admin/dispatch', roles: ['admin_region'] },
+  { labelKey: 'nav.regionalCompanies', href: '/super/regions', roles: ['super_admin'] },
+  { labelKey: 'nav.shops', href: '/hq/shops', roles: ['hq'] },
+  { labelKey: 'nav.billing', href: '/hq/billing', roles: ['hq'] },
+  { labelKey: 'nav.billing', href: '/city/billing', roles: ['city'] },
+  { labelKey: 'nav.billing', href: '/shop/billing', roles: ['shop'] },
+  { labelKey: 'nav.whyDring', href: '/resources/presentation', roles: ['admin_region', 'hq', 'shop', 'city'] },
+  { labelKey: 'nav.history', href: '/customer/deliveries', roles: ['customer'] },
+  { labelKey: 'nav.account', href: '/customer/profile', roles: ['customer'] },
+  { labelKey: 'nav.support', href: '/customer/support', roles: ['customer'] },
+  { labelKey: 'common.settings', href: '/settings', roles: ['shop', 'admin_region', 'super_admin', 'courier', 'city', 'hq'] },
 ]
 
 export default function RoleNav() {
   const { user, loading, adminContextRegion, setAdminContext } = useAuth()
+  const { t } = useLanguage()
 
   if (loading) {
     return <div className="border-b bg-white" />
@@ -42,7 +44,7 @@ export default function RoleNav() {
 
   const items = NAV_ITEMS.filter((item) => item.roles.includes(effectiveRole))
   if (effectiveRole === 'courier' && user?.can_dispatch) {
-    items.push({ label: 'Dispatch', href: '/courier/dispatch', roles: ['courier'] })
+    items.push({ labelKey: 'nav.dispatch', href: '/courier/dispatch', roles: ['courier'] })
   }
 
   return (
@@ -60,7 +62,7 @@ export default function RoleNav() {
           <nav className="flex items-center gap-3 text-gray-600">
             {items.map((item) => (
               <Link key={item.href} href={item.href} className="hover:underline">
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ))}
           </nav>

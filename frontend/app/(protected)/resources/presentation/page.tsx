@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { Download, Megaphone } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import type { Locale } from '@/lib/i18n/messages'
 
 type Section = {
   title: string
@@ -17,8 +19,6 @@ type RoleCopy = {
   points: string[]
   outro: string
 }
-
-type Locale = 'fr' | 'de' | 'it' | 'en'
 
 type TranslationPack = {
   tagLabel: string
@@ -454,21 +454,6 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
   },
 }
 
-const LOCALE_STORAGE_KEY = 'dringdring.presentation.lang'
-
-function detectLocale(): Locale {
-  if (typeof window === 'undefined') return 'fr'
-  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-  if (stored === 'fr' || stored === 'de' || stored === 'it' || stored === 'en') {
-    return stored
-  }
-  const browser = window.navigator.language.toLowerCase()
-  if (browser.startsWith('de')) return 'de'
-  if (browser.startsWith('it')) return 'it'
-  if (browser.startsWith('en')) return 'en'
-  return 'fr'
-}
-
 async function loadLogoDataUrl(path: string) {
   const response = await fetch(path)
   if (!response.ok) return null
@@ -533,22 +518,11 @@ async function generatePdf(
 
 export default function PresentationResourcesPage() {
   const { user } = useAuth()
+  const { locale, setLocale } = useLanguage()
   const role = user?.role ?? ''
   const isAdminRegion = role === 'admin_region'
-  const [locale, setLocale] = useState<Locale>('fr')
   const [isGeneratingDossier, setIsGeneratingDossier] = useState(false)
   const [isGeneratingKpi, setIsGeneratingKpi] = useState(false)
-
-  useEffect(() => {
-    const initial = detectLocale()
-    setLocale(initial)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
-    }
-  }, [locale])
 
   const t = TRANSLATIONS[locale]
   const roleCopy = t.roleCopy[role] ?? t.roleCopy.admin_region
@@ -673,4 +647,3 @@ export default function PresentationResourcesPage() {
     </div>
   )
 }
-

@@ -7,6 +7,8 @@ import { useAuth } from '../providers/AuthProvider'
 import type { AdminRegionContext } from '../providers/AuthProvider'
 import BrandLogo from '@/components/BrandLogo'
 import { roleLabel } from '@/lib/roleLabel'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import {
     LayoutDashboard,
     Map,
@@ -39,72 +41,72 @@ const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDi
     // SUPER ADMIN
     if (role === 'super_admin' && !adminContextRegion) {
         return [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-            { label: 'Entreprises regionales de livraison', href: '/super/regions', icon: Map },
-            { label: 'Utilisateurs', href: '/super/users', icon: Users }, // To implement
+            { labelKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+            { labelKey: 'nav.regionalCompanies', href: '/super/regions', icon: Map },
+            { labelKey: 'nav.users', href: '/super/users', icon: Users }, // To implement
         ]
     }
 
     // ADMIN REGION (or Super Admin in Drill-Down)
     if (role === 'admin_region' || (role === 'super_admin' && adminContextRegion)) {
         return [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-            { label: 'Dispatch', href: '/admin/dispatch', icon: ListTodo }, // "Courses (DISPATCH)"
-            { label: 'Coursiers', href: '/admin/couriers', icon: Bike },
-            { label: 'Commerces', href: '/admin/shops', icon: Store },
-            { label: 'HQ', href: '/admin/hqs', icon: Building2 },
-            { label: 'Clients', href: '/admin/clients', icon: Users },
-            { label: 'Facturation', href: '/admin/billing', icon: Euro },
-            { label: 'Tarification', href: '/admin/tariffs', icon: Tags },
-            { label: 'Communes partenaires', href: '/admin/cities', icon: MapPin }, // "Communes partenaires" management
-            { label: 'Pourquoi DringDring', href: '/resources/presentation', icon: Megaphone },
+            { labelKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+            { labelKey: 'nav.dispatch', href: '/admin/dispatch', icon: ListTodo }, // "Courses (DISPATCH)"
+            { labelKey: 'nav.couriers', href: '/admin/couriers', icon: Bike },
+            { labelKey: 'nav.shops', href: '/admin/shops', icon: Store },
+            { labelKey: 'nav.hq', href: '/admin/hqs', icon: Building2 },
+            { labelKey: 'nav.clients', href: '/admin/clients', icon: Users },
+            { labelKey: 'nav.billing', href: '/admin/billing', icon: Euro },
+            { labelKey: 'nav.tariffs', href: '/admin/tariffs', icon: Tags },
+            { labelKey: 'nav.partnerCities', href: '/admin/cities', icon: MapPin }, // "Communes partenaires" management
+            { labelKey: 'nav.whyDring', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
     // HQ
     if (role === 'hq') {
         return [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-            { label: 'Commerces', href: '/hq/shops', icon: Store },
-            { label: 'Facturation', href: '/hq/billing', icon: Euro },
-            { label: 'Pourquoi DringDring', href: '/resources/presentation', icon: Megaphone },
+            { labelKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+            { labelKey: 'nav.shops', href: '/hq/shops', icon: Store },
+            { labelKey: 'nav.billing', href: '/hq/billing', icon: Euro },
+            { labelKey: 'nav.whyDring', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
     // SHOP
     if (role === 'shop') {
         return [
-            { label: 'Livraisons', href: '/dashboard', icon: ListTodo },
-            { label: 'Facturation', href: '/shop/billing', icon: Euro },
-            { label: 'Pourquoi DringDring', href: '/resources/presentation', icon: Megaphone },
+            { labelKey: 'nav.deliveries', href: '/dashboard', icon: ListTodo },
+            { labelKey: 'nav.billing', href: '/shop/billing', icon: Euro },
+            { labelKey: 'nav.whyDring', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
     // CITY
     if (role === 'city') {
         return [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-            { label: 'Facturation', href: '/city/billing', icon: Euro }, // Spec says "Facturation City"
-            { label: 'Communes partenaires', href: '/admin/cities', icon: MapPin },
-            { label: 'Pourquoi DringDring', href: '/resources/presentation', icon: Megaphone },
+            { labelKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+            { labelKey: 'nav.billing', href: '/city/billing', icon: Euro }, // Spec says "Facturation City"
+            { labelKey: 'nav.partnerCities', href: '/admin/cities', icon: MapPin },
+            { labelKey: 'nav.whyDring', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
     // CUSTOMER
     if (role === 'customer') {
         return [
-            { label: 'Accueil', href: '/dashboard', icon: LayoutDashboard },
-            { label: 'Historique', href: '/customer/deliveries', icon: ListTodo },
-            { label: 'Mon compte', href: '/customer/profile', icon: UserCircle },
-            { label: 'Aide & support', href: '/customer/support', icon: LifeBuoy },
+            { labelKey: 'nav.home', href: '/dashboard', icon: LayoutDashboard },
+            { labelKey: 'nav.history', href: '/customer/deliveries', icon: ListTodo },
+            { labelKey: 'nav.account', href: '/customer/profile', icon: UserCircle },
+            { labelKey: 'nav.support', href: '/customer/support', icon: LifeBuoy },
         ]
     }
 
     // COURIER (Simple CRUD role mostly, but if they log in?)
     if (role === 'courier') {
         return [
-            { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-            ...(canDispatch ? [{ label: 'Dispatch', href: '/courier/dispatch', icon: ListTodo }] : []),
+            { labelKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard },
+            ...(canDispatch ? [{ labelKey: 'nav.dispatch', href: '/courier/dispatch', icon: ListTodo }] : []),
         ]
     }
 
@@ -113,6 +115,7 @@ const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDi
 
 export default function Sidebar() {
     const { user, loading, adminContextRegion, setAdminContext, signOut } = useAuth()
+    const { t } = useLanguage()
     const pathname = usePathname()
     const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -129,7 +132,7 @@ export default function Sidebar() {
                 type="button"
                 onClick={() => setMobileOpen(true)}
                 className="fixed right-3 top-3 z-50 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow sm:hidden"
-                aria-label="Ouvrir le menu"
+                aria-label={t('common.openMenu')}
             >
                 <Menu className="h-4 w-4" />
             </button>
@@ -140,7 +143,7 @@ export default function Sidebar() {
                     type="button"
                     onClick={() => setMobileOpen(false)}
                     className="fixed inset-0 z-40 bg-black/30 sm:hidden"
-                    aria-label="Fermer le menu"
+                    aria-label={t('common.closeMenu')}
                 />
             )}
 
@@ -158,7 +161,7 @@ export default function Sidebar() {
                         type="button"
                         onClick={() => setMobileOpen(false)}
                         className="sm:hidden inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-600 hover:bg-white"
-                        aria-label="Fermer le menu"
+                        aria-label={t('common.closeMenu')}
                     >
                         <X className="h-4 w-4" />
                     </button>
@@ -192,7 +195,7 @@ export default function Sidebar() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            title={item.label}
+                            title={t(item.labelKey)}
                             className={`flex items-center justify-center sm:justify-start rounded-lg px-2 sm:px-4 py-3 text-sm font-medium transition-colors duration-150 ${
                                 isActive
                                     ? 'bg-emerald-600 text-white shadow-md'
@@ -201,7 +204,7 @@ export default function Sidebar() {
                             onClick={() => setMobileOpen(false)}
                         >
                             <Icon className={`mr-0 sm:mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                            <span className="inline">{item.label}</span>
+                            <span className="inline">{t(item.labelKey)}</span>
                         </Link>
                     )
                 })}
@@ -214,7 +217,7 @@ export default function Sidebar() {
                     className="sm:hidden mt-4 flex w-full items-center justify-center rounded-lg px-2 py-3 text-sm font-medium text-slate-700 transition hover:bg-white hover:text-slate-900"
                 >
                     <LogOut className="w-4 h-4 mr-2" />
-                    Se deconnecter
+                    {t('common.logout')}
                 </button>
             </nav>
 
@@ -229,14 +232,17 @@ export default function Sidebar() {
                         <p className="text-xs text-slate-500">{roleLabel(role)}</p>
                     </div>
                 </div>
+                <div className="mb-3">
+                    <LanguageSwitcher />
+                </div>
                 <Link
                     href={settingsHref}
-                    title="Parametres"
+                    title={t('common.settings')}
                     className="flex items-center justify-center sm:justify-start rounded px-2 py-2 text-sm text-slate-700 transition hover:bg-white hover:text-slate-900"
                     onClick={() => setMobileOpen(false)}
                 >
                     <Settings className="w-4 h-4 mr-0 sm:mr-2" />
-                    <span className="inline">Parametres</span>
+                    <span className="inline">{t('common.settings')}</span>
                 </Link>
                 <button
                     type="button"
@@ -247,7 +253,7 @@ export default function Sidebar() {
                     className="mt-2 flex w-full items-center justify-center sm:justify-start rounded px-2 py-2 text-sm text-slate-700 transition hover:bg-white hover:text-slate-900"
                 >
                     <LogOut className="w-4 h-4 mr-0 sm:mr-2" />
-                    <span className="inline">Se deconnecter</span>
+                    <span className="inline">{t('common.logout')}</span>
                 </button>
             </div>
             </div>
