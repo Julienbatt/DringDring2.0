@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, FileText } from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MonthInput } from '@/components/ui/month-input'
 import { apiGet, API_BASE_URL } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -55,6 +54,17 @@ function getCurrentMonth() {
   now.setMonth(now.getMonth() - 1)
   const month = String(now.getMonth() + 1).padStart(2, '0')
   return `${now.getFullYear()}-${month}`
+}
+
+function shiftMonth(value: string, delta: number) {
+  const [yearRaw, monthRaw] = value.split('-')
+  const year = Number(yearRaw)
+  const month = Number(monthRaw)
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return value
+  const date = new Date(year, month - 1 + delta, 1)
+  const nextYear = date.getFullYear()
+  const nextMonth = String(date.getMonth() + 1).padStart(2, '0')
+  return `${nextYear}-${nextMonth}`
 }
 
 export default function CityBillingPage() {
@@ -223,11 +233,37 @@ export default function CityBillingPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <MonthInput
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="w-[180px]"
-          />
+          <div className="inline-flex items-center rounded-full border border-slate-200 bg-white px-1 py-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSelectedMonth((prev) => shiftMonth(prev, -1))}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+              aria-label="Mois precedent"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="relative mx-1 min-w-[140px]">
+              <div className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-full px-3 text-sm font-medium text-slate-700">
+                <Calendar className="h-4 w-4 text-slate-500" />
+                <span>{formatMonthYear(`${selectedMonth}-01`, locale)}</span>
+              </div>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="absolute inset-0 h-8 w-full cursor-pointer border-0 bg-transparent p-0 opacity-0"
+                aria-label="Choisir un mois"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedMonth((prev) => shiftMonth(prev, 1))}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+              aria-label="Mois suivant"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
           <Button variant="outline" onClick={downloadCsv}>
             <Download className="mr-2 h-4 w-4" />
             {t('billing.city.exportCsv')}

@@ -44,13 +44,6 @@ type TranslationPack = {
   kpiPdfFile: string
 }
 
-const LOCALES: { code: Locale; label: string }[] = [
-  { code: 'fr', label: 'FR' },
-  { code: 'de', label: 'DE' },
-  { code: 'it', label: 'IT' },
-  { code: 'en', label: 'EN' },
-]
-
 const TRANSLATIONS: Record<Locale, TranslationPack> = {
   fr: {
     tagLabel: 'Pourquoi DringDring',
@@ -518,7 +511,7 @@ async function generatePdf(
 
 export default function PresentationResourcesPage() {
   const { user } = useAuth()
-  const { locale, setLocale } = useLanguage()
+  const { locale } = useLanguage()
   const role = user?.role ?? ''
   const isAdminRegion = role === 'admin_region'
   const [isGeneratingDossier, setIsGeneratingDossier] = useState(false)
@@ -564,22 +557,6 @@ export default function PresentationResourcesPage() {
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               <Megaphone className="h-3.5 w-3.5" />
               {t.tagLabel}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {LOCALES.map((entry) => (
-                <button
-                  key={entry.code}
-                  type="button"
-                  onClick={() => setLocale(entry.code)}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    locale === entry.code
-                      ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200'
-                  }`}
-                >
-                  {entry.label}
-                </button>
-              ))}
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">{roleCopy.title}</h1>
             <p className="text-sm text-slate-700">{roleCopy.intro}</p>
