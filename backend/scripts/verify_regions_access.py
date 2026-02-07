@@ -3,16 +3,18 @@ import urllib.parse
 import json
 import ssl
 import sys
+import os
 
-BASE_URL = "http://localhost:8000/api/v1"
-EMAIL = "jub@ik.me"
-PASSWORD = "password123" 
-# User said password is "123456" in the chat but wait, I previously used "password123" in verify_shops_admin.py and it worked?
-# The user said "mot de passse est 123456" in the *browser* context. 
-# Let's try both or just try 123456 first as per user latest instruction.
-PASSWORD_ATTEMPT = "123456"
+BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1").rstrip("/")
+EMAIL = os.getenv("TEST_EMAIL")
+PASSWORD_ATTEMPT = os.getenv("TEST_PASSWORD")
 
 def verify_regions_access():
+    if not EMAIL or not PASSWORD_ATTEMPT:
+        print("Missing TEST_EMAIL or TEST_PASSWORD environment variables.")
+        print("Example: TEST_EMAIL=admin@dringdring.ch TEST_PASSWORD=*** python3 backend/scripts/verify_regions_access.py")
+        return
+
     print(f"1. Logging in as {EMAIL} with password {PASSWORD_ATTEMPT}...")
     auth_data = {
         "email": EMAIL,
@@ -40,22 +42,7 @@ def verify_regions_access():
             print("Login successful.")
     except Exception as e:
         print(f"Login error with {PASSWORD_ATTEMPT}: {e}")
-        # Try fallback password if user changed it back or I am confused
-        print("Retrying with 'password123'...")
-        auth_data["password"] = "password123"
-        req = urllib.request.Request(
-            f"{BASE_URL}/me/login",
-            data=json.dumps(auth_data).encode('utf-8'),
-            headers={'Content-Type': 'application/json'}
-        )
-        try:
-             with urllib.request.urlopen(req, context=ctx) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                access_token = data.get("access_token")
-                print("Login successful with fallback password.")
-        except Exception as e2:
-             print(f"Login completely failed: {e2}")
-             return
+        return
 
     print("2. Testing GET /regions ...")
     req_regions = urllib.request.Request(

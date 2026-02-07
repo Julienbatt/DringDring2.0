@@ -3,12 +3,18 @@ import urllib.parse
 import json
 import ssl
 import sys
+import os
 
-BASE_URL = "http://localhost:8000/api/v1"
-EMAIL = "jub@ik.me"
-PASSWORD = "password123"
+BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1").rstrip("/")
+EMAIL = os.getenv("TEST_EMAIL")
+PASSWORD = os.getenv("TEST_PASSWORD")
 
 def verify_shops_access():
+    if not EMAIL or not PASSWORD:
+        print("Missing TEST_EMAIL or TEST_PASSWORD environment variables.")
+        print("Example: TEST_EMAIL=admin@dringdring.ch TEST_PASSWORD=*** python3 backend/scripts/verify_shops_admin.py")
+        return
+
     print("1. Logging in...")
     auth_data = {
         "email": EMAIL,
