@@ -1,13 +1,13 @@
 ﻿'use client'
 
 import { Suspense } from 'react'
-import CityReport from '../reports/components/CityReport'
 import ShopReport from '../reports/components/ShopReport'
 import HqReport from '../reports/components/HqReport'
 import CourierDashboard from './components/CourierDashboard'
 import CustomerDashboard from './components/CustomerDashboard'
 import AdminRegionDashboard from './components/AdminRegionDashboard'
 import SuperAdminDashboard from './components/SuperAdminDashboard'
+import CityDashboard from './components/CityDashboard'
 import { useMe } from '../hooks/useMe'
 
 function DashboardContent() {
@@ -27,7 +27,7 @@ function DashboardContent() {
 
   switch (data.role) {
     case 'city':
-      return <CityReport />
+      return <CityDashboard />
     case 'shop':
       return <ShopReport />
     case 'hq':
