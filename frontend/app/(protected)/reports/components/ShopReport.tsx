@@ -665,6 +665,21 @@ export default function ShopReport() {
   const currentFrozenPeriod = (periods ?? []).find(
     (p) => String(p.period_month).startsWith(selectedMonth)
   )
+  const kpiTotalDeliveries = shopStats?.total_deliveries ?? 0
+  const kpiUniqueClients = shopStats?.unique_clients ?? 0
+  const kpiCmsShare = shopStats?.cms_share_pct ?? 0
+  const kpiBasketAvg = shopStats?.average_basket_value_chf ?? 0
+  const kpiDeliveriesTrend = shopStats?.deliveries_change_pct
+  const trendLabel =
+    kpiDeliveriesTrend === null || kpiDeliveriesTrend === undefined
+      ? 'n/a'
+      : `${kpiDeliveriesTrend > 0 ? '+' : ''}${kpiDeliveriesTrend.toFixed(1)}%`
+  const trendTone =
+    kpiDeliveriesTrend === null || kpiDeliveriesTrend === undefined
+      ? 'text-slate-500'
+      : kpiDeliveriesTrend >= 0
+        ? 'text-emerald-600'
+        : 'text-rose-600'
 
   return (
     <div className="p-8 space-y-8">
@@ -719,6 +734,43 @@ export default function ShopReport() {
           )}
         </div>
       </header >
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+            Vue business du mois
+          </h2>
+          <span className="text-xs text-slate-500">
+            Conversion & fidelisation
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+            <div className="text-xs uppercase tracking-wider text-slate-500">Livraisons</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : kpiTotalDeliveries}</div>
+            <div className={`text-xs ${trendTone}`}>Evol. {trendLabel}</div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="text-xs uppercase tracking-wider text-slate-500">Clients actifs</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : kpiUniqueClients}</div>
+            <div className="text-xs text-slate-500">Nouveaux: {statsLoading ? '...' : newClients}</div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="text-xs uppercase tracking-wider text-slate-500">Part CMS</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900">
+              {statsLoading ? '...' : `${kpiCmsShare.toFixed(1)}%`}
+            </div>
+            <div className="text-xs text-slate-500">Impact social</div>
+          </div>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+            <div className="text-xs uppercase tracking-wider text-emerald-700">Panier moyen</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900">
+              {statsLoading ? '...' : formatCHF(kpiBasketAvg)}
+            </div>
+            <div className="text-xs text-emerald-700/80">Valeur commande moyenne</div>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-lg border p-4 space-y-4">
         <h2 className="text-sm font-medium text-gray-700">

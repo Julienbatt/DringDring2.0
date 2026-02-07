@@ -324,34 +324,7 @@ export default function HqReport() {
   if (error || shopError) {
     return <div className="p-8 text-red-600">{error ?? shopError}</div>
   }
-  if (!resolvedRows || resolvedRows.length === 0) {
-    return (
-      <div className="p-8">
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
-          <h1 className="text-xl font-semibold text-slate-900">Aucune donnee HQ</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Aucun flux facture n&apos;est disponible pour la periode {formatMonth(selectedMonth)}.
-          </p>
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => stepMonth(-1)}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-200 hover:text-emerald-700"
-            >
-              Voir le mois precedent
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/hq/shops')}
-              className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-            >
-              Voir les commerces
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const hasData = Boolean(resolvedRows && resolvedRows.length > 0)
 
   const totalDeliveries = resolvedRows.reduce(
     (sum, row) => sum + Number(row.total_deliveries ?? 0),
@@ -609,6 +582,32 @@ export default function HqReport() {
             </section>
           </div>
         </header>
+
+        {!hasData ? (
+          <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
+            <h2 className="text-lg font-semibold text-slate-900">Aucune donnee consolidee ce mois</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Le dashboard reste disponible pour le pilotage. Les volumes apparaitront des que des
+              livraisons seront consolidees sur {formatMonth(selectedMonth)}.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => stepMonth(-1)}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-200 hover:text-emerald-700"
+              >
+                Voir le mois precedent
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/hq/shops')}
+                className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+              >
+                Voir les commerces
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         <section className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
           <div className="flex items-center justify-between">
