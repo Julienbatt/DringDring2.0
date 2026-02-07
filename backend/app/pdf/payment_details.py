@@ -34,6 +34,21 @@ def _clean(value: str | None) -> str:
     return str(value).strip()
 
 
+def _limit(value: str | None, max_len: int) -> str:
+    text = _clean(value)
+    if len(text) <= max_len:
+        return text
+    return text[:max_len].rstrip()
+
+
+def _normalize_city(value: str | None) -> str:
+    city = _clean(value)
+    city = re.sub(r"^\d{4}\s+", "", city)
+    if " - " in city:
+        city = city.split(" - ", 1)[0].strip()
+    return city
+
+
 def _clean_iban(value: str | None) -> str:
     return re.sub(r"[^0-9A-Za-z]", "", _clean(value))
 
@@ -160,23 +175,28 @@ def _build_qrbill_instance(
 
     creditor_country_clean = _clean(creditor_country or "CH")
     street, house_num = split_street(_clean(creditor_address))
+    creditor_name_clean = _limit(creditor_name, 70)
+    creditor_street_clean = _limit(street or creditor_address, 35)
+    creditor_house_num_clean = _limit(house_num, 16) or None
+    creditor_postal_clean = _limit(creditor_postal_code, 16)
+    creditor_city_clean = _limit(_normalize_city(creditor_city), 35)
     creditor = None
-    if _clean(creditor_postal_code) and _clean(creditor_city):
+    if creditor_postal_clean and creditor_city_clean:
         creditor = {
-            "name": _clean(creditor_name),
-            "street": street or _clean(creditor_address),
-            "house_num": house_num,
-            "pcode": _clean(creditor_postal_code),
-            "city": _clean(creditor_city),
+            "name": creditor_name_clean,
+            "street": creditor_street_clean,
+            "house_num": creditor_house_num_clean,
+            "pcode": creditor_postal_clean,
+            "city": creditor_city_clean,
             "country": creditor_country_clean,
         }
     else:
-        creditor_line2 = " ".join([_clean(creditor_postal_code), _clean(creditor_city)]).strip()
-        if _clean(creditor_address) and creditor_line2:
+        creditor_line2 = " ".join([creditor_postal_clean, creditor_city_clean]).strip()
+        if creditor_street_clean and creditor_line2:
             creditor = {
-                "name": _clean(creditor_name),
-                "line1": _clean(creditor_address),
-                "line2": creditor_line2,
+                "name": creditor_name_clean,
+                "line1": _limit(creditor_street_clean, 35),
+                "line2": _limit(creditor_line2, 35),
                 "country": creditor_country_clean,
             }
     if creditor is None:
@@ -186,22 +206,27 @@ def _build_qrbill_instance(
     if debtor_name:
         debtor_country_clean = _clean(debtor_country or "CH")
         debtor_street, debtor_house_num = split_street(_clean(debtor_address))
-        if _clean(debtor_postal_code) and _clean(debtor_city):
+        debtor_name_clean = _limit(debtor_name, 70)
+        debtor_street_clean = _limit(debtor_street or debtor_address, 35)
+        debtor_house_num_clean = _limit(debtor_house_num, 16) or None
+        debtor_postal_clean = _limit(debtor_postal_code, 16)
+        debtor_city_clean = _limit(_normalize_city(debtor_city), 35)
+        if debtor_postal_clean and debtor_city_clean:
             debtor = {
-                "name": _clean(debtor_name),
-                "street": debtor_street or _clean(debtor_address),
-                "house_num": debtor_house_num,
-                "pcode": _clean(debtor_postal_code),
-                "city": _clean(debtor_city),
+                "name": debtor_name_clean,
+                "street": debtor_street_clean,
+                "house_num": debtor_house_num_clean,
+                "pcode": debtor_postal_clean,
+                "city": debtor_city_clean,
                 "country": debtor_country_clean,
             }
         else:
-            debtor_line2 = " ".join([_clean(debtor_postal_code), _clean(debtor_city)]).strip()
-            if _clean(debtor_address) and debtor_line2:
+            debtor_line2 = " ".join([debtor_postal_clean, debtor_city_clean]).strip()
+            if debtor_street_clean and debtor_line2:
                 debtor = {
-                    "name": _clean(debtor_name),
-                    "line1": _clean(debtor_address),
-                    "line2": debtor_line2,
+                    "name": debtor_name_clean,
+                    "line1": _limit(debtor_street_clean, 35),
+                    "line2": _limit(debtor_line2, 35),
                     "country": debtor_country_clean,
                 }
 

@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { MonthInput } from '@/components/ui/month-input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { apiGet, API_BASE_URL } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
@@ -242,19 +243,13 @@ export default function CityBillingPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <div className="relative mx-1 min-w-[140px]">
-              <div className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-full px-3 text-sm font-medium text-slate-700">
-                <Calendar className="h-4 w-4 text-slate-500" />
-                <span>{formatMonthYear(`${selectedMonth}-01`, locale)}</span>
-              </div>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="absolute inset-0 h-8 w-full cursor-pointer border-0 bg-transparent p-0 opacity-0"
-                aria-label="Choisir un mois"
-              />
-            </div>
+            <MonthInput
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              wrapperClassName="mx-1 min-w-[140px]"
+              className="h-8 rounded-full border-0 bg-transparent px-3 py-0 text-center text-sm font-medium text-slate-700 shadow-none focus-visible:ring-0"
+              aria-label="Choisir un mois"
+            />
             <button
               type="button"
               onClick={() => setSelectedMonth((prev) => shiftMonth(prev, 1))}

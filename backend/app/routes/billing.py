@@ -58,6 +58,16 @@ def _split_address(address: str | None) -> tuple[str | None, str | None]:
     return value, None
 
 
+def _normalize_qr_city(value: str | None) -> str | None:
+    city = (value or "").strip()
+    if not city:
+        return None
+    city = re.sub(r"^\d{4}\s+", "", city)
+    if " - " in city:
+        city = city.split(" - ", 1)[0].strip()
+    return city or None
+
+
 def _safe_pdf_filename(value: str | None, fallback: str) -> str:
     base = (value or "").strip()
     if not base:
@@ -265,6 +275,8 @@ def _build_billing_document_pdf_bytes(document_id: str, preview: int, jwt_claims
 
     recipient_postal_code = recipient_postal_code_snapshot or fallback_postal_code
     recipient_city = recipient_city_snapshot or fallback_city
+    if recipient_type == "COMMUNE":
+        recipient_city = _normalize_qr_city(recipient_city) or _normalize_qr_city(fallback_city) or recipient_city
 
     debtor_street = recipient_street_snapshot
     debtor_house_num = recipient_house_num_snapshot

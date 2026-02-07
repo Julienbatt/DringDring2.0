@@ -155,7 +155,7 @@ export default function Sidebar() {
             {/* Header */}
                 <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-slate-100 px-4">
                     <div className="flex items-center gap-2">
-                        <BrandLogo width={140} height={42} className="h-8 w-auto max-w-[140px]" priority />
+                        <BrandLogo width={176} height={56} className="h-10 w-auto max-w-[176px]" priority />
                     </div>
                     <button
                         type="button"

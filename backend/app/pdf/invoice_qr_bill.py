@@ -24,6 +24,23 @@ _POSTAL_CITY_RE = re.compile(r"\b(?P<postal>\d{4})\s+(?P<city>.+)$")
 _STREET_NUM_RE = re.compile(r"^(?P<street>.+?)\s+(?P<num>\d+[A-Za-z0-9/\-]*)$")
 
 
+def _normalize_city_for_qr(value: str | None) -> str | None:
+    city = (value or "").strip()
+    if not city:
+        return None
+    city = re.sub(r"^\d{4}\s+", "", city)
+    if " - " in city:
+        city = city.split(" - ", 1)[0].strip()
+    return city[:35].rstrip() or None
+
+
+def _limit_for_qr(value: str | None, max_len: int) -> str | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    return text[:max_len].rstrip()
+
+
 def build_recipient_invoice_with_qr_bill(
     *,
     recipient_label: str,
@@ -186,6 +203,11 @@ def build_recipient_invoice_with_qr_bill(
         if match:
             recipient_street_value = match.group("street").strip()
             recipient_house_num_value = match.group("num").strip()
+
+    recipient_street_value = _limit_for_qr(recipient_street_value, 35)
+    recipient_house_num_value = _limit_for_qr(recipient_house_num_value, 16)
+    recipient_postal_code_value = _limit_for_qr(recipient_postal_code_value, 16)
+    recipient_city_value = _normalize_city_for_qr(recipient_city_value)
 
     recipient_lines = [recipient_name]
     recipient_street_line = None

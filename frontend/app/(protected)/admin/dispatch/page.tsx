@@ -502,7 +502,7 @@ export default function DispatchPage() {
             </div>
 
             <div className="table-scroll bg-white shadow sm:rounded-lg">
-                <table className="min-w-[980px] w-full table-fixed divide-y divide-gray-200">
+                <table className="min-w-[980px] w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date / Heure</th>
@@ -510,7 +510,7 @@ export default function DispatchPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destinataire</th>
                             <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
                             <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut / Coursier</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[220px]">Action</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -592,11 +592,12 @@ export default function DispatchPage() {
                                         <td className={`hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm ${highlightClass}`}>
                                             <StatusBadge status={statusForBadge} size="xs" />
                                         </td>
-                                        <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 ${highlightClass}`}>
+                                        <td className={`px-6 py-4 text-right text-sm font-medium ${highlightClass}`}>
+                                            <div className="flex flex-wrap items-center justify-end gap-2">
                                             {canAssign && (
                                                 <button
                                                     onClick={() => handleAssignClick(delivery)}
-                                                    className="text-emerald-600 hover:text-emerald-800"
+                                                    className="whitespace-nowrap text-emerald-600 hover:text-emerald-800"
                                                     disabled={!canEdit}
                                                 >
                                                     {delivery.courier_id ? 'Changer' : 'Assigner'}
@@ -605,7 +606,7 @@ export default function DispatchPage() {
                                             {!isDelivered && !isCancelled && hasCourier && !isPickedUp && (
                                                 <button
                                                     onClick={() => handleUpdateStatus(delivery, 'picked_up')}
-                                                    className="text-blue-600 hover:text-blue-800"
+                                                    className="whitespace-nowrap text-blue-600 hover:text-blue-800"
                                                 >
                                                     Collecte
                                                 </button>
@@ -613,7 +614,7 @@ export default function DispatchPage() {
                                             {!isDelivered && !isCancelled && hasCourier && isPickedUp && (
                                                 <button
                                                     onClick={() => handleUpdateStatus(delivery, 'delivered')}
-                                                    className="text-slate-600 hover:text-slate-800"
+                                                    className="whitespace-nowrap text-slate-600 hover:text-slate-800"
                                                 >
                                                     Livrer
                                                 </button>
@@ -621,7 +622,7 @@ export default function DispatchPage() {
                                             {canEdit && (
                                                 <button
                                                     onClick={() => handleEditClick(delivery)}
-                                                    className="text-blue-600 hover:text-blue-800"
+                                                    className="whitespace-nowrap text-blue-600 hover:text-blue-800"
                                                 >
                                                     Modifier
                                                 </button>
@@ -629,12 +630,13 @@ export default function DispatchPage() {
                                             {canCancel && (
                                                 <button
                                                     onClick={() => handleCancelDelivery(delivery)}
-                                                    className="text-red-600 hover:text-red-800"
+                                                    className="whitespace-nowrap text-red-600 hover:text-red-800"
                                                     disabled={!canEdit}
                                                 >
                                                     Annuler
                                                 </button>
                                             )}
+                                            </div>
                                         </td>
                                     </tr>
                                 )
