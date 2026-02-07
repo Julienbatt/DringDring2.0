@@ -25,7 +25,8 @@ import {
     Tags,
     LifeBuoy,
     Menu,
-    X
+    X,
+    Megaphone
 } from 'lucide-react'
 
 // Map roles to navigation items based on SPECIFICATION
@@ -56,6 +57,7 @@ const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDi
             { label: 'Facturation', href: '/admin/billing', icon: Euro },
             { label: 'Tarification', href: '/admin/tariffs', icon: Tags },
             { label: 'Communes partenaires', href: '/admin/cities', icon: MapPin }, // "Communes partenaires" management
+            { label: 'Dossier service', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
@@ -65,6 +67,7 @@ const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDi
             { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
             { label: 'Commerces', href: '/hq/shops', icon: Store },
             { label: 'Facturation', href: '/hq/billing', icon: Euro },
+            { label: 'Dossier service', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
@@ -73,6 +76,7 @@ const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDi
         return [
             { label: 'Livraisons', href: '/dashboard', icon: ListTodo },
             { label: 'Facturation', href: '/shop/billing', icon: Euro },
+            { label: 'Dossier service', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
@@ -82,6 +86,7 @@ const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDi
             { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
             { label: 'Facturation', href: '/city/billing', icon: Euro }, // Spec says "Facturation City"
             { label: 'Communes partenaires', href: '/admin/cities', icon: MapPin },
+            { label: 'Dossier service', href: '/resources/presentation', icon: Megaphone },
         ]
     }
 
