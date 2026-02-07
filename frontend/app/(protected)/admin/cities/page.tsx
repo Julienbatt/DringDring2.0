@@ -122,6 +122,9 @@ export default function AdminCitiesPage() {
         .filter((group) => (normalizedTerm ? group.isVisible : true))
 
     const visibleOrphans = normalizedTerm ? orphans.filter(matchesCity) : orphans
+    const totalCommunes = parents.length
+    const totalZones = cities.filter((city) => Boolean(city.parent_city_id)).length
+    const zonesWithoutParent = orphans.length
 
     return (
         <div className="space-y-6">
@@ -131,12 +134,33 @@ export default function AdminCitiesPage() {
                     <p className="text-gray-500 mt-1">
                         Gerez les municipalites desservies par votre region.
                     </p>
+                    <p className="text-xs text-emerald-700 mt-1">
+                        Cette vue est aussi votre argument commercial pour montrer la couverture locale DringDring.
+                    </p>
                 </div>
 
                 <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
                     <Plus className="mr-2 h-4 w-4" />
                     Ajouter une commune partenaire
                 </Button>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+                    <div className="text-xs uppercase tracking-wider text-emerald-700">Communes partenaires</div>
+                    <div className="mt-1 text-2xl font-semibold text-slate-900">{totalCommunes}</div>
+                    <div className="text-xs text-slate-600">points d&apos;ancrage institutionnels</div>
+                </div>
+                <div className="rounded-xl border bg-white p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-500">Zones de service</div>
+                    <div className="mt-1 text-2xl font-semibold text-slate-900">{totalZones}</div>
+                    <div className="text-xs text-slate-600">extensions territoriales</div>
+                </div>
+                <div className="rounded-xl border bg-white p-4">
+                    <div className="text-xs uppercase tracking-wider text-slate-500">Qualite de maillage</div>
+                    <div className="mt-1 text-2xl font-semibold text-slate-900">{zonesWithoutParent}</div>
+                    <div className="text-xs text-slate-600">zones sans commune parente</div>
+                </div>
             </div>
 
             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border shadow-sm max-w-md">

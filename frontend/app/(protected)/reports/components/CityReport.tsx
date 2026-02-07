@@ -9,6 +9,7 @@ import { useCityBillingShops } from '../../dashboard/hooks/useCityBillingShops'
 import { API_BASE_URL } from '@/lib/api'
 import { useEcoStats } from '@/app/(protected)/hooks/useEcoStats'
 import { useCityStats } from '../../dashboard/hooks/useCityStats'
+import { useAuth } from '../../providers/AuthProvider'
 
 function formatCHF(value: number) {
   return `CHF ${value.toLocaleString('fr-CH', {
@@ -138,6 +139,7 @@ function extractFilename(res: Response) {
 }
 
 export default function CityReport() {
+  const { user } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -146,7 +148,9 @@ export default function CityReport() {
     paramMonth ?? getCurrentMonth()
   )
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
-  const pickerYear = Number(selectedMonth.split('-')[0] ?? getCurrentMonth().split('-')[0])
+  const [pickerYear, setPickerYear] = useState(
+    Number(selectedMonth.split('-')[0] ?? getCurrentMonth().split('-')[0])
+  )
   const monthPickerRef = useRef<HTMLDivElement | null>(null)
 
   const { data, loading, error } = useCityBilling(selectedMonth)
@@ -188,6 +192,10 @@ export default function CityReport() {
     number,
   ]
 
+  useEffect(() => {
+    setPickerYear(selectedYear)
+  }, [selectedYear])
+
   const formatMonthLabel = (year: number, monthIndex: number) => {
     const label = MONTH_LABELS[monthIndex] || ''
     return `${label} ${year}`
@@ -219,25 +227,20 @@ export default function CityReport() {
     )
   }
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="p-8 text-sm text-gray-600">
-        Aucune donnee de facturation disponible pour cette periode.
-      </div>
-    )
-  }
+  const rows = data ?? []
+  const hasData = rows.length > 0
 
-  const totalDeliveries = data.reduce(
+  const totalDeliveries = rows.reduce(
     (sum, row) => sum + Number(row.total_deliveries ?? 0),
     0
   )
 
-  const totalSubvention = data.reduce(
+  const totalSubvention = rows.reduce(
     (sum, row) => sum + Number(row.total_amount_due ?? 0),
     0
   )
 
-  const totalVolume = data.reduce(
+  const totalVolume = rows.reduce(
     (sum, row) => sum + Number(row.total_volume_chf ?? 0),
     0
   )
@@ -251,8 +254,9 @@ export default function CityReport() {
       ? subventionBase / cityStats.unique_clients
       : 0
 
-  const cityName = data[0]?.city_name ?? data[0]?.city_id ?? 'Commune partenaire'
-  const cityId = data[0]?.city_id ?? ''
+  const cityName =
+    rows[0]?.city_name ?? rows[0]?.city_id ?? user?.city_id ?? 'Commune partenaire'
+  const cityId = rows[0]?.city_id ?? user?.city_id ?? ''
   const detailRows = shopData ?? []
 
   const handleExport = async () => {
@@ -359,6 +363,32 @@ export default function CityReport() {
           ) : null}
         </div>
       </header>
+
+      {!hasData ? (
+        <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Aucune donnee sur {formatMonth(selectedMonth)}
+          </h2>
+          <p className="text-sm text-slate-600">
+            Aucun flux facture n&apos;est disponible pour cette periode. Cela arrive en debut de mois
+            ou lorsqu&apos;aucune livraison eligible n&apos;a ete consolidee.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => stepMonth(-1)}
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-200 hover:text-emerald-700"
+            >
+              Voir le mois precedent
+            </button>
+            <button
+              onClick={() => router.push('/city/billing')}
+              className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+            >
+              Ouvrir la vue facturation
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 sm:p-6 space-y-4">
         <div className="flex items-center justify-between">

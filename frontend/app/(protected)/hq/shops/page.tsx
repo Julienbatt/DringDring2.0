@@ -60,6 +60,13 @@ export default function HQShopsPage() {
     )
   })
 
+  const uniqueCities = new Set(
+    shops.map((shop) => String(shop.city_name ?? '').trim()).filter(Boolean)
+  ).size
+  const shopsWithContact = shops.filter(
+    (shop) => Boolean(String(shop.contact_person ?? '').trim() || String(shop.phone ?? '').trim())
+  ).length
+
   return (
     <div className="space-y-6 p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -70,6 +77,27 @@ export default function HQShopsPage() {
           <p className="text-gray-500 mt-1">
             {shops.length} commerces rattaches a votre siege.
           </p>
+          <p className="text-xs text-emerald-700 mt-1">
+            Cette page sert aussi de vitrine reseau pour vos equipes terrain.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+          <div className="text-xs uppercase tracking-wider text-emerald-700">Couverture</div>
+          <div className="mt-1 text-2xl font-semibold text-slate-900">{uniqueCities}</div>
+          <div className="text-xs text-slate-600">communes partenaires actives</div>
+        </div>
+        <div className="rounded-xl border bg-white p-4">
+          <div className="text-xs uppercase tracking-wider text-slate-500">Commerces actifs</div>
+          <div className="mt-1 text-2xl font-semibold text-slate-900">{shops.length}</div>
+          <div className="text-xs text-slate-600">dans votre portefeuille HQ</div>
+        </div>
+        <div className="rounded-xl border bg-white p-4">
+          <div className="text-xs uppercase tracking-wider text-slate-500">Qualite de contact</div>
+          <div className="mt-1 text-2xl font-semibold text-slate-900">{shopsWithContact}</div>
+          <div className="text-xs text-slate-600">fiches avec contact renseigne</div>
         </div>
       </div>
 
@@ -103,7 +131,7 @@ export default function HQShopsPage() {
             ) : filteredShops.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-20 text-center text-muted-foreground">
-                  Aucun commerce pour ce siege.
+                  Aucun commerce pour ce siege. Ajoutez des partenaires pour activer votre couverture.
                 </TableCell>
               </TableRow>
             ) : (
