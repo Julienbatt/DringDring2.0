@@ -7,6 +7,7 @@ import { useMe } from '../hooks/useMe'
 import { toast } from 'sonner'
 import { roleLabel } from '@/lib/roleLabel'
 import { apiGet, apiPost, apiPut, apiDelete, API_BASE_URL } from '@/lib/api'
+import { MonthInput } from '@/components/ui/month-input'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -512,8 +513,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-slate-600">Mois d&apos;effet</label>
-                                <input
-                                    type="month"
+                                <MonthInput
                                     value={vatMonth}
                                     onChange={(e) => setVatMonth(e.target.value)}
                                     className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"

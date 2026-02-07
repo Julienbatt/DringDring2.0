@@ -5,7 +5,7 @@ import { Download, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Input } from '@/components/ui/input'
+import { MonthInput } from '@/components/ui/month-input'
 import { apiGet, API_BASE_URL } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -226,8 +226,7 @@ export default function CityBillingPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Input
-            type="month"
+          <MonthInput
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="w-[180px]"
