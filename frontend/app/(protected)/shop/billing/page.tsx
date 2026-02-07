@@ -191,7 +191,10 @@ export default function ShopBillingPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Facturation commerce</h1>
           <p className="text-muted-foreground">
-            Historique mensuel, totaux et PDFs officiels.
+            Historique mensuel, totaux et pieces comptables.
+          </p>
+          <p className="text-xs text-emerald-700 mt-1">
+            Periode active: {formatMonth(selectedMonth)}.
           </p>
         </div>
         <div className="relative" ref={monthPickerRef}>
@@ -273,18 +276,39 @@ export default function ShopBillingPage() {
         </div>
       </div>
 
+      {!loading && activeDeliveries.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Aucune livraison facturee sur {formatMonth(selectedMonth)}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Vous pouvez continuer a creer des livraisons depuis l&apos;ecran Livraisons.
+            Les PDF officiels apparaissent apres gel de periode.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Montant facture (TTC)</div>
+          <div className="text-sm font-medium text-muted-foreground">Part entreprise regionale (TTC)</div>
           <div className="text-2xl font-bold">{formatCHF(totalAdminRegion)}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Base des livraisons non annulees
+          </div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
           <div className="text-sm font-medium text-muted-foreground">Livraisons</div>
           <div className="text-2xl font-bold">{totalDeliveries}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Operations prises en compte
+          </div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
           <div className="text-sm font-medium text-muted-foreground">Sacs</div>
           <div className="text-2xl font-bold">{totalBags}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Volume logistique mensuel
+          </div>
         </div>
       </div>
 
@@ -404,7 +428,9 @@ export default function ShopBillingPage() {
             </table>
           </div>
         ) : (
-          <div className="text-sm text-gray-500">Aucune periode gelee.</div>
+          <div className="text-sm text-gray-500">
+            Aucune periode gelee. Les exports officiels seront disponibles apres cloture mensuelle.
+          </div>
         )}
       </div>
     </div>

@@ -55,6 +55,12 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${month}`
 }
 
+function formatMonth(value: string) {
+  const date = new Date(value.length === 7 ? `${value}-01` : value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
+}
+
 export default function CityBillingPage() {
   const { user } = useAuth()
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
@@ -196,12 +202,28 @@ export default function CityBillingPage() {
     ? (cmsDeliveries / deliveries.length) * 100
     : 0
 
+  if (!user?.city_id) {
+    return (
+      <div className="p-8">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
+          <h1 className="text-xl font-semibold text-slate-900">Acces commune incomplet</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Aucun identifiant de commune n&apos;est associe a votre compte. Contactez l&apos;administration regionale.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-8 space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Facturation communale</h1>
           <p className="text-muted-foreground">Resume et detail des livraisons par commerce</p>
+          <p className="text-xs text-emerald-700 mt-1">
+            Periode analysee: {formatMonth(selectedMonth)}.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Input
@@ -221,6 +243,18 @@ export default function CityBillingPage() {
         </div>
       </div>
 
+      {!loading && !summary && shops.length === 0 && deliveries.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Aucune donnee disponible sur {formatMonth(selectedMonth)}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Cette vue se remplit automatiquement lorsqu&apos;il y a des livraisons consolidees
+            pour votre commune sur la periode.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
           <div className="text-sm font-medium text-muted-foreground">Volume total</div>
@@ -237,6 +271,7 @@ export default function CityBillingPage() {
           <div className="text-2xl font-bold">
             CHF {Number(summary?.total_amount_due || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
           </div>
+          <div className="text-xs text-muted-foreground mt-1">Budget mobilise sur la periode</div>
         </div>
       </div>
 
@@ -257,7 +292,7 @@ export default function CityBillingPage() {
         </div>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-white overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -333,62 +368,64 @@ export default function CityBillingPage() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Commerce</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Adresse</TableHead>
-              <TableHead>NPA</TableHead>
-              <TableHead>Commune</TableHead>
-              <TableHead>Public</TableHead>
-              <TableHead className="text-right">Sacs</TableHead>
-              <TableHead className="text-right">Total CHF</TableHead>
-              <TableHead className="text-right">Part commune</TableHead>
-              <TableHead className="text-right">Part entreprise regionale</TableHead>
-              <TableHead className="text-right">Part client</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {detailLoading ? (
+        <div className="overflow-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={12} className="h-20 text-center">Chargement...</TableCell>
+                <TableHead>Date</TableHead>
+                <TableHead>Commerce</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Adresse</TableHead>
+                <TableHead>NPA</TableHead>
+                <TableHead>Commune</TableHead>
+                <TableHead>Public</TableHead>
+                <TableHead className="text-right">Sacs</TableHead>
+                <TableHead className="text-right">Total CHF</TableHead>
+                <TableHead className="text-right">Part commune</TableHead>
+                <TableHead className="text-right">Part entreprise regionale</TableHead>
+                <TableHead className="text-right">Part client</TableHead>
               </TableRow>
-            ) : visibleDetails.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={12} className="h-20 text-center text-muted-foreground">
-                  Aucune livraison pour cette periode.
-                </TableCell>
-              </TableRow>
-            ) : (
-              visibleDetails.map((row) => (
-                <TableRow key={row.delivery_id}>
-                  <TableCell>{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
-                  <TableCell>{row.shop_name}</TableCell>
-                  <TableCell>{row.client_name || '-'}</TableCell>
-                  <TableCell>{row.address || '-'}</TableCell>
-                  <TableCell>{row.postal_code || '-'}</TableCell>
-                  <TableCell>{row.delivery_city || row.city_name}</TableCell>
-                  <TableCell>{row.is_cms ? 'CMS' : 'Standard'}</TableCell>
-                  <TableCell className="text-right">{row.bags ?? '-'}</TableCell>
-                  <TableCell className="text-right">
-                    CHF {Number(row.total_price || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                    <TableCell className="text-right">
-                      CHF {Number(row.share_city || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      CHF {Number(row.share_admin_region || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                  <TableCell className="text-right">
-                    CHF {Number(row.share_client || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+            </TableHeader>
+            <TableBody>
+              {detailLoading ? (
+                <TableRow>
+                  <TableCell colSpan={12} className="h-20 text-center">Chargement...</TableCell>
+                </TableRow>
+              ) : visibleDetails.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={12} className="h-20 text-center text-muted-foreground">
+                    Aucune livraison pour cette periode.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                visibleDetails.map((row) => (
+                  <TableRow key={row.delivery_id}>
+                    <TableCell>{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
+                    <TableCell>{row.shop_name}</TableCell>
+                    <TableCell>{row.client_name || '-'}</TableCell>
+                    <TableCell>{row.address || '-'}</TableCell>
+                    <TableCell>{row.postal_code || '-'}</TableCell>
+                    <TableCell>{row.delivery_city || row.city_name}</TableCell>
+                    <TableCell>{row.is_cms ? 'CMS' : 'Standard'}</TableCell>
+                    <TableCell className="text-right">{row.bags ?? '-'}</TableCell>
+                    <TableCell className="text-right">
+                      CHF {Number(row.total_price || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                      <TableCell className="text-right">
+                        CHF {Number(row.share_city || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        CHF {Number(row.share_admin_region || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                    <TableCell className="text-right">
+                      CHF {Number(row.share_client || 0).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   )
