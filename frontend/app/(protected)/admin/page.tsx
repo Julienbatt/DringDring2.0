@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { apiGet } from '@/lib/api'
 import { useEcoStats } from '@/app/(protected)/hooks/useEcoStats'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -38,7 +39,6 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { createClient } = require('@/lib/supabase/client')
         const supabase = createClient()
         const { data: sessionData } = await supabase.auth.getSession()
         const session = sessionData?.session

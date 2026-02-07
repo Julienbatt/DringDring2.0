@@ -19,6 +19,10 @@ import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toast } from 'sonner'
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback
+}
+
 export type ClientData = {
     id?: string
     name: string
@@ -110,7 +114,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     useEffect(() => {
         if (open && session?.access_token) {
             const queryParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
-            apiGet<any[]>(`/cities${queryParams}`, session.access_token)
+            apiGet<{ id: string; name: string }[]>(`/cities${queryParams}`, session.access_token)
                 .then(setCities)
                 .catch(e => console.error("Error loading cities", e))
         }
@@ -211,9 +215,9 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             }
             onSuccess()
             onOpenChange(false)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error)
-            toast.error(error.message || "Une erreur est survenue")
+            toast.error(getErrorMessage(error, "Une erreur est survenue"))
         } finally {
             setLoading(false)
         }
@@ -239,9 +243,9 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             toast.success('Client supprime')
             onSuccess()
             onOpenChange(false)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error)
-            toast.error(error.message || "Erreur lors de la suppression")
+            toast.error(getErrorMessage(error, "Erreur lors de la suppression"))
         } finally {
             setLoading(false)
             setConfirmDelete(false)

@@ -10,11 +10,6 @@ function getToday() {
     return now.toISOString().slice(0, 10)
 }
 
-function formatTime(isoString: string | null) {
-    if (!isoString) return ''
-    return new Date(isoString).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' })
-}
-
 export default function CourierDashboard() {
     const [selectedDate, setSelectedDate] = useState(getToday())
     const { data, loading, error, refresh } = useCourierDeliveries(selectedDate)

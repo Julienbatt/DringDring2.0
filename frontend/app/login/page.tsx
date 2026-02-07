@@ -43,7 +43,7 @@ export default function LoginPage() {
             toast.success('Bon retour parmi nous !')
             router.refresh()
             router.push('/dashboard')
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Login Error:', err)
             toast.error('Une erreur systeme est survenue.')
         } finally {

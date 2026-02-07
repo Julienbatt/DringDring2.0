@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, MapPin, Phone, User, Key, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -50,13 +50,7 @@ export default function ClientsPage() {
     const cmsCount = clients.filter((client) => client.is_cms).length
     const standardCount = clients.length - cmsCount
 
-    useEffect(() => {
-        if (session?.access_token) {
-            loadClients()
-        }
-    }, [session, adminContextRegion])
-
-    const loadClients = async () => {
+    const loadClients = useCallback(async () => {
         try {
             if (!session?.access_token) return
             const queryParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
@@ -68,7 +62,13 @@ export default function ClientsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [session, adminContextRegion])
+
+    useEffect(() => {
+        if (session?.access_token) {
+            loadClients()
+        }
+    }, [session, loadClients])
 
     const handleCreate = () => {
         setSelectedClient(null)

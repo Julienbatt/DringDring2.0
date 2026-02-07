@@ -56,8 +56,8 @@ export function useRewardStats(adminRegionId?: string) {
         const path = `/stats/rewards${params.toString() ? `?${params.toString()}` : ''}`
         const response = await apiGet<RewardStats>(path, session.access_token)
         setData(response)
-      } catch (err: any) {
-        setError(err?.message ?? 'Erreur de chargement')
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Erreur de chargement')
       } finally {
         setLoading(false)
       }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { apiGet, apiPut } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
@@ -38,6 +38,14 @@ type UserData = {
     created_at?: string
 }
 
+type UserUpdatePayload = {
+    role: string
+    admin_region_id: string | null
+    shop_id: string | null
+    city_id: string | null
+    hq_id: string | null
+}
+
 export default function SuperAdminUsersPage() {
     const { session } = useAuth()
     const [users, setUsers] = useState<UserData[]>([])
@@ -48,13 +56,7 @@ export default function SuperAdminUsersPage() {
     const [role, setRole] = useState('')
     const [contextId, setContextId] = useState('')
 
-    useEffect(() => {
-        if (session?.access_token) {
-            loadUsers()
-        }
-    }, [session])
-
-    const loadUsers = async () => {
+    const loadUsers = useCallback(async () => {
         try {
             if (!session?.access_token) return
             const data = await apiGet<UserData[]>('/users', session.access_token)
@@ -65,7 +67,13 @@ export default function SuperAdminUsersPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [session])
+
+    useEffect(() => {
+        if (session?.access_token) {
+            loadUsers()
+        }
+    }, [session, loadUsers])
 
     const handleEdit = (u: UserData) => {
         setEditingUser(u)
@@ -82,11 +90,13 @@ export default function SuperAdminUsersPage() {
     const handleSave = async () => {
         if (!editingUser || !session?.access_token) return
 
-        const payload: any = { role }
-        payload.admin_region_id = null
-        payload.shop_id = null
-        payload.city_id = null
-        payload.hq_id = null
+        const payload: UserUpdatePayload = {
+            role,
+            admin_region_id: null,
+            shop_id: null,
+            city_id: null,
+            hq_id: null,
+        }
 
         if (role === 'admin_region') payload.admin_region_id = contextId
         if (role === 'shop') payload.shop_id = contextId
@@ -98,8 +108,9 @@ export default function SuperAdminUsersPage() {
             toast.success('Utilisateur mis a jour')
             loadUsers()
             setIsDialogOpen(false)
-        } catch (e: any) {
-            toast.error('Erreur mise a jour: ' + e.message)
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : 'Erreur inconnue'
+            toast.error('Erreur mise a jour: ' + message)
         }
     }
 

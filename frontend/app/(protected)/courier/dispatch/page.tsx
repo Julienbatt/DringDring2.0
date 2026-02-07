@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
 import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle } from 'lucide-react'
@@ -31,6 +31,13 @@ type Courier = {
   phone_number: string | null
 }
 
+type BackendCourier = {
+  id: string
+  first_name: string
+  last_name: string
+  phone_number: string | null
+}
+
 const getToday = () => new Date().toISOString().slice(0, 10)
 
 const getMapLink = (address: string, city: string) => {
@@ -51,7 +58,7 @@ export default function CourierDispatchPage() {
   const canDispatch = !!user?.can_dispatch
   const courierId = user?.courier_id || null
 
-  const fetchDeliveries = async () => {
+  const fetchDeliveries = useCallback(async () => {
     if (!session?.access_token) return
     setLoading(true)
     setError(null)
@@ -59,7 +66,7 @@ export default function CourierDispatchPage() {
       const query = `?date_from=${encodeURIComponent(selectedDate)}&date_to=${encodeURIComponent(selectedDate)}`
       const [data, couriersRes] = await Promise.all([
         api.get<DispatchDelivery[]>(`/dispatch/deliveries${query}`, session.access_token),
-        api.get<any[]>(`/couriers`, session.access_token)
+        api.get<BackendCourier[]>(`/couriers`, session.access_token)
       ])
       setDeliveries(data)
       const formattedCouriers = couriersRes.map((c) => ({
@@ -74,12 +81,12 @@ export default function CourierDispatchPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session, selectedDate])
 
   useEffect(() => {
     if (!user || !canDispatch) return
     fetchDeliveries()
-  }, [user, canDispatch, selectedDate])
+  }, [user, canDispatch, fetchDeliveries])
 
   const todo = useMemo(
     () => deliveries.filter((d) => !d.courier_id && !['delivered', 'cancelled'].includes(d.status || '')),
@@ -101,7 +108,7 @@ export default function CourierDispatchPage() {
       setDeliveries((prev) =>
         prev.map((d) => (d.id === deliveryId ? { ...d, courier_id: courierId, status: 'assigned' } : d))
       )
-      setActiveTab('mine')
+      setActiveTab('assigned')
     } catch (err) {
       console.error(err)
       alert("Erreur lors de l'assignation")
@@ -155,7 +162,7 @@ export default function CourierDispatchPage() {
       <div className="p-6 bg-white rounded-xl border shadow-sm">
         <h1 className="text-xl font-semibold text-gray-900">Dispatch</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Ce compte n'est pas autorise au dispatch.
+          Ce compte n&apos;est pas autorise au dispatch.
         </p>
       </div>
     )
@@ -313,7 +320,7 @@ export default function CourierDispatchPage() {
                           try {
                             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=picked_up`, {}, session.access_token)
                             fetchDeliveries()
-                          } catch (err) {
+                          } catch {
                             alert("Erreur lors de la collecte")
                           }
                         }}
@@ -327,7 +334,7 @@ export default function CourierDispatchPage() {
                           try {
                             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=delivered`, {}, session.access_token)
                             fetchDeliveries()
-                          } catch (err) {
+                          } catch {
                             alert("Erreur lors de la livraison")
                           }
                         }}
@@ -341,7 +348,7 @@ export default function CourierDispatchPage() {
                           try {
                             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=cancelled`, {}, session.access_token)
                             fetchDeliveries()
-                          } catch (err) {
+                          } catch {
                             alert("Erreur lors de l'annulation")
                           }
                         }}

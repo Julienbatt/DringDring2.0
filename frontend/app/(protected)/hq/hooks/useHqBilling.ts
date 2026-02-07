@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
 
-export type HqBillingRow = Record<string, any>
+export type HqBillingRow = Record<string, unknown>
 
 export function useHqBilling(month?: string) {
   const [data, setData] = useState<HqBillingRow[] | null>(null)
@@ -32,8 +32,8 @@ export function useHqBilling(month?: string) {
         session.access_token
       )
       setData(result)
-    } catch (e: any) {
-      const message = e?.message ?? ''
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e ?? '')
       if (message.includes('403')) {
         setError('Acces reserve HQ')
       } else if (message.includes('401')) {

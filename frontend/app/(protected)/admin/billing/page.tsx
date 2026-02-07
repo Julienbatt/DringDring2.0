@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Calendar, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -126,12 +126,6 @@ export default function BillingPage() {
     }, [paramMonth, selectedMonth])
 
     useEffect(() => {
-        setData(null)
-        setDetails([])
-        loadAll()
-    }, [selectedMonth, adminContextRegion])
-
-    useEffect(() => {
         const [year] = selectedMonth.split('-')
         setPickerYear(Number(year))
     }, [selectedMonth])
@@ -149,7 +143,7 @@ export default function BillingPage() {
     }, [monthPickerOpen])
 
 
-    const loadAll = async () => {
+    const loadAll = useCallback(async () => {
         const requestId = ++loadAllRequestRef.current
         const dataRequestId = ++dataRequestRef.current
         const detailsRequestId = ++detailsRequestRef.current
@@ -187,7 +181,13 @@ export default function BillingPage() {
                 setDetailLoading(false)
             }
         }
-    }
+    }, [adminContextRegion, selectedMonth])
+
+    useEffect(() => {
+        setData(null)
+        setDetails([])
+        loadAll()
+    }, [loadAll])
 
     const handleRefresh = async () => {
         setRefreshing(true)

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
 
-export type CityBillingRow = Record<string, any>
+export type CityBillingRow = Record<string, unknown>
 
 export function useCityBilling(month?: string) {
   const [data, setData] = useState<CityBillingRow[] | null>(null)
@@ -33,8 +33,8 @@ export function useCityBilling(month?: string) {
       )
 
       setData(res)
-    } catch (e: any) {
-      const message = e?.message ?? ''
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e ?? '')
 
       if (message.includes('403')) {
         setError('Acces interdit : role insuffisant')

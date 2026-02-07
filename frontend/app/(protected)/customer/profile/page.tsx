@@ -10,6 +10,10 @@ import BrandLogo from '@/components/BrandLogo'
 import { roleLabel } from '@/lib/roleLabel'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback
+}
+
 const emptyClient = {
     id: '',
     name: '',
@@ -120,8 +124,8 @@ export default function CustomerProfilePage() {
 
             toast.success('Mot de passe mis a jour avec succes')
             setNewPassword('')
-        } catch (error: any) {
-            toast.error(`Erreur: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setUpdating(false)
         }
@@ -153,8 +157,8 @@ export default function CustomerProfilePage() {
             setClient(updated)
             setClientDraft(updated)
             toast.success('Informations client mises a jour')
-        } catch (error: any) {
-            toast.error(`Erreur: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setClientSaving(false)
         }
@@ -214,8 +218,8 @@ export default function CustomerProfilePage() {
             setClientDraft(created)
             setCreateDraft(created)
             toast.success('Fiche client créée')
-        } catch (error: any) {
-            toast.error(`Erreur: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setCreatingClient(false)
         }

@@ -36,8 +36,8 @@ export function useCustomerStats(month?: string) {
         const path = `/stats/customer${params.toString() ? `?${params.toString()}` : ''}`
         const response = await apiGet<CustomerStats>(path, session.access_token)
         setData(response)
-      } catch (err: any) {
-        setError(err?.message ?? 'Erreur de chargement')
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Erreur de chargement')
       } finally {
         setLoading(false)
       }

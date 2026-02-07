@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
 import { format } from 'date-fns'
@@ -88,27 +88,21 @@ export default function DispatchPage() {
         return 'unassigned'
     }
 
-    // Allow admin_region or super_admin (with optional context drill-down).
-    useEffect(() => {
-        if (!user) return
-        if (user.role !== 'admin_region' && user.role !== 'super_admin') return
+    const clearHighlight = useCallback((deliveryId: string) => {
+        setHighlightedIds((prev) => {
+            if (!prev.has(deliveryId)) return prev
+            const next = new Set(prev)
+            next.delete(deliveryId)
+            return next
+        })
+        const timeoutId = highlightTimeoutsRef.current.get(deliveryId)
+        if (timeoutId) {
+            window.clearTimeout(timeoutId)
+            highlightTimeoutsRef.current.delete(deliveryId)
+        }
+    }, [])
 
-        fetchData()
-    }, [user, adminContextRegion, selectedMonth])
-
-    useEffect(() => {
-        if (!user) return
-        if (user.role !== 'admin_region' && user.role !== 'super_admin') return
-
-        const intervalId = window.setInterval(() => {
-            if (document.visibilityState !== 'visible') return
-            fetchData({ silent: true })
-        }, 15000)
-
-        return () => window.clearInterval(intervalId)
-    }, [user, adminContextRegion, selectedMonth])
-
-    const fetchData = async ({ silent = false }: { silent?: boolean } = {}) => {
+    const fetchData = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
         if (!silent) {
             setLoading(true)
         }
@@ -125,7 +119,7 @@ export default function DispatchPage() {
             const couriersParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
             const [deliveriesRes, couriersRes] = await Promise.all([
                 api.get<DispatchDelivery[]>(`/dispatch/deliveries${queryParams}`, session?.access_token),
-                api.get<any[]>(`/couriers${couriersParams}`, session?.access_token)
+                api.get<BackendCourier[]>(`/couriers${couriersParams}`, session?.access_token)
             ])
 
             // Mapping backend response to frontend Courier type if schema differs slightly
@@ -172,7 +166,7 @@ export default function DispatchPage() {
             previousDeliveryIdsRef.current = currentIds
             lastFetchAtRef.current = fetchStartedAt
             setCouriers(formattedCouriers)
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err)
             setError('Erreur lors du chargement des donnees dispatch.')
         } finally {
@@ -180,25 +174,31 @@ export default function DispatchPage() {
                 setLoading(false)
             }
         }
-    }
+    }, [adminContextRegion, clearHighlight, selectedMonth, session?.access_token])
+
+    // Allow admin_region or super_admin (with optional context drill-down).
+    useEffect(() => {
+        if (!user) return
+        if (user.role !== 'admin_region' && user.role !== 'super_admin') return
+
+        fetchData()
+    }, [user, fetchData])
+
+    useEffect(() => {
+        if (!user) return
+        if (user.role !== 'admin_region' && user.role !== 'super_admin') return
+
+        const intervalId = window.setInterval(() => {
+            if (document.visibilityState !== 'visible') return
+            fetchData({ silent: true })
+        }, 15000)
+
+        return () => window.clearInterval(intervalId)
+    }, [user, fetchData])
 
     const handleAssignClick = (delivery: DispatchDelivery) => {
         setSelectedDelivery(delivery)
         setIsModalOpen(true)
-    }
-
-    const clearHighlight = (deliveryId: string) => {
-        setHighlightedIds((prev) => {
-            if (!prev.has(deliveryId)) return prev
-            const next = new Set(prev)
-            next.delete(deliveryId)
-            return next
-        })
-        const timeoutId = highlightTimeoutsRef.current.get(deliveryId)
-        if (timeoutId) {
-            window.clearTimeout(timeoutId)
-            highlightTimeoutsRef.current.delete(deliveryId)
-        }
     }
 
     const handleAssignConfirm = async (courierId: string) => {
@@ -229,7 +229,7 @@ export default function DispatchPage() {
 
             setIsModalOpen(false)
             setSelectedDelivery(null)
-        } catch (err) {
+        } catch {
             alert("Erreur lors de l'assignation")
         } finally {
             setAssigningLoading(false)
@@ -244,7 +244,7 @@ export default function DispatchPage() {
                     ? { ...d, status }
                     : d
             )))
-        } catch (err) {
+        } catch {
             alert("Erreur lors de la validation")
         }
     }
@@ -273,12 +273,12 @@ export default function DispatchPage() {
             await api.patch(`/deliveries/admin/${editDelivery.id}`, payload, session?.access_token)
             setDeliveries(prev => prev.map(d => (
                 d.id === editDelivery.id
-                    ? { ...d, delivery_date: payload.delivery_date, time_window: payload.time_window, bags: payload.bags as any, notes: payload.notes }
+                    ? { ...d, delivery_date: payload.delivery_date, time_window: payload.time_window, bags: payload.bags, notes: payload.notes }
                     : d
             )))
             setIsEditModalOpen(false)
             setEditDelivery(null)
-        } catch (err) {
+        } catch {
             alert("Erreur lors de la modification")
         } finally {
             setEditSaving(false)
@@ -672,7 +672,7 @@ export default function DispatchPage() {
 
                 <div className="rounded-lg border bg-white p-4 lg:col-span-2">
                     <div className="flex items-center justify-between">
-                        <div className="text-sm font-semibold text-gray-700">Journal d'operations</div>
+                        <div className="text-sm font-semibold text-gray-700">Journal d&apos;operations</div>
                         <div className="text-xs text-gray-500">{recentOps.length} derniere(s)</div>
                     </div>
                     <div className="mt-4 space-y-3">

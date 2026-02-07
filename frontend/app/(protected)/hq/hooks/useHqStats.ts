@@ -51,8 +51,8 @@ export function useHqStats(month?: string, adminRegionId?: string | null) {
       const query = params.toString() ? `?${params.toString()}` : ''
       const result = await apiGet<HqStats>(`/stats/hq${query}`, session.access_token)
       setData(result)
-    } catch (e: any) {
-      const message = e?.message ?? ''
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e ?? '')
       if (message.includes('403')) {
         setError('Acces reserve HQ')
       } else if (message.includes('401')) {

@@ -96,32 +96,28 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<SwisstopoResult[]>([])
     const [isOpen, setIsOpen] = useState(false)
-    const [loading, setLoading] = useState(false)
 
     // Use debounced query for API calls
     const debouncedQuery = useDebounce(query, 300)
+    const shouldSearch = debouncedQuery.trim().length >= 3
     const wrapperRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        if (!debouncedQuery || debouncedQuery.length < 3) {
-            setResults([])
+        if (!shouldSearch) {
             return
         }
 
-        setLoading(true)
         // api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&searchText=...&origins=address
         fetch(`https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&searchText=${encodeURIComponent(debouncedQuery)}&origins=address`)
             .then(res => res.json())
             .then(data => {
                 setResults(data.results || [])
-                setLoading(false)
                 setIsOpen(true)
             })
             .catch(err => {
                 console.error("Swisstopo error", err)
-                setLoading(false)
             })
-    }, [debouncedQuery])
+    }, [debouncedQuery, shouldSearch])
 
     // Parse "<b>Avenue de la Gare</b> 1, 1950 Sion"
     const parseLabel = (htmlLabel: string): Address => {
@@ -223,18 +219,14 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
                     value={query}
                     onChange={e => {
                         setQuery(e.target.value)
-                        setIsOpen(true)
+                        const nextShouldSearch = e.target.value.trim().length >= 3
+                        setIsOpen(nextShouldSearch)
                     }}
                     disabled={disabled}
                 />
-                {loading && (
-                    <div className="absolute right-3 top-2.5">
-                        <div className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
-                    </div>
-                )}
             </div>
 
-            {isOpen && results.length > 0 && (
+            {isOpen && shouldSearch && results.length > 0 && (
                 <ul className="absolute z-10 w-full mt-1 bg-white border rounded shadow-lg max-h-60 overflow-auto">
                     {results.map((result) => (
                         <li

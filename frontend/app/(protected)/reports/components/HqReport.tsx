@@ -181,9 +181,7 @@ export default function HqReport() {
     paramRegion ?? null
   )
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
-  const [pickerYear, setPickerYear] = useState(() =>
-    Number(getCurrentMonth().split('-')[0])
-  )
+  const pickerYear = Number(selectedMonth.split('-')[0] ?? getCurrentMonth().split('-')[0])
   const monthPickerRef = useRef<HTMLDivElement | null>(null)
   const { data: ecoStats } = useEcoStats(selectedMonth)
   const { user } = useAuth()
@@ -206,11 +204,6 @@ export default function HqReport() {
     }
     router.replace(`${pathname}?${params.toString()}`)
   }
-
-  useEffect(() => {
-    const [year] = selectedMonth.split('-')
-    setPickerYear(Number(year))
-  }, [selectedMonth])
 
   useEffect(() => {
     if (!monthPickerOpen) return
@@ -300,14 +293,11 @@ export default function HqReport() {
       ? String((data as { month?: string }).month ?? selectedMonth)
       : selectedMonth
 
-  useEffect(() => {
-    if (!selectedRegionId && regionOptions.length === 1) {
-      setSelectedRegionId(regionOptions[0].id)
-    }
-  }, [regionOptions, selectedRegionId])
+  const effectiveSelectedRegionId =
+    selectedRegionId ?? (regionOptions.length === 1 ? regionOptions[0].id : null)
 
   const isRegionRequired = regionOptions.length > 1
-  const canDownloadPdf = !isRegionRequired || Boolean(selectedRegionId)
+  const canDownloadPdf = !isRegionRequired || Boolean(effectiveSelectedRegionId)
 
   const handleRegionChange = (value: string) => {
     const nextValue = value || null
@@ -352,7 +342,6 @@ export default function HqReport() {
     totalDeliveries > 0
       ? totalSubventionValue / totalDeliveries
       : 0
-  const totalBasketValue = hqStats?.total_basket_value_chf ?? 0
   const averageBasketValue = hqStats?.average_basket_value_chf ?? 0
   const cmsDeliveries = hqStats?.cms_deliveries ?? 0
   const cmsSharePct = hqStats?.cms_share_pct ?? 0
@@ -371,8 +360,8 @@ export default function HqReport() {
   const co2SavedKg = ecoStats?.co2_saved_kg ?? 0
 
   const hqName = resolvedRows[0]?.hq_name ?? resolvedRows[0]?.hq_id ?? 'Groupe'
-  const detailRows = selectedRegionId
-    ? (shopData ?? []).filter((row) => String(row.admin_region_id) === selectedRegionId)
+  const detailRows = effectiveSelectedRegionId
+    ? (shopData ?? []).filter((row) => String(row.admin_region_id) === effectiveSelectedRegionId)
     : shopData ?? []
   const topShops = [...detailRows]
     .sort((a, b) => Number(b.total_deliveries ?? 0) - Number(a.total_deliveries ?? 0))
@@ -391,8 +380,8 @@ export default function HqReport() {
   const handleExport = async () => {
     const params = new URLSearchParams()
     params.set('month', selectedMonth)
-    if (selectedRegionId) {
-      params.set('admin_region_id', selectedRegionId)
+    if (effectiveSelectedRegionId) {
+      params.set('admin_region_id', effectiveSelectedRegionId)
     }
     await downloadCsv(
       `/reports/hq-billing/export?${params.toString()}`,
@@ -405,8 +394,8 @@ export default function HqReport() {
     const params = new URLSearchParams()
     params.set('month', selectedMonth)
     params.set('allow_unfrozen', '1')
-    if (selectedRegionId) {
-      params.set('admin_region_id', selectedRegionId)
+    if (effectiveSelectedRegionId) {
+      params.set('admin_region_id', effectiveSelectedRegionId)
     }
     await downloadPdf(
       `/reports/hq-monthly-pdf?${params.toString()}`,
@@ -527,7 +516,7 @@ export default function HqReport() {
                     <select
                       id="hq-region"
                       className="bg-transparent text-sm font-semibold text-slate-900 outline-none"
-                      value={selectedRegionId ?? ''}
+                      value={effectiveSelectedRegionId ?? ''}
                       onChange={(event) => handleRegionChange(event.target.value)}
                     >
                       <option value="">Toutes regions</option>
@@ -657,7 +646,7 @@ export default function HqReport() {
                 Totaux regionaux — selectionne une region pour filtrer les details et le PDF.
               </p>
             </div>
-            {isRegionRequired && !selectedRegionId && (
+            {isRegionRequired && !effectiveSelectedRegionId && (
               <div className="text-xs font-semibold text-amber-600">
                 Selectionne une region pour generer le PDF groupe.
               </div>
@@ -669,7 +658,7 @@ export default function HqReport() {
                 key={region.id}
                 onClick={() => handleRegionChange(region.id)}
                 className={`rounded-2xl border p-5 text-left transition ${
-                  selectedRegionId === region.id
+                  effectiveSelectedRegionId === region.id
                     ? 'border-emerald-300 bg-emerald-50/60'
                     : 'border-slate-200 bg-white hover:border-emerald-200'
                 }`}
@@ -689,7 +678,7 @@ export default function HqReport() {
               </button>
             ))}
           </div>
-          {selectedRegionId && (
+          {effectiveSelectedRegionId && (
             <div className="mt-4">
               <button
                 onClick={() => handleRegionChange('')}
@@ -801,7 +790,7 @@ export default function HqReport() {
               <button
                 onClick={() => handleRegionChange('')}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  !selectedRegionId
+                  !effectiveSelectedRegionId
                     ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
                     : 'border-slate-200 text-slate-600 hover:border-emerald-200'
                 }`}
@@ -813,7 +802,7 @@ export default function HqReport() {
                   key={region.id}
                   onClick={() => handleRegionChange(region.id)}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    selectedRegionId === region.id
+                    effectiveSelectedRegionId === region.id
                       ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
                       : 'border-slate-200 text-slate-600 hover:border-emerald-200'
                   }`}

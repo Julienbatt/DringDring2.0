@@ -19,6 +19,10 @@ import { useAuth } from '../../../providers/AuthProvider'
 import { toast } from 'sonner'
 import { Bike } from 'lucide-react'
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback
+}
+
 export type CourierData = {
     id?: string
     first_name: string
@@ -129,9 +133,9 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
             }
             onSuccess()
             onOpenChange(false)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error)
-            toast.error(error.message || "Une erreur est survenue")
+            toast.error(getErrorMessage(error, "Une erreur est survenue"))
         } finally {
             setLoading(false)
         }
@@ -145,7 +149,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Modifier le Coursier' : 'Nouveau Coursier'}</DialogTitle>
                     <DialogDescription>
-                        Gérez l'équipe logistique.
+                        Gerez l&apos;equipe logistique.
                     </DialogDescription>
                 </DialogHeader>
 

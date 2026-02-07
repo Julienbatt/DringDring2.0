@@ -31,14 +31,8 @@ export default function ClientAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null)
 
   const selectedClient = clients.find((client) => client.id === value)
-
-  useEffect(() => {
-    if (selectedClient) {
-      setQuery(
-        `${selectedClient.name}`
-      )
-    }
-  }, [selectedClient])
+  const inputValue =
+    query || !selectedClient ? query : `${selectedClient.name}`
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -64,7 +58,7 @@ export default function ClientAutocomplete({
         type="text"
         className="w-full rounded border px-2 py-1 disabled:bg-slate-100 disabled:text-slate-500"
         placeholder={placeholder}
-        value={query}
+        value={inputValue}
         onChange={(event) => {
           if (disabled) return
           setQuery(event.target.value)
@@ -85,6 +79,7 @@ export default function ClientAutocomplete({
               className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
               onClick={() => {
                 onChange(client.id)
+                setQuery('')
                 setOpen(false)
               }}
             >

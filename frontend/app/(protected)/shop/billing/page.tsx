@@ -9,7 +9,7 @@ import { useShopPeriods } from '../../reports/hooks/useShopPeriods'
 import { Button } from '@/components/ui/button'
 import { useMe } from '../../hooks/useMe'
 
-type ShopDeliveryRow = Record<string, any>
+type ShopDeliveryRow = Record<string, unknown>
 
 function getCurrentMonth() {
   const now = new Date()

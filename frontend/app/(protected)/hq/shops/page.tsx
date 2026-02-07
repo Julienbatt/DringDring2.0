@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Search, Mail, Phone, MapPin, Store } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { apiGet } from '@/lib/api'
@@ -31,13 +31,7 @@ export default function HQShopsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    if (session?.access_token) {
-      loadShops()
-    }
-  }, [session])
-
-  const loadShops = async () => {
+  const loadShops = useCallback(async () => {
     setLoading(true)
     try {
       if (!session?.access_token) return
@@ -49,7 +43,13 @@ export default function HQShopsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session])
+
+  useEffect(() => {
+    if (session?.access_token) {
+      loadShops()
+    }
+  }, [session, loadShops])
 
   const filteredShops = shops.filter((shop) => {
     const query = searchQuery.toLowerCase()

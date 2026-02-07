@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, Fragment } from 'react'
+import { useState, useEffect, Fragment, useCallback } from 'react'
 import { Plus, Search, MapPin, Phone, Mail, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiGet } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import {
@@ -29,9 +30,8 @@ export default function AdminCitiesPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedCity, setSelectedCity] = useState<CityData | null>(null)
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
-            const { createClient } = require('@/lib/supabase/client')
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
@@ -47,11 +47,11 @@ export default function AdminCitiesPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [adminContextRegion])
 
     useEffect(() => {
         loadData()
-    }, [adminContextRegion])
+    }, [loadData])
 
     const handleCreate = () => {
         setSelectedCity(null)

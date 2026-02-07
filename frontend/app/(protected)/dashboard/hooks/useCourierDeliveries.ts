@@ -47,7 +47,7 @@ export function useCourierDeliveries(date?: string) {
                 session.access_token
             )
             setData(result)
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e)
             setError('Erreur de chargement des livraisons')
             setData(null)

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
-import { toast } from 'sonner'
+import type { Session } from '@supabase/supabase-js'
 
 // Define the shape of the User (MeResponse)
 export type UserIdentity = {
@@ -33,17 +33,21 @@ type AuthContextType = {
     refresh: () => Promise<void>
     signOut: () => Promise<void>
     setAdminContext: (ctx: AdminRegionContext) => void
-    session: any | null
+    session: Session | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<UserIdentity | null>(null)
     const [adminContextRegion, setAdminContextRegion] = useState<AdminRegionContext>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [sessionData, setSessionData] = useState<any | null>(null)
+    const [sessionData, setSessionData] = useState<Session | null>(null)
     const router = useRouter()
     const supabase = createClient()
 
@@ -81,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     try {
                         const parsed = JSON.parse(storedContext)
                         setAdminContextRegion(parsed)
-                    } catch (e) {
+                    } catch {
                         localStorage.removeItem('admin_context_region')
                     }
                 }
@@ -91,12 +95,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setAdminContextRegion(null)
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Auth Load Error:", err)
             // Only redirect if we are strictly protecting (which we are in this provider)
             // But be careful of infinite loops if this provider is used in /login (it shouldn't be).
             // This provider is for (protected) routes.
-            setError(err.message || 'Erreur authentification')
+            setError(getErrorMessage(err, 'Erreur authentification'))
             setUser(null)
             // Redirect to login handled by proper effect or guard component? 
             // Let's do it here for simplicity of "State of the Art" - fail fast.

@@ -17,6 +17,10 @@ import { useAuth } from '../../../providers/AuthProvider'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toast } from 'sonner'
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback
+}
+
 export type CityData = {
     id?: string
     name: string
@@ -170,9 +174,9 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
             }
             onSuccess()
             onOpenChange(false)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error)
-            toast.error(error.message || "Erreur lors de l'enregistrement")
+            toast.error(getErrorMessage(error, "Erreur lors de l'enregistrement"))
         } finally {
             setLoading(false)
         }
@@ -198,9 +202,9 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
             toast.success('Commune partenaire supprimee')
             onSuccess()
             onOpenChange(false)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error)
-            toast.error(error.message || "Erreur lors de la suppression")
+            toast.error(getErrorMessage(error, "Erreur lors de la suppression"))
         } finally {
             setLoading(false)
         }

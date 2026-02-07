@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
 
-export type ShopDeliveryRow = Record<string, any>
+export type ShopDeliveryRow = Record<string, unknown>
 
 export function useShopDeliveries(month?: string) {
   const [data, setData] = useState<ShopDeliveryRow[] | null>(null)
@@ -37,8 +37,8 @@ export function useShopDeliveries(month?: string) {
       )
       setData(result.rows)
       setIsFrozen(result.is_frozen)
-    } catch (e: any) {
-      const message = e?.message ?? ''
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e ?? '')
       if (message.includes('403')) {
         setError('Acces reserve shop')
       } else if (message.includes('401')) {

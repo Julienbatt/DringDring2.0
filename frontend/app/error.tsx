@@ -26,7 +26,7 @@ export default function Error({
 
                 <h2 className="mb-2 text-xl font-bold text-gray-900">Une erreur est survenue</h2>
                 <p className="mb-6 text-sm text-gray-500">
-                    Nous sommes désolés, mais nous n'avons pas pu charger cette page correctement.
+                    Nous sommes désolés, mais nous n&apos;avons pas pu charger cette page correctement.
                 </p>
 
                 <div className="space-y-3">

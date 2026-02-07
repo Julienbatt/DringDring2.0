@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { apiGet } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { useEcoStats } from '@/app/(protected)/hooks/useEcoStats'
@@ -29,13 +29,7 @@ export default function CustomerDeliveriesPage() {
         return deliveries.filter((item) => format(new Date(item.delivery_date), 'yyyy-MM') === currentMonth)
     }, [deliveries, currentMonth])
 
-    useEffect(() => {
-        if (session?.access_token) {
-            loadDeliveries()
-        }
-    }, [session])
-
-    const loadDeliveries = async () => {
+    const loadDeliveries = useCallback(async () => {
         try {
             if (!session?.access_token) return
             const data = await apiGet<CustomerDelivery[]>('/deliveries/customer', session.access_token)
@@ -45,7 +39,13 @@ export default function CustomerDeliveriesPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [session])
+
+    useEffect(() => {
+        if (session?.access_token) {
+            loadDeliveries()
+        }
+    }, [session, loadDeliveries])
 
     const totals = useMemo(() => {
         const delivered = deliveries.filter((item) => item.status === 'delivered').length
@@ -96,7 +96,7 @@ export default function CustomerDeliveriesPage() {
                         <div>
                             <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">Historique des livraisons</h1>
                             <p className="text-sm text-slate-600 md:text-base">
-                                Suivez l'etat de vos commandes en cours et passees.
+                                Suivez l&apos;etat de vos commandes en cours et passees.
                             </p>
                         </div>
                         <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">

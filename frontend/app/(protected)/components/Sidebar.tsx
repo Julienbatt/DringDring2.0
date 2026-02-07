@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../providers/AuthProvider'
+import type { AdminRegionContext } from '../providers/AuthProvider'
 import BrandLogo from '@/components/BrandLogo'
 import { roleLabel } from '@/lib/roleLabel'
 import {
@@ -12,9 +13,9 @@ import {
     Users,
     Store,
     Bike,
-    FileText,
+    
     Settings,
-    ShoppingBag,
+    
     LogOut,
     Building2,
     Euro,
@@ -28,7 +29,7 @@ import {
 } from 'lucide-react'
 
 // Map roles to navigation items based on SPECIFICATION
-const getNavItems = (role: string, adminContextRegion: any, canDispatch: boolean) => {
+const getNavItems = (role: string, adminContextRegion: AdminRegionContext, canDispatch: boolean) => {
 
 
     // Base Items (available to generic logged in users if no specific role match?)

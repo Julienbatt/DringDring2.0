@@ -41,8 +41,8 @@ export function useShopPeriods() {
         session.access_token
       )
       setData(result)
-    } catch (e: any) {
-      const message = e?.message ?? ''
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e ?? '')
       if (message.includes('403')) {
         setError('Acces reserve shop')
       } else if (message.includes('401')) {

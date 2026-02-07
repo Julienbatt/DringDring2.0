@@ -16,6 +16,10 @@ import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export type HqData = {
   id: string
   name: string
@@ -86,9 +90,9 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
       }
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error(error.message || 'Erreur lors de lenregistrement')
+      toast.error(getErrorMessage(error, 'Erreur lors de lenregistrement'))
     } finally {
       setLoading(false)
     }
@@ -103,9 +107,9 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
       toast.success('HQ supprime')
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error(error.message || 'Erreur lors de la suppression')
+      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'))
     } finally {
       setLoading(false)
     }

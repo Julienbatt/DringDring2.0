@@ -27,7 +27,7 @@ export default function CustomerSupportPage() {
             try {
                 const data = await apiGet<SupportInfo>('/clients/me/support', session.access_token)
                 setSupportInfo(data)
-            } catch (error) {
+            } catch {
                 setSupportInfo(null)
             } finally {
                 setLoading(false)

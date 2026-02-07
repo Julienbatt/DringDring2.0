@@ -15,8 +15,48 @@ import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 interface TariffDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    tariffToEdit: any | null
+    tariffToEdit: TariffEditData | null
     onSuccess: () => void
+}
+
+type TariffThreshold = {
+    min: number
+    max: number | null
+    price: number
+}
+
+type TariffShare = {
+    client?: number
+    shop?: number
+    city?: number
+    admin_region?: number
+    velocite?: number
+}
+
+type TariffPricing = {
+    price_per_2_bags?: number
+    price_per_bag?: number
+    amount_per_bag?: number
+    cms_price_per_2_bags?: number
+    thresholds?: TariffThreshold[]
+}
+
+type TariffRule = {
+    pricing?: TariffPricing
+    shares_cms?: {
+        client: number
+        shop: number
+        city: number
+        admin_region: number
+    }
+}
+
+type TariffEditData = {
+    id: string
+    name: string
+    rule_type: string
+    rule?: TariffRule
+    share?: TariffShare
 }
 
 export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: TariffDialogProps) {
@@ -57,7 +97,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                 // Map thresholds
                 const pricing = tariffToEdit.rule?.pricing ?? tariffToEdit.rule ?? {}
                 const th = pricing.thresholds || []
-                setThresholds(th.map((t: any) => ({
+                setThresholds(th.map((t: TariffThreshold) => ({
                     min: String(t.min),
                     max: t.max ? String(t.max) : '',
                     price: String(t.price)
@@ -121,7 +161,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
         setLoading(true)
         try {
             // Construct JSON Rule
-            let rulePayload: any = {}
+            let rulePayload: TariffRule = {}
             if (ruleType === 'bags_price') {
                 rulePayload = {
                     pricing: {
@@ -145,7 +185,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
             }
 
             // Construct JSON Share
-            let sharePayload: any = {}
+            let sharePayload: { client: number; shop: number; city: number; admin_region: number }
             if (payerType === 'client') {
                 sharePayload = { client: 100, shop: 0, city: 0, admin_region: 0 }
             } else if (payerType === 'shop') {
@@ -160,7 +200,13 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
             }
 
             const backendRuleType = ruleType === 'bags_price' ? 'bags' : ruleType
-            const payload: any = {
+            const payload: {
+                name: string
+                rule_type: string
+                rule: TariffRule
+                share: { client: number; shop: number; city: number; admin_region: number }
+                admin_region_id?: string
+            } = {
                 name,
                 rule_type: backendRuleType,
                 rule: rulePayload,
@@ -343,7 +389,12 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                             {ruleType === 'bags_price' && (
                                 <div className="space-y-2 pl-4 border-l-2 border-amber-200">
                                     <Label>Répartition CMS</Label>
-                                    <Select value={cmsShareMode} onValueChange={(v) => setCmsShareMode(v as any)}>
+                                    <Select
+                                        value={cmsShareMode}
+                                        onValueChange={(v) =>
+                                            setCmsShareMode(v === 'city_shop_50' ? 'city_shop_50' : 'same')
+                                        }
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>

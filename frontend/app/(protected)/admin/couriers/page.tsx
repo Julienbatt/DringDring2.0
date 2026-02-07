@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Search, Bike, Zap, Phone, Mail, User } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, Search, Bike, Zap, Phone, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiGet } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import {
@@ -40,9 +41,8 @@ export default function AdminCouriersPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedCourier, setSelectedCourier] = useState<CourierData | null>(null)
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
-            const { createClient } = require('@/lib/supabase/client')
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
@@ -59,11 +59,11 @@ export default function AdminCouriersPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [adminContextRegion])
 
     useEffect(() => {
         loadData()
-    }, [adminContextRegion])
+    }, [loadData])
 
     const handleCreate = () => {
         setSelectedCourier(null)

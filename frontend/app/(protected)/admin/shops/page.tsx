@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Mail, Phone, MapPin, Store, Building2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -42,13 +42,7 @@ export default function ShopsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedShop, setSelectedShop] = useState<ShopData | null>(null)
 
-    useEffect(() => {
-        if (session?.access_token) {
-            loadShops()
-        }
-    }, [session, adminContextRegion])
-
-    const loadShops = async () => {
+    const loadShops = useCallback(async () => {
         setLoading(true)
         try {
             if (!session?.access_token) return
@@ -62,7 +56,13 @@ export default function ShopsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [session, adminContextRegion])
+
+    useEffect(() => {
+        if (session?.access_token) {
+            loadShops()
+        }
+    }, [session, loadShops])
 
     const handleCreate = () => {
         setSelectedShop(null)

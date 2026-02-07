@@ -32,8 +32,8 @@ export function useEcoStats(month?: string, adminRegionId?: string) {
         const path = `/stats/eco${params.toString() ? `?${params.toString()}` : ''}`
         const response = await apiGet<EcoStats>(path, session.access_token)
         setData(response)
-      } catch (err: any) {
-        setError(err?.message ?? 'Erreur de chargement')
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Erreur de chargement')
       } finally {
         setLoading(false)
       }

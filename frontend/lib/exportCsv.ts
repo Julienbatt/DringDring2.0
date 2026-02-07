@@ -1,6 +1,6 @@
 export function exportToCsv(
   filename: string,
-  rows: Array<Record<string, any>>,
+  rows: Array<Record<string, unknown>>,
   columnLabels?: Record<string, string>
 ) {
   if (!rows.length) return

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,6 +18,10 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
 
 export type ShopData = {
   id?: string
@@ -65,12 +69,6 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
   })
 
   useEffect(() => {
-    if (open && session?.access_token) {
-      fetchReferences()
-    }
-  }, [open, session, adminContextRegion])
-
-  useEffect(() => {
     if (shopToEdit) {
       setFormData({
         ...shopToEdit,
@@ -99,21 +97,27 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
     }
   }, [shopToEdit, open])
 
-  const fetchReferences = async () => {
+  const fetchReferences = useCallback(async () => {
     if (!session?.access_token) return
     try {
       const queryParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
       const [cities, hqs, tariffs] = await Promise.all([
-        apiGet<any[]>(`/cities${queryParams}`, session.access_token),
-        apiGet<any[]>(`/shops/hqs${queryParams}`, session.access_token),
-        apiGet<any[]>(`/shops/tariffs${queryParams}`, session.access_token),
+        apiGet<ReferenceData['cities']>(`/cities${queryParams}`, session.access_token),
+        apiGet<ReferenceData['hqs']>(`/shops/hqs${queryParams}`, session.access_token),
+        apiGet<ReferenceData['tariffs']>(`/shops/tariffs${queryParams}`, session.access_token),
       ])
       setRefData({ cities, hqs, tariffs })
     } catch (error) {
       console.error('Error loading references', error)
       toast.error('Erreur de chargement des listes')
     }
-  }
+  }, [session, adminContextRegion])
+
+  useEffect(() => {
+    if (open && session?.access_token) {
+      fetchReferences()
+    }
+  }, [open, session, fetchReferences])
 
   const formatAddress = (address: { street: string; number: string; zip: string; city: string }) => {
     const line1 = [address.street, address.number].filter(Boolean).join(' ').trim()
@@ -160,9 +164,9 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
       }
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error(error.message || 'Une erreur est survenue')
+      toast.error(getErrorMessage(error, 'Une erreur est survenue'))
     } finally {
       setLoading(false)
     }
@@ -177,9 +181,9 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
       toast.success('Commerce supprime')
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error)
-      toast.error(error.message || 'Erreur lors de la suppression')
+      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'))
     } finally {
       setLoading(false)
     }

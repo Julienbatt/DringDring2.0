@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import ClientAutocomplete from '@/components/ClientAutocomplete'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { createClient } from '@/lib/supabase/client'
@@ -68,15 +67,6 @@ type PreviewResult = {
   share_client: string
   share_city: string
   share_admin_region?: string
-}
-
-function formatMonth(value: unknown) {
-  if (!value) return ''
-  const asText = String(value)
-  const normalized = asText.length === 7 ? `${asText}-01` : asText
-  const date = new Date(normalized)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
 }
 
 const TABLE_COLUMNS = [
@@ -154,7 +144,18 @@ type FormState = {
   order_amount: string | number
   basket_value: string | number
   notes: string
-  [key: string]: any
+  [key: string]: string | number
+}
+
+type DeliveryTableRow = {
+  delivery_id?: string
+  client_id?: string
+  delivery_date?: string
+  time_window?: string
+  bags?: string | number | null
+  order_amount?: string | number | null
+  basket_value?: string | number | null
+  notes?: string | null
 }
 
 export default function ShopReport() {
@@ -329,7 +330,7 @@ export default function ShopReport() {
         create_account: false,
         is_cms: false
       })
-    } catch (err) {
+    } catch {
       alert("Erreur creation client")
     } finally {
       setNewClientSubmitting(false)
@@ -454,15 +455,15 @@ export default function ShopReport() {
           order_amount: formState.order_amount ? Number(formState.order_amount) : null,
         }
 
-        const result = await apiPost(
+        const result = await apiPost<PreviewResult>(
           '/deliveries/shop/preview',
           payload,
           session.access_token
         )
 
         if (!active) return
-        setPreview(result as PreviewResult)
-      } catch (e: any) {
+        setPreview(result)
+      } catch {
         if (!active) return
         setPreviewError('Impossible de calculer le montant')
         setPreview(null)
@@ -480,6 +481,7 @@ export default function ShopReport() {
     formState.bags,
     formState.order_amount,
     formState.delivery_date,
+    formState.time_window,
     tariffType,
     isFrozen, // Dependency added
   ])
@@ -570,7 +572,7 @@ export default function ShopReport() {
       }))
       setFormResetKey((prev) => prev + 1)
       await refresh()
-    } catch (e: any) {
+    } catch {
       setSubmitError(editingDeliveryId ? 'Impossible de modifier la livraison' : 'Impossible de creer la livraison')
     } finally {
       setSubmitting(false)
@@ -592,7 +594,7 @@ export default function ShopReport() {
     setFormResetKey((prev) => prev + 1)
   }
 
-  const handleEditDelivery = (row: any) => {
+  const handleEditDelivery = (row: DeliveryTableRow) => {
     if (!row?.delivery_id) return
     setEditingDeliveryId(row.delivery_id)
     setFormState((prev) => ({
@@ -608,7 +610,7 @@ export default function ShopReport() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleCancelDelivery = async (row: any) => {
+  const handleCancelDelivery = async (row: DeliveryTableRow) => {
     if (!row?.delivery_id) return
     const reason = window.prompt("Raison de l'annulation (optionnelle) ?") ?? ''
     try {
@@ -700,7 +702,7 @@ export default function ShopReport() {
                           a.click()
                           window.URL.revokeObjectURL(url)
                           document.body.removeChild(a)
-                        } catch (e) {
+                        } catch {
                           alert("Impossible de télécharger le PDF")
                         }
                       }}

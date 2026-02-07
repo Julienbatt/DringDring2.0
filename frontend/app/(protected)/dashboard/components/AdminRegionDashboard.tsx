@@ -62,7 +62,7 @@ export default function AdminRegionDashboard() {
                             </div>
                         </div>
                         <p className="text-sm text-slate-600 md:text-base">
-                            Supervisez l'activite des communes partenaires, commerces et coursiers avec une vision claire et operationnelle.
+                            Supervisez l&apos;activite des communes partenaires, commerces et coursiers avec une vision claire et operationnelle.
                         </p>
                     </div>
                 </section>

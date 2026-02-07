@@ -26,12 +26,6 @@ function formatMonth(value: unknown) {
   return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
 }
 
-function formatPercent(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) return 'n/a'
-  const sign = value > 0 ? '+' : ''
-  return `${sign}${value.toFixed(1)}%`
-}
-
 function getCurrentMonth() {
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')
@@ -152,9 +146,7 @@ export default function CityReport() {
     paramMonth ?? getCurrentMonth()
   )
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
-  const [pickerYear, setPickerYear] = useState(() =>
-    Number(getCurrentMonth().split('-')[0])
-  )
+  const pickerYear = Number(selectedMonth.split('-')[0] ?? getCurrentMonth().split('-')[0])
   const monthPickerRef = useRef<HTMLDivElement | null>(null)
 
   const { data, loading, error } = useCityBilling(selectedMonth)
@@ -176,11 +168,6 @@ export default function CityReport() {
     params.set('month', value)
     router.replace(`${pathname}?${params.toString()}`)
   }
-
-  useEffect(() => {
-    const [year] = selectedMonth.split('-')
-    setPickerYear(Number(year))
-  }, [selectedMonth])
 
   useEffect(() => {
     if (!monthPickerOpen) return

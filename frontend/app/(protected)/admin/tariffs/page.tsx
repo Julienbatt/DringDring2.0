@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, Calculator, ShoppingBag, CreditCard, Trash2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, ShoppingBag, CreditCard, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiGet, apiDelete } from '@/lib/api'
+import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import {
@@ -22,8 +23,8 @@ interface TariffGrid {
     name: string
     current_version_id: string
     rule_type: string
-    rule: any
-    share: any
+    rule: Record<string, unknown> | null
+    share: Record<string, unknown> | null
 }
 
 export default function TariffsPage() {
@@ -33,9 +34,8 @@ export default function TariffsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedTariff, setSelectedTariff] = useState<TariffGrid | null>(null)
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
-            const { createClient } = require('@/lib/supabase/client')
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
@@ -50,11 +50,11 @@ export default function TariffsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [adminContextRegion])
 
     useEffect(() => {
         loadData()
-    }, [user, adminContextRegion])
+    }, [user, loadData])
 
     const handleCreate = () => {
         setSelectedTariff(null)
@@ -71,7 +71,6 @@ export default function TariffsPage() {
         if (!confirmed) return
 
         try {
-            const { createClient } = require('@/lib/supabase/client')
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
@@ -79,20 +78,31 @@ export default function TariffsPage() {
             await apiDelete(`/tariffs/${t.id}`, session.access_token)
             toast.success('Tarif supprime')
             loadData()
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete tariff', error)
-            toast.error(error.message || 'Suppression impossible')
+            const message =
+                error && typeof error === 'object' && 'message' in error
+                    ? String(error.message)
+                    : 'Suppression impossible'
+            toast.error(message)
         }
     }
 
     const formatRule = (t: TariffGrid) => {
-        const pricing = t.rule?.pricing ?? t.rule ?? {}
+        const rule = t.rule ?? {}
+        const pricingValue = rule.pricing
+        const pricing =
+            pricingValue && typeof pricingValue === 'object'
+                ? (pricingValue as Record<string, unknown>)
+                : rule
         if (t.rule_type === 'bags_price' || t.rule_type === 'bags') {
-            const price = pricing.price_per_2_bags ?? pricing.price_per_bag ?? pricing.amount_per_bag
-            return price ? `CHF ${price} / 2 sacs` : 'N/A'
+            const priceRaw = pricing.price_per_2_bags ?? pricing.price_per_bag ?? pricing.amount_per_bag
+            const price = priceRaw === undefined || priceRaw === null ? null : Number(priceRaw)
+            return Number.isFinite(price) && price !== null ? `CHF ${price} / 2 sacs` : 'N/A'
         }
         if (t.rule_type === 'order_amount') {
-            const count = pricing.thresholds?.length || 0
+            const thresholds = Array.isArray(pricing.thresholds) ? pricing.thresholds : []
+            const count = thresholds.length
             if (count > 0) {
                 return `${count} palier(s) defini(s)`
             }
@@ -104,7 +114,7 @@ export default function TariffsPage() {
         return 'N/A'
     }
 
-    const formatShare = (share: any) => {
+    const formatShare = (share: Record<string, unknown> | null) => {
         if (!share) return '-'
         const client = Number(share.client ?? 0)
         const shop = Number(share.shop ?? 0)

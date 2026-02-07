@@ -8,6 +8,10 @@ import { toast } from 'sonner'
 import { roleLabel } from '@/lib/roleLabel'
 import { apiGet, apiPost, apiPut, apiDelete, API_BASE_URL } from '@/lib/api'
 
+function getErrorMessage(error: unknown, fallback: string) {
+    return error instanceof Error ? error.message : fallback
+}
+
 export default function SettingsPage() {
     const router = useRouter()
     const { data: user, loading } = useMe()
@@ -68,8 +72,8 @@ export default function SettingsPage() {
                 const percent = (data.rate * 100).toFixed(1).replace(/\.0$/, '')
                 setVatRatePercent(percent)
                 setVatEffectiveFrom(data.effective_from)
-            } catch (error: any) {
-                toast.error(`Erreur TVA: ${error.message}`)
+            } catch (error: unknown) {
+                toast.error(`Erreur TVA: ${getErrorMessage(error, 'Erreur inconnue')}`)
             } finally {
                 if (isActive) {
                     setVatLoading(false)
@@ -112,8 +116,8 @@ export default function SettingsPage() {
                     billing_country: data.billing_country || 'CH',
                     billing_logo_path: data.billing_logo_path || '',
                 })
-            } catch (error: any) {
-                toast.error(`Erreur facturation: ${error.message}`)
+            } catch (error: unknown) {
+                toast.error(`Erreur facturation: ${getErrorMessage(error, 'Erreur inconnue')}`)
             } finally {
                 if (isActive) {
                     setBillingLoading(false)
@@ -156,8 +160,8 @@ export default function SettingsPage() {
                     internal_billing_country: data.internal_billing_country || 'CH',
                     internal_billing_logo_path: data.internal_billing_logo_path || '',
                 })
-            } catch (error: any) {
-                toast.error(`Erreur facturation interne: ${error.message}`)
+            } catch (error: unknown) {
+                toast.error(`Erreur facturation interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
             } finally {
                 if (isActive) {
                     setInternalBillingLoading(false)
@@ -186,8 +190,8 @@ export default function SettingsPage() {
 
             toast.success('Mot de passe mis a jour avec succes')
             setNewPassword('')
-        } catch (error: any) {
-            toast.error(`Erreur: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setUpdating(false)
         }
@@ -224,8 +228,8 @@ export default function SettingsPage() {
             )
             setVatEffectiveFrom(response.effective_from)
             toast.success('TVA mise a jour')
-        } catch (error: any) {
-            toast.error(`Erreur TVA: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur TVA: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setVatSaving(false)
         }
@@ -261,8 +265,8 @@ export default function SettingsPage() {
                 billing_logo_path: response.billing_logo_path || prev.billing_logo_path,
             }))
             toast.success('Parametres de facturation mis a jour')
-        } catch (error: any) {
-            toast.error(`Erreur facturation: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur facturation: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setBillingSaving(false)
         }
@@ -298,8 +302,8 @@ export default function SettingsPage() {
                 internal_billing_logo_path: response.internal_billing_logo_path || prev.internal_billing_logo_path,
             }))
             toast.success('Facturation interne mise a jour')
-        } catch (error: any) {
-            toast.error(`Erreur facturation interne: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur facturation interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setInternalBillingSaving(false)
         }
@@ -338,8 +342,8 @@ export default function SettingsPage() {
                 billing_logo_path: data.billing_logo_path || '',
             }))
             toast.success('Logo charge')
-        } catch (error: any) {
-            toast.error(`Erreur logo: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur logo: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setLogoUploading(false)
         }
@@ -357,8 +361,8 @@ export default function SettingsPage() {
             await apiDelete('/regions/me/logo', session.access_token)
             setBillingForm((prev) => ({ ...prev, billing_logo_path: '' }))
             toast.success('Logo supprime')
-        } catch (error: any) {
-            toast.error(`Erreur logo: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur logo: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setLogoUploading(false)
         }
@@ -397,8 +401,8 @@ export default function SettingsPage() {
                 internal_billing_logo_path: data.internal_billing_logo_path || '',
             }))
             toast.success('Logo interne charge')
-        } catch (error: any) {
-            toast.error(`Erreur logo interne: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur logo interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setInternalLogoUploading(false)
         }
@@ -416,8 +420,8 @@ export default function SettingsPage() {
             await apiDelete('/regions/me/internal-logo', session.access_token)
             setInternalBillingForm((prev) => ({ ...prev, internal_billing_logo_path: '' }))
             toast.success('Logo interne supprime')
-        } catch (error: any) {
-            toast.error(`Erreur logo interne: ${error.message}`)
+        } catch (error: unknown) {
+            toast.error(`Erreur logo interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setInternalLogoUploading(false)
         }

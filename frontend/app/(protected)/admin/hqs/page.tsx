@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Plus, Search, Building2, MapPin, Mail, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,7 +27,7 @@ export default function AdminHqsPage() {
   const [selectedHq, setSelectedHq] = useState<HqData | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       if (!session?.access_token) return
@@ -39,11 +39,11 @@ export default function AdminHqsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session])
 
   useEffect(() => {
     loadData()
-  }, [session?.access_token])
+  }, [loadData])
 
   const handleCreate = () => {
     setSelectedHq(null)

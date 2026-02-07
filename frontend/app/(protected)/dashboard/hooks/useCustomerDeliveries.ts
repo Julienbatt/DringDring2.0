@@ -44,7 +44,7 @@ export function useCustomerDeliveries() {
                 session.access_token
             )
             setData(result)
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e)
             setError('Erreur de chargement de vos commandes')
             setData(null)
