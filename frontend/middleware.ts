@@ -41,7 +41,7 @@ export async function middleware(req: NextRequest) {
    * Public Paths Whitelist
    * Add any new public route here.
    */
-  const publicPaths = ['/', '/login', '/register', '/forgot-password', '/auth/callback']
+  const publicPaths = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/set-password']
   const isPublic = publicPaths.includes(req.nextUrl.pathname) || req.nextUrl.pathname.startsWith('/api/public')
 
   if (!isPublic && !session) {
