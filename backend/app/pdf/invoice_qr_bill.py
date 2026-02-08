@@ -29,6 +29,7 @@ def _normalize_city_for_qr(value: str | None) -> str | None:
     if not city:
         return None
     city = re.sub(r"^\d{4}\s+", "", city)
+    city = re.sub(r"^(ville|commune)\s+de\s+", "", city, flags=re.IGNORECASE)
     if " - " in city:
         city = city.split(" - ", 1)[0].strip()
     return city[:35].rstrip() or None

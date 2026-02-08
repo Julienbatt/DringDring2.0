@@ -312,6 +312,80 @@ def update_client(
 
     return {"id": client_id, "message": "Client updated successfully"}
 
+
+@router.post("/{client_id}/invite-account", response_model=dict)
+def invite_existing_client_account(
+    client_id: str,
+    user: MeResponse = Depends(require_admin_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    admin_region_id = user.admin_region_id
+    if user.role != "super_admin" and not admin_region_id:
+        raise HTTPException(status_code=400, detail="Admin region id missing")
+
+    with get_db_connection(jwt_claims) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT c.email, city.admin_region_id
+                FROM client c
+                JOIN city ON c.city_id = city.id
+                WHERE c.id = %s
+                """,
+                (client_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Client not found")
+
+            client_email, client_region_id = row
+            if user.role != "super_admin" and str(client_region_id) != str(admin_region_id):
+                raise HTTPException(status_code=403, detail="Client not in your region")
+
+            if not client_email:
+                raise HTTPException(status_code=400, detail="Email client requis pour inviter un compte")
+
+            try:
+                invited, invite_error = invite_customer_account(client_email.strip(), client_id)
+            except Exception as exc:
+                invited, invite_error = False, str(exc)
+
+            if invited:
+                cur.execute(
+                    """
+                    UPDATE client
+                    SET account_invite_status = 'invited',
+                        account_invite_error = NULL,
+                        account_invited_at = now()
+                    WHERE id = %s
+                    """,
+                    (client_id,),
+                )
+                conn.commit()
+                return {
+                    "id": client_id,
+                    "status": "invited",
+                    "message": "Invitation envoyee",
+                }
+
+            cur.execute(
+                """
+                UPDATE client
+                SET account_invite_status = 'failed',
+                    account_invite_error = %s
+                WHERE id = %s
+                """,
+                (invite_error or "invite failed", client_id),
+            )
+            conn.commit()
+            return {
+                "id": client_id,
+                "status": "failed",
+                "message": "Invitation en echec",
+                "error": invite_error or "invite failed",
+            }
+
+
 @router.delete("/{client_id}", response_model=dict)
 def delete_client(
     client_id: str,

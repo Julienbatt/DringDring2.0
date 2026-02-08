@@ -2192,7 +2192,11 @@ def _extract_postal_city_from_address(value: str | None) -> tuple[str | None, st
     if not matches:
         return None, None
     postal_code, city = matches[-1]
-    return (postal_code.strip() or None, city.strip() or None)
+    city_clean = city.strip()
+    city_clean = re.sub(r"^(ville|commune)\s+de\s+", "", city_clean, flags=re.IGNORECASE)
+    if " - " in city_clean:
+        city_clean = city_clean.split(" - ", 1)[0].strip()
+    return (postal_code.strip() or None, city_clean or None)
 
 
 def _get_admin_region_billing(cur, admin_region_id: str) -> dict:

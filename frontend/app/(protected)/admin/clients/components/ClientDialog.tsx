@@ -56,6 +56,9 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [cities, setCities] = useState<{ id: string; name: string }[]>([])
     const [createAccount, setCreateAccount] = useState(false)
+    const [inviteLoading, setInviteLoading] = useState(false)
+    const [inviteStatusLocal, setInviteStatusLocal] = useState<string | null>(null)
+    const [inviteErrorLocal, setInviteErrorLocal] = useState<string | null>(null)
 
     const normalizePhone = (value: string) => {
         const cleaned = value.replace(/\s+/g, '')
@@ -145,6 +148,8 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             })
             setCreateAccount(false)
             setConfirmDelete(false)
+            setInviteStatusLocal(clientToEdit.account_invite_status || null)
+            setInviteErrorLocal(clientToEdit.account_invite_error || null)
         } else {
             setFormData({
                 name: '',
@@ -161,6 +166,8 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             })
             setCreateAccount(false)
             setConfirmDelete(false)
+            setInviteStatusLocal(null)
+            setInviteErrorLocal(null)
         }
     }, [clientToEdit, open])
 
@@ -224,8 +231,8 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     }
 
     const isEditing = !!clientToEdit?.id
-    const inviteStatus = clientToEdit?.account_invite_status || null
-    const inviteError = clientToEdit?.account_invite_error || null
+    const inviteStatus = inviteStatusLocal
+    const inviteError = inviteErrorLocal
 
     const inviteStatusLabel = () => {
         if (!inviteStatus) return 'Non renseigné'
@@ -249,6 +256,35 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
         } finally {
             setLoading(false)
             setConfirmDelete(false)
+        }
+    }
+
+    const handleInviteAccount = async () => {
+        if (!session?.access_token || !clientToEdit?.id) return
+        if (!(formData.email || '').trim()) {
+            toast.error("Renseignez un email pour inviter le compte client")
+            return
+        }
+        setInviteLoading(true)
+        try {
+            const response = await apiPost<{ status?: string; error?: string }>(
+                `/clients/${clientToEdit.id}/invite-account`,
+                {},
+                session.access_token
+            )
+            const nextStatus = response?.status || 'invited'
+            setInviteStatusLocal(nextStatus)
+            setInviteErrorLocal(response?.error || null)
+            if (nextStatus === 'invited') {
+                toast.success("Invitation envoyee")
+            } else {
+                toast.error(response?.error || "Invitation en echec")
+            }
+            onSuccess()
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, "Erreur lors de l'invitation"))
+        } finally {
+            setInviteLoading(false)
         }
     }
 
@@ -397,6 +433,20 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                         <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
                             <div className="text-sm font-medium text-gray-700">
                                 Compte client: {inviteStatusLabel()}
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleInviteAccount}
+                                    disabled={inviteLoading || !(formData.email || '').trim()}
+                                >
+                                    {inviteLoading ? 'Envoi...' : 'Inviter le compte client'}
+                                </Button>
+                                {!(formData.email || '').trim() && (
+                                    <span className="text-xs text-gray-500">Email requis</span>
+                                )}
                             </div>
                             {inviteStatus === 'failed' && inviteError && (
                                 <p className="mt-1 text-xs text-red-600">
