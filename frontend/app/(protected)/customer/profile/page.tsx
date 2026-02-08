@@ -42,7 +42,10 @@ export default function CustomerProfilePage() {
     const [creatingClient, setCreatingClient] = useState(false)
     const [createDraft, setCreateDraft] = useState<ClientProfile>(emptyClient)
     const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const [updating, setUpdating] = useState(false)
+    const [emailDraft, setEmailDraft] = useState('')
+    const [emailUpdating, setEmailUpdating] = useState(false)
 
     const normalizePhone = (value: string) => {
         const cleaned = value.replace(/\s+/g, '')
@@ -108,9 +111,18 @@ export default function CustomerProfilePage() {
         loadClient()
     }, [session])
 
+    useEffect(() => {
+        if (!user?.email) return
+        setEmailDraft(user.email)
+    }, [user?.email])
+
     const handlePasswordUpdate = async (e: FormEvent) => {
         e.preventDefault()
         if (!newPassword) return
+        if (newPassword !== confirmPassword) {
+            toast.error('Les mots de passe ne correspondent pas')
+            return
+        }
 
         setUpdating(true)
         const supabase = createClient()
@@ -124,10 +136,28 @@ export default function CustomerProfilePage() {
 
             toast.success('Mot de passe mis a jour avec succes')
             setNewPassword('')
+            setConfirmPassword('')
         } catch (error: unknown) {
             toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
         } finally {
             setUpdating(false)
+        }
+    }
+
+    const handleEmailUpdate = async (e: FormEvent) => {
+        e.preventDefault()
+        if (!emailDraft) return
+        if (emailDraft === user?.email) return
+        setEmailUpdating(true)
+        const supabase = createClient()
+        try {
+            const { error } = await supabase.auth.updateUser({ email: emailDraft })
+            if (error) throw error
+            toast.success('Email mis a jour. Verification envoyee a la nouvelle adresse.')
+        } catch (error: unknown) {
+            toast.error(`Erreur email: ${getErrorMessage(error, 'Erreur inconnue')}`)
+        } finally {
+            setEmailUpdating(false)
         }
     }
 
@@ -472,10 +502,26 @@ export default function CustomerProfilePage() {
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                     <h2 className="text-base font-semibold text-slate-900">Compte</h2>
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email</label>
-                            <div className="mt-1 text-sm font-medium text-slate-900">{user.email}</div>
+                    <form onSubmit={handleEmailUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                            <label htmlFor="customer-account-email" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email</label>
+                            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <input
+                                    id="customer-account-email"
+                                    type="email"
+                                    value={emailDraft}
+                                    onChange={(e) => setEmailDraft(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={!emailDraft || emailDraft === user.email || emailUpdating}
+                                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                    {emailUpdating ? 'Mise a jour...' : 'Modifier email'}
+                                </button>
+                            </div>
+                            <p className="mt-1 text-xs text-slate-400">Un email de verification peut etre requis par Supabase.</p>
                         </div>
                         <div>
                             <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Role</label>
@@ -483,7 +529,7 @@ export default function CustomerProfilePage() {
                                 {roleLabel(user.role ?? undefined)}
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </section>
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
@@ -502,10 +548,22 @@ export default function CustomerProfilePage() {
                             />
                             <p className="mt-1 text-xs text-slate-400">Minimum 6 caracteres.</p>
                         </div>
+                        <div>
+                            <label htmlFor="confirm-password" className="text-sm font-medium text-slate-600">Confirmer le mot de passe</label>
+                            <input
+                                id="confirm-password"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="******"
+                                minLength={6}
+                                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
+                            />
+                        </div>
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                disabled={!newPassword || updating}
+                                disabled={!newPassword || !confirmPassword || updating}
                                 className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                             >
                                 {updating ? 'Mise a jour...' : 'Mettre a jour'}

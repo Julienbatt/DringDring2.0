@@ -90,6 +90,8 @@ export default function CourierDashboard() {
                             const isPickedUp = delivery.status === 'picked_up'
                             const isCancelled = delivery.status === 'cancelled'
                             const isPending = !isDelivered
+                            const isCollectDisabled = isPickedUp || isDelivered || isCancelled || updating === delivery.delivery_id
+                            const isDeliverDisabled = !isPickedUp || isDelivered || isCancelled || updating === delivery.delivery_id
                             const statusForBadge = isCancelled
                                 ? 'cancelled'
                                 : isDelivered
@@ -146,29 +148,36 @@ export default function CourierDashboard() {
                                             )}
                                             {!isDelivered && !isCancelled && (
                                                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                                                    {!isPickedUp ? (
-                                                        <button
-                                                            onClick={async () => {
-                                                                const ok = await updateStatus(delivery.delivery_id, 'picked_up')
-                                                                if (ok) refresh()
-                                                            }}
-                                                            disabled={updating === delivery.delivery_id}
-                                                            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
-                                                        >
-                                                            Collecte
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={async () => {
-                                                                const ok = await updateStatus(delivery.delivery_id, 'delivered')
-                                                                if (ok) refresh()
-                                                            }}
-                                                            disabled={updating === delivery.delivery_id}
-                                                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                                                        >
-                                                            Livré
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (isCollectDisabled) return
+                                                            const ok = await updateStatus(delivery.delivery_id, 'picked_up')
+                                                            if (ok) refresh()
+                                                        }}
+                                                        disabled={isCollectDisabled}
+                                                        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${
+                                                            isCollectDisabled
+                                                                ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                                                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                        }`}
+                                                    >
+                                                        {isPickedUp ? 'Collecté ✓' : 'Collecte'}
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (isDeliverDisabled) return
+                                                            const ok = await updateStatus(delivery.delivery_id, 'delivered')
+                                                            if (ok) refresh()
+                                                        }}
+                                                        disabled={isDeliverDisabled}
+                                                        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${
+                                                            isDeliverDisabled
+                                                                ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                                                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                                        }`}
+                                                    >
+                                                        Livrer
+                                                    </button>
                                                     <span className="text-xs text-gray-500">
                                                         {isPickedUp ? 'Collecté' : 'À collecter'}
                                                     </span>

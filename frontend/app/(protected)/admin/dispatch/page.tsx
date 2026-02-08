@@ -74,6 +74,7 @@ export default function DispatchPage() {
 
     // Tabs State
     const [activeTab, setActiveTab] = useState<'todo' | 'assigned' | 'done'>('todo')
+    const [actionLoading, setActionLoading] = useState<Record<string, string>>({})
 
     const getCurrentMonth = () => new Date().toISOString().slice(0, 7)
     const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
@@ -237,6 +238,8 @@ export default function DispatchPage() {
     }
 
     const handleUpdateStatus = async (delivery: DispatchDelivery, status: 'picked_up' | 'delivered' | 'cancelled') => {
+        const key = `${delivery.id}:${status}`
+        setActionLoading((prev) => ({ ...prev, [key]: '1' }))
         try {
             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=${status}`, {}, session?.access_token)
             setDeliveries(prev => prev.map(d => (
@@ -246,6 +249,12 @@ export default function DispatchPage() {
             )))
         } catch {
             alert("Erreur lors de la validation")
+        } finally {
+            setActionLoading((prev) => {
+                const copy = { ...prev }
+                delete copy[key]
+                return copy
+            })
         }
     }
 
@@ -286,6 +295,8 @@ export default function DispatchPage() {
     }
 
     const handleCancelDelivery = async (delivery: DispatchDelivery) => {
+        const key = `${delivery.id}:cancelled`
+        setActionLoading((prev) => ({ ...prev, [key]: '1' }))
         try {
             await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=cancelled`, {}, session?.access_token)
             setDeliveries(prev => prev.map(d => (
@@ -296,6 +307,12 @@ export default function DispatchPage() {
         } catch (err) {
             const message = err instanceof Error ? err.message : "Erreur lors de l'annulation"
             alert(message)
+        } finally {
+            setActionLoading((prev) => {
+                const copy = { ...prev }
+                delete copy[key]
+                return copy
+            })
         }
     }
 
@@ -552,6 +569,9 @@ export default function DispatchPage() {
                                 const isHighlighted = highlightedIds.has(delivery.id)
                                 const highlightClass = isHighlighted ? 'bg-amber-100/80' : ''
                                 const isPickedUp = delivery.status === 'picked_up'
+                                const collectDisabled = isPickedUp || isDelivered || isCancelled || !!actionLoading[`${delivery.id}:picked_up`]
+                                const deliverDisabled = !isPickedUp || isDelivered || isCancelled || !!actionLoading[`${delivery.id}:delivered`]
+                                const cancelDisabled = !canEdit || !!actionLoading[`${delivery.id}:cancelled`]
                                 const statusForBadge = getDeliveryStatus(delivery)
                                 const notesShort = delivery.notes ? delivery.notes.slice(0, 60) : ''
                                 return (
@@ -603,18 +623,34 @@ export default function DispatchPage() {
                                                     {delivery.courier_id ? 'Changer' : 'Assigner'}
                                                 </button>
                                             )}
-                                            {!isDelivered && !isCancelled && hasCourier && !isPickedUp && (
+                                            {!isDelivered && !isCancelled && hasCourier && (
                                                 <button
-                                                    onClick={() => handleUpdateStatus(delivery, 'picked_up')}
-                                                    className="text-blue-600 hover:text-blue-800"
+                                                    onClick={() => {
+                                                        if (collectDisabled) return
+                                                        handleUpdateStatus(delivery, 'picked_up')
+                                                    }}
+                                                    disabled={collectDisabled}
+                                                    className={`rounded px-2 py-1 ${
+                                                        collectDisabled
+                                                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                                                            : 'text-blue-600 hover:text-blue-800'
+                                                    }`}
                                                 >
-                                                    Collecte
+                                                    {isPickedUp ? 'Collecte ✓' : 'Collecte'}
                                                 </button>
                                             )}
-                                            {!isDelivered && !isCancelled && hasCourier && isPickedUp && (
+                                            {!isDelivered && !isCancelled && hasCourier && (
                                                 <button
-                                                    onClick={() => handleUpdateStatus(delivery, 'delivered')}
-                                                    className="text-slate-600 hover:text-slate-800"
+                                                    onClick={() => {
+                                                        if (deliverDisabled) return
+                                                        handleUpdateStatus(delivery, 'delivered')
+                                                    }}
+                                                    disabled={deliverDisabled}
+                                                    className={`rounded px-2 py-1 ${
+                                                        deliverDisabled
+                                                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                                                            : 'text-slate-600 hover:text-slate-800'
+                                                    }`}
                                                 >
                                                     Livrer
                                                 </button>
@@ -630,8 +666,12 @@ export default function DispatchPage() {
                                             {canCancel && (
                                                 <button
                                                     onClick={() => handleCancelDelivery(delivery)}
-                                                    className="text-red-600 hover:text-red-800"
-                                                    disabled={!canEdit}
+                                                    className={`rounded px-2 py-1 ${
+                                                        cancelDisabled
+                                                            ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                                                            : 'text-red-600 hover:text-red-800'
+                                                    }`}
+                                                    disabled={cancelDisabled}
                                                 >
                                                     Annuler
                                                 </button>

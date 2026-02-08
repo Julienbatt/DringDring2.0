@@ -56,6 +56,7 @@ export default function CourierDispatchPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'todo' | 'assigned' | 'done'>('todo')
   const [assignTarget, setAssignTarget] = useState<DispatchDelivery | null>(null)
+  const [actionLoading, setActionLoading] = useState<Record<string, string>>({})
 
   const canDispatch = !!user?.can_dispatch
   const courierId = user?.courier_id || null
@@ -130,6 +131,24 @@ export default function CourierDispatchPage() {
       console.error(err)
       alert(t('dispatch.mobile.assignError'))
       return false
+    }
+  }
+
+  const updateDeliveryStatus = async (delivery: DispatchDelivery, status: 'picked_up' | 'delivered' | 'cancelled') => {
+    if (!session?.access_token) return
+    const key = `${delivery.id}:${status}`
+    setActionLoading((prev) => ({ ...prev, [key]: '1' }))
+    try {
+      await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=${status}`, {}, session.access_token)
+      // Fast local feedback: avoids waiting full refresh for button state.
+      setDeliveries((prev) => prev.map((d) => (d.id === delivery.id ? { ...d, status } : d)))
+      fetchDeliveries()
+    } finally {
+      setActionLoading((prev) => {
+        const copy = { ...prev }
+        delete copy[key]
+        return copy
+      })
     }
   }
 
@@ -316,26 +335,35 @@ export default function CourierDispatchPage() {
                     </div>
                   ) : activeTab === 'assigned' ? (
                     <div className="ml-auto flex items-center gap-2">
+                      {(() => {
+                        const isCollectDone = delivery.status === 'picked_up' || delivery.status === 'delivered' || delivery.status === 'cancelled'
+                        const isCollectLoading = !!actionLoading[`${delivery.id}:picked_up`]
+                        const collectDisabled = isCollectDone || isCollectLoading
+                        return (
                       <button
                         onClick={async () => {
-                          if (!session?.access_token) return
+                          if (collectDisabled) return
                           try {
-                            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=picked_up`, {}, session.access_token)
-                            fetchDeliveries()
+                            await updateDeliveryStatus(delivery, 'picked_up')
                           } catch {
                             alert(t('dispatch.mobile.pickupError'))
                           }
                         }}
-                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                        disabled={collectDisabled}
+                        className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${
+                          collectDisabled
+                            ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
                       >
-                        {t('dispatch.mobile.collect')}
+                        {collectDisabled ? `${t('dispatch.mobile.collect')} ✓` : t('dispatch.mobile.collect')}
                       </button>
+                        )
+                      })()}
                       <button
                         onClick={async () => {
-                          if (!session?.access_token) return
                           try {
-                            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=delivered`, {}, session.access_token)
-                            fetchDeliveries()
+                            await updateDeliveryStatus(delivery, 'delivered')
                           } catch {
                             alert(t('dispatch.mobile.deliveryError'))
                           }
@@ -346,10 +374,8 @@ export default function CourierDispatchPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (!session?.access_token) return
                           try {
-                            await api.patch(`/dispatch/deliveries/${delivery.id}/status?status=cancelled`, {}, session.access_token)
-                            fetchDeliveries()
+                            await updateDeliveryStatus(delivery, 'cancelled')
                           } catch {
                             alert(t('dispatch.mobile.cancelError'))
                           }
