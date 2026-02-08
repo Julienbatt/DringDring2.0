@@ -18,6 +18,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toast } from 'sonner'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -52,6 +53,7 @@ type ClientDialogProps = {
 
 export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: ClientDialogProps) {
     const { session, adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [loading, setLoading] = useState(false)
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [cities, setCities] = useState<{ id: string; name: string }[]>([])
@@ -189,18 +191,18 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
         if (!session?.access_token) return
 
         if (!formData.city_id) {
-            toast.error("La commune partenaire est obligatoire")
+            toast.error(t('admin.clients.dialog.cityRequired'))
             return
         }
         if (!clientToEdit?.id && createAccount && !(formData.email || '').trim()) {
-            toast.error("Renseignez un email pour creer un compte client")
+            toast.error(t('admin.clients.dialog.emailRequiredToCreate'))
             return
         }
 
         setLoading(true)
         try {
             if (formData.phone && !isValidSwissPhone(normalizePhone(formData.phone))) {
-                toast.error("Numero invalide. Format attendu: +41...")
+                toast.error(t('admin.clients.dialog.phoneInvalid'))
                 setLoading(false)
                 return
             }
@@ -215,16 +217,16 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
 
             if (clientToEdit?.id) {
                 await apiPut(`/clients/${clientToEdit.id}`, payload, session.access_token)
-                toast.success("Client mis à jour")
+                toast.success(t('admin.clients.dialog.updated'))
             } else {
                 await apiPost('/clients', { ...payload, create_account: createAccount }, session.access_token)
-                toast.success("Client créé")
+                toast.success(t('admin.clients.dialog.created'))
             }
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
             console.error(error)
-            toast.error(getErrorMessage(error, "Une erreur est survenue"))
+            toast.error(getErrorMessage(error, t('admin.clients.dialog.unknownError')))
         } finally {
             setLoading(false)
         }
@@ -235,10 +237,10 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     const inviteError = inviteErrorLocal
 
     const inviteStatusLabel = () => {
-        if (!inviteStatus) return 'Non renseigné'
-        if (inviteStatus === 'invited') return 'Compte invité'
-        if (inviteStatus === 'failed') return 'Invite échouée'
-        if (inviteStatus === 'not_requested') return 'Pas de compte'
+        if (!inviteStatus) return t('admin.clients.dialog.invite.notSet')
+        if (inviteStatus === 'invited') return t('admin.clients.dialog.invite.invited')
+        if (inviteStatus === 'failed') return t('admin.clients.dialog.invite.failed')
+        if (inviteStatus === 'not_requested') return t('admin.clients.dialog.invite.notRequested')
         return inviteStatus
     }
 
@@ -247,12 +249,12 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
         setLoading(true)
         try {
             await apiDelete(`/clients/${clientToEdit.id}`, session.access_token)
-            toast.success('Client supprime')
+            toast.success(t('admin.clients.dialog.deleted'))
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
             console.error(error)
-            toast.error(getErrorMessage(error, "Erreur lors de la suppression"))
+            toast.error(getErrorMessage(error, t('admin.clients.dialog.deleteError')))
         } finally {
             setLoading(false)
             setConfirmDelete(false)
@@ -262,7 +264,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
     const handleInviteAccount = async () => {
         if (!session?.access_token || !clientToEdit?.id) return
         if (!(formData.email || '').trim()) {
-            toast.error("Renseignez un email pour inviter le compte client")
+            toast.error(t('admin.clients.dialog.emailRequiredToInvite'))
             return
         }
         setInviteLoading(true)
@@ -276,13 +278,13 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             setInviteStatusLocal(nextStatus)
             setInviteErrorLocal(response?.error || null)
             if (nextStatus === 'invited') {
-                toast.success("Invitation envoyee")
+                toast.success(t('admin.clients.dialog.invite.sent'))
             } else {
-                toast.error(response?.error || "Invitation en echec")
+                toast.error(response?.error || t('admin.clients.dialog.invite.failedGeneric'))
             }
             onSuccess()
         } catch (error: unknown) {
-            toast.error(getErrorMessage(error, "Erreur lors de l'invitation"))
+            toast.error(getErrorMessage(error, t('admin.clients.dialog.invite.error')))
         } finally {
             setInviteLoading(false)
         }
@@ -292,32 +294,32 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Modifier le Client' : 'Nouveau Client'}</DialogTitle>
+                    <DialogTitle>{isEditing ? t('admin.clients.dialog.editTitle') : t('admin.clients.dialog.newTitle')}</DialogTitle>
                     <DialogDescription>
-                        Informations de livraison et de contact.
+                        {t('admin.clients.dialog.description')}
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
 
                     <div className="space-y-2">
-                        <Label htmlFor="name">Nom / Prénom *</Label>
+                        <Label htmlFor="name">{t('admin.clients.dialog.name')}</Label>
                         <Input
                             id="name"
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                             required
-                            placeholder="Ex: Jean Dupont"
+                            placeholder={t('admin.clients.dialog.namePlaceholder')}
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2 col-span-2">
-                            <Label>Recherche adresse (Suisse)</Label>
+                            <Label>{t('admin.clients.dialog.addressSearch')}</Label>
                             <AddressAutocomplete onSelect={handleAddressSelect} />
                         </div>
                         <div className="space-y-2 col-span-2">
-                            <Label htmlFor="address">Adresse (rue, no) *</Label>
+                            <Label htmlFor="address">{t('admin.clients.dialog.address')}</Label>
                             <Input
                                 id="address"
                                 value={formData.address}
@@ -330,17 +332,17 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                     })
                                 }
                                 required
-                                placeholder="Rue de la Gare 12"
+                                placeholder={t('admin.clients.dialog.addressPlaceholder')}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="city">Commune partenaire (tarification) *</Label>
+                            <Label htmlFor="city">{t('admin.clients.dialog.partnerCity')}</Label>
                             <Select
                                 value={formData.city_id}
                                 onValueChange={v => setFormData({ ...formData, city_id: v })}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Choisir..." />
+                                    <SelectValue placeholder={t('admin.clients.dialog.select')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {cities.map(c => (
@@ -350,41 +352,41 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="npa">NPA *</Label>
+                            <Label htmlFor="npa">{t('admin.clients.dialog.postalCode')}</Label>
                             <Input
                                 id="npa"
                                 value={formData.postal_code}
                                 onChange={e => setFormData({ ...formData, postal_code: e.target.value })}
                                 required
-                                placeholder="Ex: 1950"
+                                placeholder={t('admin.clients.dialog.postalCodePlaceholder')}
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-md border border-gray-100">
                         <div className="space-y-2">
-                            <Label htmlFor="floor">Étage</Label>
+                            <Label htmlFor="floor">{t('admin.clients.dialog.floor')}</Label>
                             <Input
                                 id="floor"
                                 value={formData.floor || ''}
                                 onChange={e => setFormData({ ...formData, floor: e.target.value })}
-                                placeholder="3ème"
+                                placeholder={t('admin.clients.dialog.floorPlaceholder')}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="code">Digicode</Label>
+                            <Label htmlFor="code">{t('admin.clients.dialog.code')}</Label>
                             <Input
                                 id="code"
                                 value={formData.door_code || ''}
                                 onChange={e => setFormData({ ...formData, door_code: e.target.value })}
-                                placeholder="1234A"
+                                placeholder={t('admin.clients.dialog.codePlaceholder')}
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="phone">Téléphone</Label>
+                            <Label htmlFor="phone">{t('admin.clients.dialog.phone')}</Label>
                             <Input
                                 id="phone"
                                 type="tel"
@@ -398,13 +400,13 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email (optionnel)</Label>
+                            <Label htmlFor="email">{t('admin.clients.dialog.email')}</Label>
                             <Input
                                 id="email"
                                 type="email"
                                 value={formData.email || ''}
                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                placeholder="prenom.nom@email.ch"
+                                placeholder={t('admin.clients.dialog.emailPlaceholder')}
                             />
                         </div>
                     </div>
@@ -419,12 +421,11 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                     disabled={!formData.email}
                                 />
                                 <Label htmlFor="create-account" className="font-medium">
-                                    Creer un compte client (optionnel)
+                                    {t('admin.clients.dialog.createAccount')}
                                 </Label>
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
-                                Un compte est cree uniquement si un email est renseigne. Sinon, le client reste joignable
-                                par telephone ou sur le terrain.
+                                {t('admin.clients.dialog.createAccountHint')}
                             </p>
                         </div>
                     )}
@@ -432,7 +433,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                     {isEditing && (
                         <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
                             <div className="text-sm font-medium text-gray-700">
-                                Compte client: {inviteStatusLabel()}
+                                {t('admin.clients.dialog.accountStatus')}: {inviteStatusLabel()}
                             </div>
                             <div className="mt-2 flex items-center gap-2">
                                 <Button
@@ -442,10 +443,10 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                     onClick={handleInviteAccount}
                                     disabled={inviteLoading || !(formData.email || '').trim()}
                                 >
-                                    {inviteLoading ? 'Envoi...' : 'Inviter le compte client'}
+                                    {inviteLoading ? t('admin.clients.dialog.invite.sending') : t('admin.clients.dialog.invite.cta')}
                                 </Button>
                                 {!(formData.email || '').trim() && (
-                                    <span className="text-xs text-gray-500">Email requis</span>
+                                    <span className="text-xs text-gray-500">{t('admin.clients.dialog.invite.emailRequired')}</span>
                                 )}
                             </div>
                             {inviteStatus === 'failed' && inviteError && (
@@ -462,12 +463,12 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                             checked={formData.is_cms}
                             onCheckedChange={(c) => setFormData({ ...formData, is_cms: c as boolean })}
                         />
-                        <Label htmlFor="cms" className="font-medium">Bénéficiaire CMS (Tarif réduit)</Label>
+                        <Label htmlFor="cms" className="font-medium">{t('admin.clients.dialog.cms')}</Label>
                     </div>
 
                     <DialogFooter className="pt-4 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2">
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                             {isEditing && !confirmDelete && (
                                 <Button
                                     type="button"
@@ -475,7 +476,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                     onClick={() => setConfirmDelete(true)}
                                     disabled={loading}
                                 >
-                                    Supprimer
+                                    {t('common.delete')}
                                 </Button>
                             )}
                             {isEditing && confirmDelete && (
@@ -486,7 +487,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                         onClick={() => setConfirmDelete(false)}
                                         disabled={loading}
                                     >
-                                        Annuler suppression
+                                        {t('admin.clients.dialog.deleteCancel')}
                                     </Button>
                                     <Button
                                         type="button"
@@ -494,13 +495,13 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
                                         onClick={handleDelete}
                                         disabled={loading}
                                     >
-                                        Confirmer suppression
+                                        {t('admin.clients.dialog.deleteConfirm')}
                                     </Button>
                                 </>
                             )}
                         </div>
                         <Button type="submit" disabled={loading}>
-                            {loading ? 'Enregistrement...' : (isEditing ? 'Mettre a jour' : 'Creer Client')}
+                            {loading ? t('admin.clients.dialog.saving') : (isEditing ? t('admin.clients.dialog.update') : t('admin.clients.dialog.create'))}
                         </Button>
                     </DialogFooter>
                 </form>

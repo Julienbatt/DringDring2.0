@@ -18,6 +18,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
@@ -52,6 +53,7 @@ type ReferenceData = {
 
 export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDialogProps) {
   const { session, adminContextRegion } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [refData, setRefData] = useState<ReferenceData>({ cities: [], hqs: [], tariffs: [] })
 
@@ -109,9 +111,9 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
       setRefData({ cities, hqs, tariffs })
     } catch (error) {
       console.error('Error loading references', error)
-      toast.error('Erreur de chargement des listes')
+      toast.error(t('admin.shops.dialog.loadRefsError'))
     }
-  }, [session, adminContextRegion])
+  }, [session, adminContextRegion, t])
 
   useEffect(() => {
     if (open && session?.access_token) {
@@ -130,11 +132,11 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
     if (!session?.access_token) return
 
     if (!formData.city_id) {
-      toast.error('La commune partenaire est obligatoire')
+      toast.error(t('admin.shops.dialog.cityRequired'))
       return
     }
     if (!formData.tariff_version_id || formData.tariff_version_id === 'none') {
-      toast.error('La grille tarifaire est obligatoire')
+      toast.error(t('admin.shops.dialog.tariffRequired'))
       return
     }
 
@@ -148,25 +150,25 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
 
       if (shopToEdit?.id) {
         await apiPut(`/shops/${shopToEdit.id}`, payload, session.access_token)
-        toast.success('Commerce mis a jour')
+        toast.success(t('admin.shops.dialog.updated'))
       } else {
         const res = await apiPost<{
           user_created?: boolean
           user_error?: string | null
           user_email?: string | null
         }>('/shops', payload, session.access_token)
-        toast.success('Commerce cree')
+        toast.success(t('admin.shops.dialog.created'))
         if (res?.user_created) {
-          toast.info('Compte commerce cree (mot de passe initial: password).')
+          toast.info(t('admin.shops.dialog.accountCreated'))
         } else if (res?.user_error) {
-          toast.error(`Compte commerce non cree: ${res.user_error}`)
+          toast.error(`${t('admin.shops.dialog.accountNotCreated')}: ${res.user_error}`)
         }
       }
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
       console.error(error)
-      toast.error(getErrorMessage(error, 'Une erreur est survenue'))
+      toast.error(getErrorMessage(error, t('admin.shops.dialog.unknownError')))
     } finally {
       setLoading(false)
     }
@@ -174,16 +176,16 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
 
   const handleDelete = async () => {
     if (!session?.access_token || !shopToEdit?.id) return
-    if (!confirm('Supprimer ce commerce ?')) return
+    if (!confirm(t('admin.shops.dialog.deleteConfirmPrompt'))) return
     setLoading(true)
     try {
       await apiDelete(`/shops/${shopToEdit.id}`, session.access_token)
-      toast.success('Commerce supprime')
+      toast.success(t('admin.shops.dialog.deleted'))
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
       console.error(error)
-      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'))
+      toast.error(getErrorMessage(error, t('admin.shops.dialog.deleteError')))
     } finally {
       setLoading(false)
     }
@@ -195,29 +197,29 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Modifier le commerce' : 'Nouveau commerce'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('admin.shops.dialog.editTitle') : t('admin.shops.dialog.newTitle')}</DialogTitle>
           <DialogDescription>
-            Remplissez les informations ci-dessous. Tous les champs marques * sont requis.
+            {t('admin.shops.dialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom du commerce *</Label>
+              <Label htmlFor="name">{t('admin.shops.dialog.name')}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                placeholder="Ex: Velocite Sion"
+                placeholder={t('admin.shops.dialog.namePlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">Commune partenaire *</Label>
+              <Label htmlFor="city">{t('admin.shops.dialog.city')}</Label>
               <Select value={formData.city_id} onValueChange={(v) => setFormData({ ...formData, city_id: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selectionner une commune partenaire..." />
+                  <SelectValue placeholder={t('admin.shops.dialog.cityPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {refData.cities.map((c) => (
@@ -232,13 +234,13 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
 
           <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-md">
             <div className="space-y-2">
-              <Label htmlFor="hq">Rattache a un HQ</Label>
+              <Label htmlFor="hq">{t('admin.shops.dialog.hq')}</Label>
               <Select value={formData.hq_id || 'none'} onValueChange={(v) => setFormData({ ...formData, hq_id: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Aucun" />
+                  <SelectValue placeholder={t('admin.shops.dialog.none')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-- Aucun --</SelectItem>
+                  <SelectItem value="none">-- {t('admin.shops.dialog.none')} --</SelectItem>
                   {refData.hqs.map((h) => (
                     <SelectItem key={h.id} value={h.id}>
                       {h.name}
@@ -248,16 +250,16 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tariff">Grille tarifaire *</Label>
+              <Label htmlFor="tariff">{t('admin.shops.dialog.tariff')}</Label>
               <Select
                 value={formData.tariff_version_id || 'none'}
                 onValueChange={(v) => setFormData({ ...formData, tariff_version_id: v })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choisir..." />
+                  <SelectValue placeholder={t('admin.shops.dialog.select')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-- A definir --</SelectItem>
+                  <SelectItem value="none">-- {t('admin.shops.dialog.toDefine')} --</SelectItem>
                   {refData.tariffs.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
@@ -269,7 +271,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Adresse physique</Label>
+            <Label htmlFor="address">{t('admin.shops.dialog.address')}</Label>
             <AddressAutocomplete
               onSelect={(address) => {
                 setFormData({
@@ -291,23 +293,23 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
                   lng: null,
                 })
               }
-              placeholder="Rue, NPA, Localite..."
+              placeholder={t('admin.shops.dialog.addressPlaceholder')}
               rows={2}
             />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="person">Personne contact</Label>
+              <Label htmlFor="person">{t('admin.shops.dialog.contact')}</Label>
               <Input
                 id="person"
                 value={formData.contact_person || ''}
                 onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                placeholder="Prenom Nom"
+                placeholder={t('admin.shops.dialog.contactPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('admin.shops.dialog.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -317,7 +319,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Telephone</Label>
+              <Label htmlFor="phone">{t('admin.shops.dialog.phone')}</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -331,14 +333,14 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
           <DialogFooter className="pt-4">
             {isEditing && (
               <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading}>
-                Supprimer
+                {t('common.delete')}
               </Button>
             )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Enregistrement...' : isEditing ? 'Mettre a jour' : 'Creer le commerce'}
+              {loading ? t('admin.shops.dialog.saving') : isEditing ? t('admin.shops.dialog.update') : t('admin.shops.dialog.create')}
             </Button>
           </DialogFooter>
         </form>

@@ -15,6 +15,7 @@ import { apiDelete, apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
@@ -38,6 +39,7 @@ type HqDialogProps = {
 
 export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogProps) {
   const { session } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState('')
   const [address, setAddress] = useState('')
@@ -65,11 +67,11 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
     e.preventDefault()
     if (!session?.access_token) return
     if (!name.trim()) {
-      toast.error('Le nom du HQ est obligatoire')
+      toast.error(t('admin.hq.dialog.nameRequired'))
       return
     }
     if (!address.trim()) {
-      toast.error("L'adresse du HQ est obligatoire")
+      toast.error(t('admin.hq.dialog.addressRequired'))
       return
     }
     setLoading(true)
@@ -83,16 +85,16 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
       }
       if (hqToEdit?.id) {
         await apiPut(`/shops/hqs/${hqToEdit.id}`, payload, session.access_token)
-        toast.success('HQ mis a jour')
+        toast.success(t('admin.hq.dialog.updated'))
       } else {
         await apiPost('/shops/hqs', payload, session.access_token)
-        toast.success('HQ cree')
+        toast.success(t('admin.hq.dialog.created'))
       }
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
       console.error(error)
-      toast.error(getErrorMessage(error, 'Erreur lors de lenregistrement'))
+      toast.error(getErrorMessage(error, t('admin.hq.dialog.saveError')))
     } finally {
       setLoading(false)
     }
@@ -100,16 +102,16 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
 
   const handleDelete = async () => {
     if (!session?.access_token || !hqToEdit?.id) return
-    if (!confirm('Supprimer ce HQ ?')) return
+    if (!confirm(t('admin.hq.dialog.deleteConfirmPrompt'))) return
     setLoading(true)
     try {
       await apiDelete(`/shops/hqs/${hqToEdit.id}`, session.access_token)
-      toast.success('HQ supprime')
+      toast.success(t('admin.hq.dialog.deleted'))
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
       console.error(error)
-      toast.error(getErrorMessage(error, 'Erreur lors de la suppression'))
+      toast.error(getErrorMessage(error, t('admin.hq.dialog.deleteError')))
     } finally {
       setLoading(false)
     }
@@ -130,72 +132,72 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Modifier le HQ' : 'Nouveau HQ'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('admin.hq.dialog.editTitle') : t('admin.hq.dialog.newTitle')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nom du HQ *</Label>
+            <Label htmlFor="name">{t('admin.hq.dialog.name')}</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              placeholder="Ex: Migros Valais"
+              placeholder={t('admin.hq.dialog.namePlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label>Recherche adresse (Suisse)</Label>
+            <Label>{t('admin.hq.dialog.addressSearch')}</Label>
             <AddressAutocomplete onSelect={handleAddressSelect} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Adresse physique *</Label>
+            <Label htmlFor="address">{t('admin.hq.dialog.address')}</Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Rue, NPA, Localite..."
+              placeholder={t('admin.hq.dialog.addressPlaceholder')}
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="contactPerson">Contact principal (optionnel)</Label>
+            <Label htmlFor="contactPerson">{t('admin.hq.dialog.contact')}</Label>
             <Input
               id="contactPerson"
               value={contactPerson}
               onChange={(e) => setContactPerson(e.target.value)}
-              placeholder="Nom du contact"
+              placeholder={t('admin.hq.dialog.contactPlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email (optionnel)</Label>
+            <Label htmlFor="email">{t('admin.hq.dialog.email')}</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="contact@hq.ch"
+              placeholder={t('admin.hq.dialog.emailPlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Telephone (optionnel)</Label>
+            <Label htmlFor="phone">{t('admin.hq.dialog.phone')}</Label>
             <Input
               id="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+41 ..."
+              placeholder={t('admin.hq.dialog.phonePlaceholder')}
             />
           </div>
           <DialogFooter className="pt-4">
             {isEditing && (
               <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading}>
-                Supprimer
+                {t('common.delete')}
               </Button>
             )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Enregistrement...' : isEditing ? 'Mettre a jour' : 'Creer'}
+              {loading ? t('admin.hq.dialog.saving') : isEditing ? t('admin.hq.dialog.update') : t('admin.hq.dialog.create')}
             </Button>
           </DialogFooter>
         </form>

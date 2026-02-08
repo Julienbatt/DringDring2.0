@@ -16,6 +16,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '../../../providers/AuthProvider'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toast } from 'sonner'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -49,6 +50,7 @@ type CantonOption = {
 
 export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDialogProps) {
     const { session, user, adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [loading, setLoading] = useState(false)
     const [cantons, setCantons] = useState<CantonOption[]>([])
     const [communes, setCommunes] = useState<CityData[]>([])
@@ -111,7 +113,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
             } catch (error) {
                 console.error('Failed to load cantons', error)
                 setCantons([])
-                toast.error('Erreur chargement cantons')
+                toast.error(t('admin.cities.dialog.loadCantonsError'))
             }
         }
 
@@ -139,7 +141,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
         e.preventDefault()
         if (!session?.access_token) return
         if (user?.role === 'super_admin' && !adminContextRegion?.id) {
-            toast.error('Selectionnez une entreprise regionale')
+            toast.error(t('admin.cities.dialog.selectRegion'))
             return
         }
 
@@ -167,16 +169,16 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
 
             if (cityToEdit?.id) {
                 await apiPut(`/cities/${cityToEdit.id}`, payload, session.access_token)
-                toast.success('Commune partenaire mise a jour')
+                toast.success(t('admin.cities.dialog.updated'))
             } else {
                 await apiPost('/cities', payload, session.access_token)
-                toast.success('Commune partenaire ajoutee')
+                toast.success(t('admin.cities.dialog.created'))
             }
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
             console.error(error)
-            toast.error(getErrorMessage(error, "Erreur lors de l'enregistrement"))
+            toast.error(getErrorMessage(error, t('admin.cities.dialog.saveError')))
         } finally {
             setLoading(false)
         }
@@ -195,16 +197,16 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
 
     const handleDelete = async () => {
         if (!session?.access_token || !cityToEdit?.id) return
-        if (!confirm('Supprimer cette commune partenaire ?')) return
+        if (!confirm(t('admin.cities.dialog.deleteConfirmPrompt'))) return
         setLoading(true)
         try {
             await apiDelete(`/cities/${cityToEdit.id}`, session.access_token)
-            toast.success('Commune partenaire supprimee')
+            toast.success(t('admin.cities.dialog.deleted'))
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
             console.error(error)
-            toast.error(getErrorMessage(error, "Erreur lors de la suppression"))
+            toast.error(getErrorMessage(error, t('admin.cities.dialog.deleteError')))
         } finally {
             setLoading(false)
         }
@@ -214,14 +216,14 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Modifier la commune partenaire' : 'Nouvelle commune partenaire'}</DialogTitle>
+                    <DialogTitle>{isEditing ? t('admin.cities.dialog.editTitle') : t('admin.cities.dialog.newTitle')}</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Nom de la commune partenaire *</Label>
+                            <Label htmlFor="name">{t('admin.cities.dialog.name')}</Label>
                             <Input
                                 id="name"
                                 value={formData.name}
@@ -230,7 +232,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="canton">Canton (optionnel)</Label>
+                            <Label htmlFor="canton">{t('admin.cities.dialog.canton')}</Label>
                             <Select
                                 value={formData.canton_id || '__none__'}
                                 onValueChange={(value) =>
@@ -241,10 +243,10 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                                 }
                             >
                                 <SelectTrigger id="canton">
-                                    <SelectValue placeholder="Selectionner..." />
+                                    <SelectValue placeholder={t('admin.cities.dialog.select')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="__none__">Aucun</SelectItem>
+                                    <SelectItem value="__none__">{t('admin.cities.dialog.none')}</SelectItem>
                                     {cantons.map((canton) => (
                                         <SelectItem key={canton.id} value={canton.id}>
                                             {canton.name}{canton.code ? ` (${canton.code})` : ''}
@@ -256,14 +258,14 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="parent_city_id">Commune parente (zone)</Label>
+                        <Label htmlFor="parent_city_id">{t('admin.cities.dialog.parentCity')}</Label>
                         {isCityUser ? (
                             <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                                 {cityToEdit?.id === user?.city_id
-                                    ? 'Commune principale'
+                                    ? t('admin.cities.dialog.mainCity')
                                     : cityToEdit?.parent_city_name
                                         ?? communes.find((commune) => commune.id === user?.city_id)?.name
-                                        ?? 'Commune principale'}
+                                        ?? t('admin.cities.dialog.mainCity')}
                             </div>
                         ) : (
                             <Select
@@ -276,10 +278,10 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                                 }
                             >
                                 <SelectTrigger id="parent_city_id">
-                                    <SelectValue placeholder="Aucune" />
+                                    <SelectValue placeholder={t('admin.cities.dialog.noneFeminine')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="__none__">Aucune</SelectItem>
+                                    <SelectItem value="__none__">{t('admin.cities.dialog.noneFeminine')}</SelectItem>
                                     {communes
                                         .filter((commune) => !cityToEdit?.id || commune.id !== cityToEdit.id)
                                         .map((commune) => (
@@ -293,32 +295,32 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Recherche adresse (Suisse)</Label>
+                        <Label>{t('admin.cities.dialog.addressSearch')}</Label>
                         <AddressAutocomplete onSelect={handleAddressSelect} />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="address">Adresse Postale (Admin)</Label>
+                        <Label htmlFor="address">{t('admin.cities.dialog.address')}</Label>
                         <Input
                             id="address"
                             value={formData.address}
                             onChange={e => setFormData({ ...formData, address: e.target.value })}
-                            placeholder="Grand-Rue 1, 1000 Lausanne"
+                            placeholder={t('admin.cities.dialog.addressPlaceholder')}
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="contact">Contact Principal</Label>
+                            <Label htmlFor="contact">{t('admin.cities.dialog.contact')}</Label>
                             <Input
                                 id="contact"
                                 value={formData.contact_person}
                                 onChange={e => setFormData({ ...formData, contact_person: e.target.value })}
-                                placeholder="M. Le Maire"
+                                placeholder={t('admin.cities.dialog.contactPlaceholder')}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="phone">Telephone</Label>
+                            <Label htmlFor="phone">{t('admin.cities.dialog.phone')}</Label>
                             <Input
                                 id="phone"
                                 value={formData.phone}
@@ -328,7 +330,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email Admin</Label>
+                        <Label htmlFor="email">{t('admin.cities.dialog.email')}</Label>
                         <Input
                             id="email" type="email"
                             value={formData.email}
@@ -339,12 +341,12 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                     <DialogFooter className="pt-4">
                         {isEditing && (!isCityUser || cityToEdit?.parent_city_id === user?.city_id) && (
                             <Button type="button" variant="destructive" onClick={handleDelete} disabled={loading}>
-                                Supprimer
+                                {t('common.delete')}
                             </Button>
                         )}
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                         <Button type="submit" disabled={loading}>
-                            {loading ? 'Enregistrement...' : (isEditing ? 'Mettre a jour' : 'Ajouter')}
+                            {loading ? t('admin.cities.dialog.saving') : (isEditing ? t('admin.cities.dialog.update') : t('admin.cities.dialog.create'))}
                         </Button>
                     </DialogFooter>
                 </form>
