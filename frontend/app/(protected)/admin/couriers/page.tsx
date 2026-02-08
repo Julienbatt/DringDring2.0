@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Badge } from '@/components/ui/badge'
 import { CourierDialog, CourierData } from './components/CourierDialog'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 interface Courier {
     id: string
@@ -32,6 +33,7 @@ interface Courier {
 }
 
 export default function AdminCouriersPage() {
+    const { t } = useLanguage()
     const { user, adminContextRegion } = useAuth()
     const [couriers, setCouriers] = useState<Courier[]>([])
     const [loading, setLoading] = useState(true)
@@ -55,11 +57,11 @@ export default function AdminCouriersPage() {
             setCouriers(couriersData)
         } catch (error) {
             console.error('Failed to load couriers', error)
-            toast.error("Erreur lors du chargement")
+            toast.error(t('admin.couriers.errorLoad'))
         } finally {
             setLoading(false)
         }
-    }, [adminContextRegion])
+    }, [adminContextRegion, t])
 
     useEffect(() => {
         loadData()
@@ -89,15 +91,15 @@ export default function AdminCouriersPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">Gestion des Coursiers</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('admin.couriers.title')}</h1>
                     <p className="text-gray-500 mt-1">
-                        {isSuperAdmin ? "Vision globale de la flotte." : `${couriers.length} coursiers dans votre flotte.`}
+                        {isSuperAdmin ? t('admin.couriers.subtitleSuper') : `${couriers.length} ${t('admin.couriers.subtitleRegion')}`}
                     </p>
                 </div>
 
                 <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
                     <Plus className="mr-2 h-4 w-4" />
-                    Nouveau Coursier
+                    {t('admin.couriers.new')}
                 </Button>
             </div>
 
@@ -105,7 +107,7 @@ export default function AdminCouriersPage() {
                 <Search className="w-4 h-4 text-gray-400 ml-2" />
                 <Input
                     type="search"
-                    placeholder={isSuperAdmin ? "Rechercher par nom, numéro ou région..." : "Rechercher par nom ou numéro..."}
+                    placeholder={isSuperAdmin ? t('admin.couriers.searchPlaceholderSuper') : t('admin.couriers.searchPlaceholder')}
                     className="border-none shadow-none focus-visible:ring-0"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -116,20 +118,20 @@ export default function AdminCouriersPage() {
                 <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[9%] whitespace-nowrap">Matr.</TableHead>
-                            <TableHead className="w-[19%]">Identité</TableHead>
-                            {isSuperAdmin && <TableHead>Région</TableHead>}
-                            <TableHead className={isSuperAdmin ? 'w-[20%]' : 'w-[30%]'}>Contact</TableHead>
-                            <TableHead className={isSuperAdmin ? 'w-[14%]' : 'w-[18%]'}>Véhicule</TableHead>
-                            <TableHead className={isSuperAdmin ? 'w-[14%]' : 'w-[14%]'}>Statut</TableHead>
-                            <TableHead className={isSuperAdmin ? 'w-[12%] text-right whitespace-nowrap' : 'w-[10%] text-right whitespace-nowrap'}>Actions</TableHead>
+                            <TableHead className="w-[9%] whitespace-nowrap">{t('admin.couriers.table.number')}</TableHead>
+                            <TableHead className="w-[19%]">{t('admin.couriers.table.identity')}</TableHead>
+                            {isSuperAdmin && <TableHead>{t('admin.couriers.table.region')}</TableHead>}
+                            <TableHead className={isSuperAdmin ? 'w-[20%]' : 'w-[30%]'}>{t('admin.couriers.table.contact')}</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[14%]' : 'w-[18%]'}>{t('admin.couriers.table.vehicle')}</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[14%]' : 'w-[14%]'}>{t('admin.couriers.table.status')}</TableHead>
+                            <TableHead className={isSuperAdmin ? 'w-[12%] text-right whitespace-nowrap' : 'w-[10%] text-right whitespace-nowrap'}>{t('admin.couriers.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center h-32 animate-pulse text-gray-400">Chargement...</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center h-32 animate-pulse text-gray-400">{t('common.loading')}</TableCell></TableRow>
                         ) : filteredCouriers.length === 0 ? (
-                            <TableRow><TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center h-32 text-muted-foreground">Aucun coursier trouvé.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={isSuperAdmin ? 7 : 6} className="text-center h-32 text-muted-foreground">{t('admin.couriers.empty')}</TableCell></TableRow>
                         ) : (
                             filteredCouriers.map(courier => (
                                 <TableRow key={courier.id} className="hover:bg-gray-50/50 transition-colors">
@@ -161,17 +163,17 @@ export default function AdminCouriersPage() {
                                     <TableCell>
                                         {courier.vehicle_type === 'cargo' && (
                                             <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200 gap-1">
-                                                <Bike className="w-3 h-3" /> Velo cargo
+                                                <Bike className="w-3 h-3" /> {t('admin.couriers.vehicle.cargo')}
                                             </Badge>
                                         )}
                                         {courier.vehicle_type === 'electric' && (
                                             <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200 gap-1">
-                                                <Zap className="w-3 h-3" /> Électrique
+                                                <Zap className="w-3 h-3" /> {t('admin.couriers.vehicle.electric')}
                                             </Badge>
                                         )}
                                         {(courier.vehicle_type === 'bike' || !courier.vehicle_type) && (
                                             <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1">
-                                                <Bike className="w-3 h-3" /> Vélo
+                                                <Bike className="w-3 h-3" /> {t('admin.couriers.vehicle.bike')}
                                             </Badge>
                                         )}
                                     </TableCell>
@@ -179,7 +181,7 @@ export default function AdminCouriersPage() {
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${courier.active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'
                                             }`}>
                                             <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${courier.active ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                                            {courier.active ? 'Actif' : 'Inactif'}
+                                            {courier.active ? t('admin.couriers.status.active') : t('admin.couriers.status.inactive')}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -188,7 +190,7 @@ export default function AdminCouriersPage() {
                                             size="sm"
                                             onClick={() => handleEdit(courier)}
                                         >
-                                            Modifier
+                                            {t('common.edit')}
                                         </Button>
                                     </TableCell>
                                 </TableRow>

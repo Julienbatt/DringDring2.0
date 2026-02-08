@@ -51,9 +51,14 @@ function DashboardContent() {
   }
 }
 
+function DashboardFallback() {
+  const { t } = useLanguage()
+  return <div className="p-8 text-sm text-gray-600">{t('common.loading')}</div>
+}
+
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<DashboardFallback />}>
       <DashboardContent />
     </Suspense>
   )

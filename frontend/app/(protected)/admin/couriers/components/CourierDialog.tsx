@@ -18,6 +18,7 @@ import { apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '../../../providers/AuthProvider'
 import { toast } from 'sonner'
 import { Bike } from 'lucide-react'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -60,6 +61,7 @@ const normalizeChPhoneNumber = (value: string) => {
 }
 
 export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: CourierDialogProps) {
+    const { t } = useLanguage()
     const { session, user, adminContextRegion } = useAuth()
     const [loading, setLoading] = useState(false)
 
@@ -101,18 +103,18 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
         e.preventDefault()
         if (!session?.access_token) return
         if (user?.role === 'super_admin' && !adminContextRegion?.id) {
-            toast.error('Selectionnez une entreprise regionale')
+            toast.error(t('admin.couriers.dialog.selectRegion'))
             return
         }
 
         const editing = !!courierToEdit?.id
         const normalizedPhone = normalizeChPhoneNumber(formData.phone_number || '')
         if (!editing && !normalizedPhone) {
-            toast.error('Telephone requis au format +41XXXXXXXXX.')
+            toast.error(t('admin.couriers.dialog.phoneRequired'))
             return
         }
         if (normalizedPhone && !normalizedPhone.startsWith('+41')) {
-            toast.error('Le telephone doit commencer par +41.')
+            toast.error(t('admin.couriers.dialog.phoneMustStart'))
             return
         }
 
@@ -126,16 +128,16 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
 
             if (courierToEdit?.id) {
                 await apiPut(`/couriers/${courierToEdit.id}`, payload, session.access_token)
-                toast.success("Coursier mis à jour")
+                toast.success(t('admin.couriers.dialog.updated'))
             } else {
                 await apiPost('/couriers', payload, session.access_token)
-                toast.success("Coursier créé")
+                toast.success(t('admin.couriers.dialog.created'))
             }
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
             console.error(error)
-            toast.error(getErrorMessage(error, "Une erreur est survenue"))
+            toast.error(getErrorMessage(error, t('admin.couriers.dialog.unknownError')))
         } finally {
             setLoading(false)
         }
@@ -147,9 +149,9 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? 'Modifier le Coursier' : 'Nouveau Coursier'}</DialogTitle>
+                    <DialogTitle>{isEditing ? t('admin.couriers.dialog.editTitle') : t('admin.couriers.dialog.newTitle')}</DialogTitle>
                     <DialogDescription>
-                        Gerez l&apos;equipe logistique.
+                        {t('admin.couriers.dialog.description')}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -157,7 +159,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="firstname">Prénom *</Label>
+                            <Label htmlFor="firstname">{t('admin.couriers.dialog.firstName')} *</Label>
                             <Input
                                 id="firstname"
                                 value={formData.first_name}
@@ -166,7 +168,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastname">Nom *</Label>
+                            <Label htmlFor="lastname">{t('admin.couriers.dialog.lastName')} *</Label>
                             <Input
                                 id="lastname"
                                 value={formData.last_name}
@@ -177,19 +179,19 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="matricule">Matricule / Surnom *</Label>
+                        <Label htmlFor="matricule">{t('admin.couriers.dialog.number')} *</Label>
                         <Input
                             id="matricule"
                             value={formData.courier_number}
                             onChange={e => setFormData({ ...formData, courier_number: e.target.value })}
-                            placeholder="Ex: C-101"
+                            placeholder={t('admin.couriers.dialog.numberPlaceholder')}
                             required
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">{t('settings.profile.email')}</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -198,7 +200,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="phone">Téléphone</Label>
+                            <Label htmlFor="phone">{t('admin.couriers.dialog.phone')}</Label>
                             <Input
                                 id="phone"
                                 type="tel"
@@ -218,7 +220,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="vehicle">Véhicule Principal</Label>
+                        <Label htmlFor="vehicle">{t('admin.couriers.dialog.vehicle')}</Label>
                         <Select
                             value={formData.vehicle_type || 'bike'}
                             onValueChange={v => setFormData({ ...formData, vehicle_type: v })}
@@ -228,13 +230,13 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="bike">
-                                    <div className="flex items-center"><Bike className="w-4 h-4 mr-2" /> Vélo Classique</div>
+                                    <div className="flex items-center"><Bike className="w-4 h-4 mr-2" /> {t('admin.couriers.dialog.vehicleBike')}</div>
                                 </SelectItem>
                                 <SelectItem value="cargo">
-                                    <div className="flex items-center"><Bike className="w-4 h-4 mr-2" /> Vélo Cargo</div>
+                                    <div className="flex items-center"><Bike className="w-4 h-4 mr-2" /> {t('admin.couriers.dialog.vehicleCargo')}</div>
                                 </SelectItem>
                                 <SelectItem value="electric">
-                                    <div className="flex items-center"><Bike className="w-4 h-4 mr-2 text-emerald-500" /> Vélo Électrique</div>
+                                    <div className="flex items-center"><Bike className="w-4 h-4 mr-2 text-emerald-500" /> {t('admin.couriers.dialog.vehicleElectric')}</div>
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -247,7 +249,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                                 checked={formData.active}
                                 onCheckedChange={(c) => setFormData({ ...formData, active: c })}
                             />
-                            <Label htmlFor="active" className="cursor-pointer">Compte Actif (Peut recevoir des courses)</Label>
+                            <Label htmlFor="active" className="cursor-pointer">{t('admin.couriers.dialog.active')}</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <Switch
@@ -255,14 +257,14 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
                                 checked={!!formData.can_dispatch}
                                 onCheckedChange={(c) => setFormData({ ...formData, can_dispatch: c })}
                             />
-                            <Label htmlFor="can_dispatch" className="cursor-pointer">Peut faire le dispatch (mode remplacement)</Label>
+                            <Label htmlFor="can_dispatch" className="cursor-pointer">{t('admin.couriers.dialog.canDispatch')}</Label>
                         </div>
                     </div>
 
                     <DialogFooter className="pt-4">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
                         <Button type="submit" disabled={loading}>
-                            {loading ? 'Enregistrement...' : (isEditing ? 'Mettre à jour' : 'Créer')}
+                            {loading ? t('admin.couriers.dialog.saving') : (isEditing ? t('admin.couriers.dialog.update') : t('admin.couriers.dialog.create'))}
                         </Button>
                     </DialogFooter>
                 </form>
