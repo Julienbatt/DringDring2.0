@@ -5,15 +5,6 @@ import type { CookieOptions } from '@supabase/ssr'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
-  const path = req.nextUrl.pathname
-
-  // Defensive: strip legacy base path if present.
-  if (path === '/DringDring' || path.startsWith('/DringDring/')) {
-    const nextUrl = req.nextUrl.clone()
-    const stripped = path.replace('/DringDring', '') || '/'
-    nextUrl.pathname = stripped
-    return NextResponse.redirect(nextUrl)
-  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +32,7 @@ export async function middleware(req: NextRequest) {
    * Public Paths Whitelist
    * Add any new public route here.
    */
-  const publicPaths = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/set-password']
+  const publicPaths = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/set-password', '/DringDring']
   const isPublic = publicPaths.includes(req.nextUrl.pathname) || req.nextUrl.pathname.startsWith('/api/public')
 
   if (!isPublic && !session) {
