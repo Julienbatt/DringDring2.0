@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
 import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { de, enUS, fr, it } from 'date-fns/locale'
 import Link from 'next/link'
 import { StatusBadge } from '@/components/StatusBadge'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 // Types
 type DispatchDelivery = {
@@ -46,6 +47,7 @@ type BackendCourier = {
 
 export default function DispatchPage() {
     const { user, loading: authLoading, session, adminContextRegion } = useAuth()
+    const { t, locale } = useLanguage()
     const [deliveries, setDeliveries] = useState<DispatchDelivery[]>([])
     const [couriers, setCouriers] = useState<Courier[]>([])
     const [loading, setLoading] = useState(true)
@@ -80,6 +82,12 @@ export default function DispatchPage() {
     const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
     const [monthPickerOpen, setMonthPickerOpen] = useState(false)
     const [pickerYear, setPickerYear] = useState(() => Number(getCurrentMonth().split('-')[0]))
+    const dateLocale = useMemo(() => {
+        if (locale === 'de') return de
+        if (locale === 'it') return it
+        if (locale === 'en') return enUS
+        return fr
+    }, [locale])
 
     const getDeliveryStatus = (delivery: DispatchDelivery) => {
         if (delivery.status === 'cancelled') return 'cancelled'
@@ -169,7 +177,7 @@ export default function DispatchPage() {
             setCouriers(formattedCouriers)
         } catch (err: unknown) {
             console.error(err)
-            setError('Erreur lors du chargement des donnees dispatch.')
+            setError(t('admin.dispatch.errorLoad'))
         } finally {
             if (!silent) {
                 setLoading(false)
@@ -231,7 +239,7 @@ export default function DispatchPage() {
             setIsModalOpen(false)
             setSelectedDelivery(null)
         } catch {
-            alert("Erreur lors de l'assignation")
+            alert(t('admin.dispatch.errorAssign'))
         } finally {
             setAssigningLoading(false)
         }
@@ -248,7 +256,7 @@ export default function DispatchPage() {
                     : d
             )))
         } catch {
-            alert("Erreur lors de la validation")
+            alert(t('admin.dispatch.errorStatusUpdate'))
         } finally {
             setActionLoading((prev) => {
                 const copy = { ...prev }
@@ -288,7 +296,7 @@ export default function DispatchPage() {
             setIsEditModalOpen(false)
             setEditDelivery(null)
         } catch {
-            alert("Erreur lors de la modification")
+            alert(t('admin.dispatch.errorEdit'))
         } finally {
             setEditSaving(false)
         }
@@ -305,7 +313,7 @@ export default function DispatchPage() {
                     : d
             )))
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Erreur lors de l'annulation"
+            const message = err instanceof Error ? err.message : t('admin.dispatch.errorCancel')
             alert(message)
         } finally {
             setActionLoading((prev) => {
@@ -338,7 +346,8 @@ export default function DispatchPage() {
     const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), [])
     const [selectedYear, selectedMonthIndex] = selectedMonth.split('-').map(Number)
     const formatMonthLabel = (year: number, monthIndex: number) => {
-        const label = format(new Date(year, monthIndex, 1), 'MMMM yyyy', { locale: fr })
+        const label = format(new Date(year, monthIndex, 1), 'MMMM yyyy', { locale: dateLocale })
+        if (!dateLocale) return label
         return `${label.charAt(0).toUpperCase()}${label.slice(1)}`
     }
     const getMonthValue = (year: number, monthIndex: number) =>
@@ -397,14 +406,14 @@ export default function DispatchPage() {
         .sort((a, b) => new Date(b.delivery_date).getTime() - new Date(a.delivery_date).getTime())
         .slice(0, 6)
 
-    if (authLoading) return <div className="p-8">Chargement auth...</div>
-    if (loading) return <div className="p-8">Chargement dispatch...</div>
+    if (authLoading) return <div className="p-8">{t('admin.dispatch.loadingAuth')}</div>
+    if (loading) return <div className="p-8">{t('admin.dispatch.loadingData')}</div>
     if (error) return <div className="p-8 text-red-600">{error}</div>
 
     return (
         <div className="w-full p-6">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Dispatch et operations</h1>
+                <h1 className="text-2xl font-bold text-gray-800">{t('admin.dispatch.title')}</h1>
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm">
@@ -466,7 +475,7 @@ export default function DispatchPage() {
                                                     setMonthPickerOpen(false)
                                                 }}
                                             >
-                                                {format(new Date(pickerYear, index, 1), 'MMM', { locale: fr })}
+                                                {format(new Date(pickerYear, index, 1), 'MMM', { locale: dateLocale })}
                                             </button>
                                         )
                                     })}
@@ -480,7 +489,7 @@ export default function DispatchPage() {
                         }}
                         className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded text-gray-700"
                     >
-                        Actualiser
+                        {t('admin.dispatch.refresh')}
                     </button>
                 </div>
             </div>
@@ -492,19 +501,19 @@ export default function DispatchPage() {
                     onClick={() => setActiveTab('todo')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'todo' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    A dispatcher ({pendingDeliveries.length})
+                    {t('admin.dispatch.tab.todo')} ({pendingDeliveries.length})
                     </button>
                     <button
                     onClick={() => setActiveTab('assigned')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'assigned' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    En cours ({assignedDeliveries.length})
+                    {t('admin.dispatch.tab.assigned')} ({assignedDeliveries.length})
                     </button>
                     <button
                     onClick={() => setActiveTab('done')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'done' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    Termine ({completedDeliveries.length})
+                    {t('admin.dispatch.tab.done')} ({completedDeliveries.length})
                     </button>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-gray-600">
@@ -514,7 +523,7 @@ export default function DispatchPage() {
                         checked={showCancelled}
                         onChange={(event) => setShowCancelled(event.target.checked)}
                     />
-                    Afficher les annulées
+                    {t('admin.dispatch.showCancelled')}
                 </label>
             </div>
 
@@ -522,12 +531,12 @@ export default function DispatchPage() {
                 <table className="min-w-[1160px] w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date / Heure</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commerce</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destinataire</th>
-                            <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Note</th>
-                            <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut / Coursier</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[320px]">Action</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.dispatch.table.dateTime')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.dispatch.table.shop')}</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.dispatch.table.recipient')}</th>
+                            <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.dispatch.table.note')}</th>
+                            <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.dispatch.table.statusCourier')}</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[320px]">{t('admin.dispatch.table.action')}</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -547,12 +556,12 @@ export default function DispatchPage() {
                                     <tr>
                                         <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                                         {activeTab === 'todo'
-                                            ? "Tout est dispatche."
+                                            ? t('admin.dispatch.empty.todo')
                                             : activeTab === 'assigned'
-                                                ? "Aucune course en cours."
+                                                ? t('admin.dispatch.empty.assigned')
                                                 : showCancelled
-                                                    ? "Aucune course terminee ou annulee."
-                                                    : "Aucune course terminee."}
+                                                    ? t('admin.dispatch.empty.doneOrCancelled')
+                                                    : t('admin.dispatch.empty.done')}
                                         </td>
                                     </tr>
                                 )
@@ -581,10 +590,10 @@ export default function DispatchPage() {
                                         className={isHighlighted ? 'bg-amber-100/80 animate-pulse ring-2 ring-amber-300/70 ring-inset shadow-sm' : undefined}
                                     >
                                         <td className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${highlightClass} ${isHighlighted ? 'border-l-4 border-amber-400' : ''}`}>
-                                            <div className="font-medium">{format(new Date(delivery.delivery_date), 'EEE dd MMM', { locale: fr })}</div>
+                                            <div className="font-medium">{format(new Date(delivery.delivery_date), 'EEE dd MMM', { locale: dateLocale })}</div>
                                             {isHighlighted && (
                                                 <span className="mt-1 inline-flex items-center rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
-                                                    Nouveau
+                                                    {t('admin.dispatch.badge.new')}
                                                 </span>
                                             )}
                                             <div className="text-gray-500">{delivery.time_window}</div>
@@ -593,16 +602,16 @@ export default function DispatchPage() {
                                             {delivery.shop_name}
                                         </td>
                                         <td className={`px-6 py-4 text-sm text-gray-500 ${highlightClass}`}>
-                                            <div className="font-medium text-gray-900">{delivery.client_name || 'Client'}</div>
+                                            <div className="font-medium text-gray-900">{delivery.client_name || t('admin.dispatch.clientFallback')}</div>
                                             <div>{delivery.client_address}</div>
                                             <div>{delivery.client_city}</div>
                                             <div className="mt-2 flex flex-col gap-1 text-xs text-gray-500 lg:hidden">
                                                 <StatusBadge status={statusForBadge} size="xs" />
                                                 {assignedCourier?.name && (
-                                                    <span>Coursier: {assignedCourier.name}</span>
+                                                    <span>{t('admin.dispatch.courier')}: {assignedCourier.name}</span>
                                                 )}
                                                 {notesShort && (
-                                                    <span className="truncate">Notes: {notesShort}</span>
+                                                    <span className="truncate">{t('admin.dispatch.notes')}: {notesShort}</span>
                                                 )}
                                             </div>
                                         </td>
@@ -620,7 +629,7 @@ export default function DispatchPage() {
                                                     className="text-emerald-600 hover:text-emerald-800"
                                                     disabled={!canEdit}
                                                 >
-                                                    {delivery.courier_id ? 'Changer' : 'Assigner'}
+                                                    {delivery.courier_id ? t('admin.dispatch.action.change') : t('admin.dispatch.action.assign')}
                                                 </button>
                                             )}
                                             {!isDelivered && !isCancelled && hasCourier && (
@@ -636,7 +645,7 @@ export default function DispatchPage() {
                                                             : 'text-blue-600 hover:text-blue-800'
                                                     }`}
                                                 >
-                                                    {isPickedUp ? 'Collecte ✓' : 'Collecte'}
+                                                    {isPickedUp ? t('admin.dispatch.action.collected') : t('admin.dispatch.action.collect')}
                                                 </button>
                                             )}
                                             {!isDelivered && !isCancelled && hasCourier && (
@@ -652,7 +661,7 @@ export default function DispatchPage() {
                                                             : 'text-slate-600 hover:text-slate-800'
                                                     }`}
                                                 >
-                                                    Livrer
+                                                    {t('admin.dispatch.action.deliver')}
                                                 </button>
                                             )}
                                             {canEdit && (
@@ -660,7 +669,7 @@ export default function DispatchPage() {
                                                     onClick={() => handleEditClick(delivery)}
                                                     className="text-blue-600 hover:text-blue-800"
                                                 >
-                                                    Modifier
+                                                    {t('common.edit')}
                                                 </button>
                                             )}
                                             {canCancel && (
@@ -673,7 +682,7 @@ export default function DispatchPage() {
                                                     }`}
                                                     disabled={cancelDisabled}
                                                 >
-                                                    Annuler
+                                                    {t('admin.dispatch.action.cancel')}
                                                 </button>
                                             )}
                                             </div>
@@ -688,38 +697,38 @@ export default function DispatchPage() {
 
             <div className="mt-8 grid gap-6 lg:grid-cols-3">
                 <div className="rounded-lg border bg-white p-4">
-                    <div className="text-sm font-semibold text-gray-700">Operations du jour</div>
+                    <div className="text-sm font-semibold text-gray-700">{t('admin.dispatch.todayOps')}</div>
                     <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <div className="text-gray-500">A dispatcher</div>
+                            <div className="text-gray-500">{t('admin.dispatch.kpi.todo')}</div>
                             <div className="text-lg font-semibold text-gray-800">{pendingToday.length}</div>
                         </div>
                         <div>
-                            <div className="text-gray-500">Assignees</div>
+                            <div className="text-gray-500">{t('admin.dispatch.kpi.assigned')}</div>
                             <div className="text-lg font-semibold text-gray-800">{assignedToday.length}</div>
                         </div>
                         <div>
-                            <div className="text-gray-500">Livrees</div>
+                            <div className="text-gray-500">{t('admin.dispatch.kpi.delivered')}</div>
                             <div className="text-lg font-semibold text-gray-800">{deliveredToday.length}</div>
                         </div>
                         <div>
-                            <div className="text-gray-500">Sacs</div>
+                            <div className="text-gray-500">{t('admin.dispatch.kpi.bags')}</div>
                             <div className="text-lg font-semibold text-gray-800">{bagsToday}</div>
                         </div>
                     </div>
                     <div className="mt-4 text-xs text-gray-500">
-                        Base sur les courses du jour (date de livraison).
+                        {t('admin.dispatch.kpi.hint')}
                     </div>
                 </div>
 
                 <div className="rounded-lg border bg-white p-4 lg:col-span-2">
                     <div className="flex items-center justify-between">
-                        <div className="text-sm font-semibold text-gray-700">Journal d&apos;operations</div>
-                        <div className="text-xs text-gray-500">{recentOps.length} derniere(s)</div>
+                        <div className="text-sm font-semibold text-gray-700">{t('admin.dispatch.journal.title')}</div>
+                        <div className="text-xs text-gray-500">{recentOps.length} {t('admin.dispatch.journal.last')}</div>
                     </div>
                     <div className="mt-4 space-y-3">
                         {recentOps.length === 0 && (
-                            <div className="text-sm text-gray-500">Aucune operation recente.</div>
+                            <div className="text-sm text-gray-500">{t('admin.dispatch.journal.empty')}</div>
                         )}
                         {recentOps.map((delivery) => {
                             const assignedCourier = couriers.find(c => c.id === delivery.courier_id)
@@ -728,12 +737,12 @@ export default function DispatchPage() {
                                     <div className="space-y-1">
                                         <div className="font-medium text-gray-800">{delivery.shop_name}</div>
                                         <div className="text-xs text-gray-500">
-                                            {format(new Date(delivery.delivery_date), 'dd MMM, HH:mm', { locale: fr })} - {delivery.client_name || 'Client'}
+                                            {format(new Date(delivery.delivery_date), 'dd MMM, HH:mm', { locale: dateLocale })} - {delivery.client_name || t('admin.dispatch.clientFallback')}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 text-xs text-gray-500">
                                         <StatusBadge status={getDeliveryStatus(delivery)} size="xs" />
-                                        {assignedCourier ? <span>avec {assignedCourier.name}</span> : null}
+                                        {assignedCourier ? <span>{t('admin.dispatch.withCourier')} {assignedCourier.name}</span> : null}
                                     </div>
                                 </div>
                             )
@@ -744,13 +753,13 @@ export default function DispatchPage() {
                             href="/admin/couriers"
                             className="rounded border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
                         >
-                            Gerer les coursiers
+                            {t('admin.dispatch.journal.manageCouriers')}
                         </Link>
                         <Link
                             href="/admin/shops"
                             className="rounded border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700"
                         >
-                            Voir les commerces
+                            {t('admin.dispatch.journal.viewShops')}
                         </Link>
                         <button
                             type="button"
@@ -759,7 +768,7 @@ export default function DispatchPage() {
                             }}
                             className="rounded border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700"
                         >
-                            Rafraichir maintenant
+                            {t('admin.dispatch.journal.refreshNow')}
                         </button>
                     </div>
                 </div>
@@ -770,9 +779,12 @@ export default function DispatchPage() {
                 isModalOpen && selectedDelivery && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                         <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-                            <h3 className="text-lg font-bold mb-4">Assigner un coursier</h3>
+                            <h3 className="text-lg font-bold mb-4">{t('admin.dispatch.modal.assignTitle')}</h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                Pour la course de <strong>{selectedDelivery.shop_name}</strong> le {format(new Date(selectedDelivery.delivery_date), 'dd/MM')}.
+                                {t('admin.dispatch.modal.assignFor')}{' '}
+                                <strong>{selectedDelivery.shop_name}</strong>{' '}
+                                {t('admin.dispatch.modal.assignOn')}{' '}
+                                {format(new Date(selectedDelivery.delivery_date), 'dd/MM')}.
                             </p>
 
                             <div className="space-y-2 max-h-80 overflow-y-auto mb-4">
@@ -806,13 +818,13 @@ export default function DispatchPage() {
                                                         dailyCount < 5 ? 'bg-yellow-100 text-yellow-800' :
                                                             'bg-red-100 text-red-800'
                                                         }`}>
-                                                        {dailyCount} course{dailyCount > 1 ? 's' : ''} ce jour
+                                                        {dailyCount} {t('admin.dispatch.modal.dailyMissions')}{dailyCount > 1 ? 's' : ''} {t('admin.dispatch.modal.dailySuffix')}
                                                     </span>
 
                                                     {/* Synergy Badge */}
                                                     {isAtSameShop && (
                                                         <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">
-                                                             Deja sur place
+                                                            {t('admin.dispatch.modal.alreadyOnSite')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -828,7 +840,7 @@ export default function DispatchPage() {
                                 })}
 
                                 {couriers.length === 0 && (
-                                    <div className="text-sm text-gray-500 italic text-center py-2">Aucun coursier disponible.</div>
+                                    <div className="text-sm text-gray-500 italic text-center py-2">{t('admin.dispatch.modal.noCourier')}</div>
                                 )}
                             </div>
 
@@ -837,7 +849,7 @@ export default function DispatchPage() {
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
                                 >
-                                    Annuler
+                                    {t('common.cancel')}
                                 </button>
                             </div>
                         </div>
@@ -848,10 +860,10 @@ export default function DispatchPage() {
             {isEditModalOpen && editDelivery && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-                        <h3 className="text-lg font-bold mb-4">Modifier la livraison</h3>
+                        <h3 className="text-lg font-bold mb-4">{t('admin.dispatch.modal.editTitle')}</h3>
                         <div className="space-y-3">
                             <label className="block text-sm">
-                                Date
+                                {t('admin.dispatch.modal.date')}
                                 <input
                                     type="date"
                                     className="mt-1 w-full rounded border px-2 py-1"
@@ -862,7 +874,7 @@ export default function DispatchPage() {
                                 />
                             </label>
                             <label className="block text-sm">
-                                Heure de livraison
+                                {t('admin.dispatch.modal.deliveryTime')}
                                 <input
                                     type="time"
                                     className="mt-1 w-full rounded border px-2 py-1"
@@ -873,7 +885,7 @@ export default function DispatchPage() {
                                 />
                             </label>
                             <label className="block text-sm">
-                                Sacs
+                                {t('admin.dispatch.modal.bags')}
                                 <input
                                     type="number"
                                     min="1"
@@ -885,7 +897,7 @@ export default function DispatchPage() {
                                 />
                             </label>
                             <label className="block text-sm">
-                                Notes
+                                {t('admin.dispatch.modal.notes')}
                                 <textarea
                                     className="mt-1 w-full rounded border px-2 py-1"
                                     rows={3}
@@ -904,14 +916,14 @@ export default function DispatchPage() {
                                 }}
                                 className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
                             >
-                                Annuler
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={handleEditSave}
                                 className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                                 disabled={editSaving}
                             >
-                                {editSaving ? 'Enregistrement...' : 'Enregistrer'}
+                                {editSaving ? t('admin.dispatch.modal.saving') : t('admin.dispatch.modal.save')}
                             </button>
                         </div>
                     </div>

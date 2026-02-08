@@ -18,6 +18,7 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import { ClientDialog, ClientData } from './components/ClientDialog'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type Client = {
     id: string
@@ -77,6 +78,7 @@ function getDisplayLocation(client: Client) {
 
 export default function ClientsPage() {
     const { session, adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [clients, setClients] = useState<Client[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -96,11 +98,11 @@ export default function ClientsPage() {
             setClients(data)
         } catch (error) {
             console.error('Failed to load clients', error)
-            toast.error('Erreur lors du chargement des clients')
+            toast.error(t('admin.clients.errorLoad'))
         } finally {
             setLoading(false)
         }
-    }, [session, adminContextRegion])
+    }, [session, adminContextRegion, t])
 
     useEffect(() => {
         if (session?.access_token) {
@@ -140,28 +142,28 @@ export default function ClientsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">Gestion des clients</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('admin.clients.title')}</h1>
                     <p className="text-gray-500 mt-1">
-                        {clients.length} clients enregistres.
+                        {clients.length} {t('admin.clients.subtitle')}
                     </p>
                 </div>
                 <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
                     <Plus className="mr-2 h-4 w-4" />
-                    Nouveau client
+                    {t('admin.clients.new')}
                 </Button>
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:overflow-visible">
                 <div className="min-w-[160px] rounded-lg border bg-white px-4 py-3 shadow-sm">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">Total</div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400">{t('admin.clients.kpi.total')}</div>
                     <div className="mt-1 text-2xl font-semibold text-gray-900">{clients.length}</div>
                 </div>
                 <div className="min-w-[160px] rounded-lg border bg-white px-4 py-3 shadow-sm">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">Clients CMS</div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400">{t('admin.clients.kpi.cms')}</div>
                     <div className="mt-1 text-2xl font-semibold text-emerald-700">{cmsCount}</div>
                 </div>
                 <div className="min-w-[180px] rounded-lg border bg-white px-4 py-3 shadow-sm">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">Clients standards</div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400">{t('admin.clients.kpi.standard')}</div>
                     <div className="mt-1 text-2xl font-semibold text-gray-900">{standardCount}</div>
                 </div>
             </div>
@@ -169,7 +171,7 @@ export default function ClientsPage() {
             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border shadow-sm max-w-md">
                 <Search className="w-4 h-4 text-gray-400 ml-2" />
                 <Input
-                    placeholder="Rechercher (nom, commune, NPA)..."
+                    placeholder={t('admin.clients.searchPlaceholder')}
                     className="border-none shadow-none focus-visible:ring-0"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -179,7 +181,7 @@ export default function ClientsPage() {
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden md:hidden">
                 {pagedClients.length === 0 ? (
                     <div className="h-32 flex items-center justify-center text-gray-500">
-                        {searchTerm ? 'Aucun client ne correspond.' : 'Aucun client trouve.'}
+                        {searchTerm ? t('admin.clients.emptySearch') : t('admin.clients.empty')}
                     </div>
                 ) : (
                     <div className="divide-y">
@@ -216,13 +218,13 @@ export default function ClientsPage() {
                                     {(client.floor || client.door_code) && (
                                         <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
                                             {client.floor && (
-                                                <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
-                                                    <Building className="w-3 h-3" /> Etage: {client.floor}
+                                                    <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
+                                                    <Building className="w-3 h-3" /> {t('admin.clients.floor')}: {client.floor}
                                                 </span>
                                             )}
                                             {client.door_code && (
                                                 <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
-                                                    <Key className="w-3 h-3" /> Code: {client.door_code}
+                                                    <Key className="w-3 h-3" /> {t('admin.clients.code')}: {client.door_code}
                                                 </span>
                                             )}
                                         </div>
@@ -234,7 +236,7 @@ export default function ClientsPage() {
                                             <MapPin className="w-4 h-4 text-gray-400" />
                                         {getDisplayLocation(client)}
                                         </div>
-                                        <span className="text-xs font-medium text-emerald-700">Modifier</span>
+                                        <span className="text-xs font-medium text-emerald-700">{t('common.edit')}</span>
                                     </div>
                             </button>
                         ))}
@@ -246,18 +248,18 @@ export default function ClientsPage() {
                 <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[26%]">Identite et contact</TableHead>
-                            <TableHead className="w-[30%]">Adresse et acces</TableHead>
-                            <TableHead className="w-[28%]">Localisation</TableHead>
-                            <TableHead className="w-[8%] text-center whitespace-nowrap">Profil</TableHead>
-                            <TableHead className="w-[8%] text-right whitespace-nowrap">Actions</TableHead>
+                            <TableHead className="w-[26%]">{t('admin.clients.table.identity')}</TableHead>
+                            <TableHead className="w-[30%]">{t('admin.clients.table.address')}</TableHead>
+                            <TableHead className="w-[28%]">{t('admin.clients.table.location')}</TableHead>
+                            <TableHead className="w-[8%] text-center whitespace-nowrap">{t('admin.clients.table.profile')}</TableHead>
+                            <TableHead className="w-[8%] text-right whitespace-nowrap">{t('admin.clients.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {pagedClients.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-32 text-center text-gray-500">
-                                    {searchTerm ? 'Aucun client ne correspond.' : 'Aucun client trouve.'}
+                                    {searchTerm ? t('admin.clients.emptySearch') : t('admin.clients.empty')}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -288,12 +290,12 @@ export default function ClientsPage() {
                                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                                     {client.floor && (
                                                         <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
-                                                            <Building className="w-3 h-3" /> Etage: {client.floor}
+                                                            <Building className="w-3 h-3" /> {t('admin.clients.floor')}: {client.floor}
                                                         </span>
                                                     )}
                                                     {client.door_code && (
                                                         <span className="flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded">
-                                                            <Key className="w-3 h-3" /> Code: {client.door_code}
+                                                            <Key className="w-3 h-3" /> {t('admin.clients.code')}: {client.door_code}
                                                         </span>
                                                     )}
                                                 </div>
@@ -323,7 +325,7 @@ export default function ClientsPage() {
                                                 handleEdit(client)
                                             }}
                                         >
-                                            Modifier
+                                            {t('common.edit')}
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -336,8 +338,11 @@ export default function ClientsPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-gray-500">
                     {totalFiltered === 0
-                        ? '0 client'
-                        : `Affichage ${pageStart + 1}-${Math.min(pageEnd, totalFiltered)} sur ${totalFiltered}`}
+                        ? t('admin.clients.pagination.zero')
+                        : t('admin.clients.pagination.range')
+                            .replace('{from}', String(pageStart + 1))
+                            .replace('{to}', String(Math.min(pageEnd, totalFiltered)))
+                            .replace('{total}', String(totalFiltered))}
                 </div>
                 {totalPages > 1 && (
                     <div className="flex items-center gap-2">
@@ -347,10 +352,14 @@ export default function ClientsPage() {
                             disabled={safePage === 1}
                             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         >
-                            Precedent
+                            {t('admin.clients.pagination.prev')}
                         </Button>
                         <span className="text-sm text-gray-500">
-                            Page {safePage} / {totalPages}
+                            {t('admin.clients.pagination.page')}
+                            {' '}
+                            {safePage}
+                            {' / '}
+                            {totalPages}
                         </span>
                         <Button
                             variant="outline"
@@ -358,7 +367,7 @@ export default function ClientsPage() {
                             disabled={safePage === totalPages}
                             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                         >
-                            Suivant
+                            {t('admin.clients.pagination.next')}
                         </Button>
                     </div>
                 )}
