@@ -37,6 +37,44 @@ type Client = {
     account_invited_at?: string | null
 }
 
+function normalizeDisplayCity(value?: string) {
+    const text = (value || '').trim()
+    if (!text) return ''
+
+    // Handle labels like "1950 Ville de Sion - Promotion Economique".
+    const noPostal = text.replace(/^\d{4}\s+/, '').trim()
+    const noPrefix = noPostal.replace(/^(ville|commune)\s+de\s+/i, '').trim()
+
+    // Keep only the geographic name before any business suffix.
+    const base = noPrefix.split(/\s[-–—]\s/)[0]?.trim() || noPrefix
+    return base
+}
+
+function extractPostalCityFromAddress(address?: string): { postal: string; city: string } | null {
+    const text = (address || '').trim()
+    if (!text) return null
+
+    // Use trailing Swiss-like "NPA + city" from autocomplete address.
+    const match = text.match(/(\d{4})\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’.\-\s]*)$/)
+    if (!match) return null
+
+    const postal = match[1].trim()
+    const city = match[2].replace(/\s{2,}/g, ' ').trim()
+    if (!postal || !city) return null
+
+    return { postal, city }
+}
+
+function getDisplayLocation(client: Client) {
+    const fromAddress = extractPostalCityFromAddress(client.address)
+    if (fromAddress) {
+        return `${fromAddress.postal} ${fromAddress.city}`.trim()
+    }
+
+    const city = normalizeDisplayCity(client.city_real_name || client.city_name || '')
+    return `${client.postal_code} ${city}`.trim()
+}
+
 export default function ClientsPage() {
     const { session, adminContextRegion } = useAuth()
     const [clients, setClients] = useState<Client[]>([])
@@ -191,13 +229,13 @@ export default function ClientsPage() {
                                     )}
                                 </div>
 
-                                <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-                                    <div className="flex items-center gap-2">
-                                        <MapPin className="w-4 h-4 text-gray-400" />
-                                        {client.postal_code} {client.city_real_name || client.city_name}
+                                    <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="w-4 h-4 text-gray-400" />
+                                        {getDisplayLocation(client)}
+                                        </div>
+                                        <span className="text-xs font-medium text-emerald-700">Modifier</span>
                                     </div>
-                                    <span className="text-xs font-medium text-emerald-700">Modifier</span>
-                                </div>
                             </button>
                         ))}
                     </div>
@@ -265,7 +303,7 @@ export default function ClientsPage() {
                                     <TableCell className="align-top">
                                         <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
                                             <MapPin className="w-4 h-4 text-gray-400" />
-                                            <span className="truncate">{client.postal_code} {client.city_real_name || client.city_name}</span>
+                                            <span className="truncate">{getDisplayLocation(client)}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">
