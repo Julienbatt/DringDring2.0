@@ -9,12 +9,14 @@ import AdminRegionDashboard from './components/AdminRegionDashboard'
 import SuperAdminDashboard from './components/SuperAdminDashboard'
 import CityDashboard from './components/CityDashboard'
 import { useMe } from '../hooks/useMe'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function DashboardContent() {
+  const { t } = useLanguage()
   const { data, loading, error } = useMe()
 
   if (loading) {
-    return <div className="p-8 text-sm text-gray-600">Chargement...</div>
+    return <div className="p-8 text-sm text-gray-600">{t('common.loading')}</div>
   }
 
   if (error) {
@@ -22,7 +24,7 @@ function DashboardContent() {
   }
 
   if (!data?.role) {
-    return <div className="p-8 text-sm text-gray-600">Acces non autorise.</div>
+    return <div className="p-8 text-sm text-gray-600">{t('common.unauthorized')}</div>
   }
 
   switch (data.role) {
@@ -43,7 +45,7 @@ function DashboardContent() {
     default:
       return (
         <div className="p-8 text-sm text-gray-600">
-          Vue non disponible pour le role : {data.role}
+          {t('common.viewUnavailableRole')}: {data.role}
         </div>
       )
   }
@@ -51,7 +53,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div>Chargement...</div>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <DashboardContent />
     </Suspense>
   )
