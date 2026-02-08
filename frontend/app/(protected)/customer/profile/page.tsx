@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import BrandLogo from '@/components/BrandLogo'
 import { roleLabel } from '@/lib/roleLabel'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -33,6 +34,7 @@ const emptyClient = {
 type ClientProfile = typeof emptyClient
 
 export default function CustomerProfilePage() {
+    const { t } = useLanguage()
     const { data: user, loading } = useMe()
     const { session } = useAuth()
     const [client, setClient] = useState<ClientProfile | null>(null)
@@ -120,7 +122,7 @@ export default function CustomerProfilePage() {
         e.preventDefault()
         if (!newPassword) return
         if (newPassword !== confirmPassword) {
-            toast.error('Les mots de passe ne correspondent pas')
+            toast.error(t('settings.security.passwordMismatch'))
             return
         }
 
@@ -134,11 +136,11 @@ export default function CustomerProfilePage() {
 
             if (error) throw error
 
-            toast.success('Mot de passe mis a jour avec succes')
+            toast.success(t('settings.security.passwordUpdated'))
             setNewPassword('')
             setConfirmPassword('')
         } catch (error: unknown) {
-            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.genericError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setUpdating(false)
         }
@@ -153,9 +155,9 @@ export default function CustomerProfilePage() {
         try {
             const { error } = await supabase.auth.updateUser({ email: emailDraft })
             if (error) throw error
-            toast.success('Email mis a jour. Verification envoyee a la nouvelle adresse.')
+            toast.success(t('settings.profile.emailUpdated'))
         } catch (error: unknown) {
-            toast.error(`Erreur email: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.emailError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setEmailUpdating(false)
         }
@@ -166,7 +168,7 @@ export default function CustomerProfilePage() {
         if (!session?.access_token || !client) return
 
         if (clientDraft.phone && !isValidSwissPhone(normalizePhone(clientDraft.phone))) {
-            toast.error('Numero invalide. Format attendu: +41...')
+            toast.error(t('profile.phoneInvalid'))
             return
         }
         setClientSaving(true)
@@ -186,9 +188,9 @@ export default function CustomerProfilePage() {
             const updated = await apiPut<ClientProfile>('/clients/me', payload, session.access_token)
             setClient(updated)
             setClientDraft(updated)
-            toast.success('Informations client mises a jour')
+            toast.success(t('profile.updated'))
         } catch (error: unknown) {
-            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.genericError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setClientSaving(false)
         }
@@ -222,11 +224,11 @@ export default function CustomerProfilePage() {
         e.preventDefault()
         if (!session?.access_token) return
         if (!createDraft.name || !createDraft.postal_code || !createDraft.city_name) {
-            toast.error('Nom, NPA et ville sont obligatoires')
+            toast.error(t('profile.requiredFields'))
             return
         }
         if (createDraft.phone && !isValidSwissPhone(normalizePhone(createDraft.phone))) {
-            toast.error('Numero invalide. Format attendu: +41...')
+            toast.error(t('profile.phoneInvalid'))
             return
         }
         setCreatingClient(true)
@@ -247,9 +249,9 @@ export default function CustomerProfilePage() {
             setClient(created)
             setClientDraft(created)
             setCreateDraft(created)
-            toast.success('Fiche client créée')
+            toast.success(t('profile.created'))
         } catch (error: unknown) {
-            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.genericError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setCreatingClient(false)
         }
@@ -262,11 +264,11 @@ export default function CustomerProfilePage() {
     }
 
     if (loading) {
-        return <div className="p-8">Chargement du profil...</div>
+        return <div className="p-8">{t('settings.loadingProfile')}</div>
     }
 
     if (!user) {
-        return <div className="p-8">Utilisateur non trouve</div>
+        return <div className="p-8">{t('settings.userNotFound')}</div>
     }
 
     return (
@@ -280,28 +282,28 @@ export default function CustomerProfilePage() {
                                     <BrandLogo width={180} height={54} className="h-10 w-auto md:h-12" />
                                 </div>
                                 <div>
-                                    <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">Mon compte</p>
-                                    <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">Profil client</h1>
+                                    <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">{t('profile.myAccount')}</p>
+                                    <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{t('profile.title')}</h1>
                                 </div>
                             </div>
                             <p className="max-w-xl text-sm text-slate-600 md:text-base">
-                                Retrouvez vos informations personnelles et mettez a jour votre securite.
+                                {t('profile.subtitle')}
                             </p>
                         </div>
                     </div>
                 </section>
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h2 className="text-base font-semibold text-slate-900">Informations client</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('profile.clientInfo')}</h2>
                     {clientLoading ? (
-                        <div className="mt-4 text-sm text-slate-500">Chargement des informations client...</div>
+                        <div className="mt-4 text-sm text-slate-500">{t('profile.loadingClientInfo')}</div>
                     ) : !client ? (
                         <form onSubmit={handleClientCreate} className="mt-4 grid gap-4 md:grid-cols-2">
                             <div className="md:col-span-2 text-sm text-slate-500">
-                                Aucune fiche client n&apos;est associee a ce compte. Creez-la pour acceder a vos livraisons.
+                                {t('profile.noCard')}
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Nom</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.name')}</label>
                                 <input
                                     value={createDraft.name}
                                     onChange={(e) => setCreateDraft({ ...createDraft, name: e.target.value })}
@@ -309,7 +311,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email (optionnel)</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.emailOptional')}</label>
                                 <input
                                     value={createDraft.email}
                                     onChange={(e) => setCreateDraft({ ...createDraft, email: e.target.value })}
@@ -317,13 +319,13 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Recherche adresse (Suisse)</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.addressSearch')}</label>
                                 <div className="mt-2">
                                     <AddressAutocomplete onSelect={handleCreateAddressSelect} />
                                 </div>
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Adresse</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.address')}</label>
                                 <input
                                     value={createDraft.address}
                                     onChange={(e) =>
@@ -338,7 +340,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Code postal</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.postalCode')}</label>
                                 <input
                                     value={createDraft.postal_code}
                                     onChange={(e) => setCreateDraft({ ...createDraft, postal_code: e.target.value })}
@@ -346,7 +348,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Ville</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.city')}</label>
                                 <input
                                     value={createDraft.city_name}
                                     onChange={(e) => setCreateDraft({ ...createDraft, city_name: e.target.value })}
@@ -354,7 +356,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Telephone</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.phone')}</label>
                                 <input
                                     value={createDraft.phone}
                                     onChange={(e) => setCreateDraft({ ...createDraft, phone: formatSwissPhone(e.target.value) })}
@@ -369,7 +371,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Etage</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.floor')}</label>
                                 <input
                                     value={createDraft.floor}
                                     onChange={(e) => setCreateDraft({ ...createDraft, floor: e.target.value })}
@@ -377,7 +379,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Code porte</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.doorCode')}</label>
                                 <input
                                     value={createDraft.door_code}
                                     onChange={(e) => setCreateDraft({ ...createDraft, door_code: e.target.value })}
@@ -390,14 +392,14 @@ export default function CustomerProfilePage() {
                                     disabled={creatingClient}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {creatingClient ? 'Creation...' : 'Creer ma fiche client'}
+                                    {creatingClient ? t('profile.creating') : t('profile.createCard')}
                                 </button>
                             </div>
                         </form>
                     ) : (
                         <form onSubmit={handleClientUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Nom</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.name')}</label>
                                 <input
                                     value={clientDraft.name}
                                     onChange={(e) => setClientDraft({ ...clientDraft, name: e.target.value })}
@@ -405,7 +407,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Commune partenaire</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.partnerCity')}</label>
                                 <input
                                     value={clientDraft.city_name}
                                     onChange={(e) => setClientDraft({ ...clientDraft, city_name: e.target.value })}
@@ -413,13 +415,13 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Recherche adresse (Suisse)</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.addressSearch')}</label>
                                 <div className="mt-2">
                                     <AddressAutocomplete onSelect={handleAddressSelect} />
                                 </div>
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Adresse</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.address')}</label>
                                 <input
                                     value={clientDraft.address}
                                     onChange={(e) =>
@@ -434,7 +436,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Code postal</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.postalCode')}</label>
                                 <input
                                     value={clientDraft.postal_code}
                                     onChange={(e) => setClientDraft({ ...clientDraft, postal_code: e.target.value })}
@@ -442,7 +444,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Telephone</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.phone')}</label>
                                 <input
                                     value={clientDraft.phone}
                                     onChange={(e) => setClientDraft({ ...clientDraft, phone: formatSwissPhone(e.target.value) })}
@@ -457,16 +459,16 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.email')}</label>
                                 <input
                                     value={clientDraft.email}
                                     onChange={(e) => setClientDraft({ ...clientDraft, email: e.target.value })}
-                                    placeholder="optionnel"
+                                    placeholder={t('profile.optional')}
                                     className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Etage</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.floor')}</label>
                                 <input
                                     value={clientDraft.floor}
                                     onChange={(e) => setClientDraft({ ...clientDraft, floor: e.target.value })}
@@ -474,7 +476,7 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Code porte</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.doorCode')}</label>
                                 <input
                                     value={clientDraft.door_code}
                                     onChange={(e) => setClientDraft({ ...clientDraft, door_code: e.target.value })}
@@ -482,9 +484,9 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Statut</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('profile.status')}</label>
                                 <div className="mt-2 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                    {client.is_cms ? 'Client CMS' : 'Client standard'}
+                                    {client.is_cms ? t('profile.cmsClient') : t('profile.standardClient')}
                                 </div>
                             </div>
                             <div className="md:col-span-2 flex justify-end pt-2">
@@ -493,7 +495,7 @@ export default function CustomerProfilePage() {
                                     disabled={clientSaving}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {clientSaving ? 'Mise a jour...' : 'Enregistrer'}
+                                    {clientSaving ? t('settings.cta.updating') : t('profile.save')}
                                 </button>
                             </div>
                         </form>
@@ -501,10 +503,10 @@ export default function CustomerProfilePage() {
                 </section>
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h2 className="text-base font-semibold text-slate-900">Compte</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('profile.accountSection')}</h2>
                     <form onSubmit={handleEmailUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
-                            <label htmlFor="customer-account-email" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email</label>
+                            <label htmlFor="customer-account-email" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.email')}</label>
                             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <input
                                     id="customer-account-email"
@@ -518,25 +520,25 @@ export default function CustomerProfilePage() {
                                     disabled={!emailDraft || emailDraft === user.email || emailUpdating}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {emailUpdating ? 'Mise a jour...' : 'Modifier email'}
+                                    {emailUpdating ? t('settings.cta.updating') : t('settings.profile.updateEmail')}
                                 </button>
                             </div>
-                            <p className="mt-1 text-xs text-slate-400">Un email de verification peut etre requis par Supabase.</p>
+                            <p className="mt-1 text-xs text-slate-400">{t('settings.profile.emailHint')}</p>
                         </div>
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Role</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.role')}</label>
                             <div className="mt-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                {roleLabel(user.role ?? undefined)}
+                                {t(`role.${user.role}`) !== `role.${user.role}` ? t(`role.${user.role}`) : roleLabel(user.role ?? undefined)}
                             </div>
                         </div>
                     </form>
                 </section>
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h2 className="text-base font-semibold text-slate-900">Securite</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('settings.security.title')}</h2>
                     <form onSubmit={handlePasswordUpdate} className="mt-4 space-y-4">
                         <div>
-                            <label htmlFor="new-password" className="text-sm font-medium text-slate-600">Nouveau mot de passe</label>
+                            <label htmlFor="new-password" className="text-sm font-medium text-slate-600">{t('settings.security.newPassword')}</label>
                             <input
                                 id="new-password"
                                 type="password"
@@ -546,10 +548,10 @@ export default function CustomerProfilePage() {
                                 minLength={6}
                                 className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
                             />
-                            <p className="mt-1 text-xs text-slate-400">Minimum 6 caracteres.</p>
+                            <p className="mt-1 text-xs text-slate-400">{t('settings.security.minHint')}</p>
                         </div>
                         <div>
-                            <label htmlFor="confirm-password" className="text-sm font-medium text-slate-600">Confirmer le mot de passe</label>
+                            <label htmlFor="confirm-password" className="text-sm font-medium text-slate-600">{t('settings.security.confirmPassword')}</label>
                             <input
                                 id="confirm-password"
                                 type="password"
@@ -566,7 +568,7 @@ export default function CustomerProfilePage() {
                                 disabled={!newPassword || !confirmPassword || updating}
                                 className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                             >
-                                {updating ? 'Mise a jour...' : 'Mettre a jour'}
+                                {updating ? t('settings.cta.updating') : t('settings.cta.update')}
                             </button>
                         </div>
                     </form>
@@ -577,7 +579,7 @@ export default function CustomerProfilePage() {
                         onClick={handleLogout}
                         className="text-sm font-semibold text-red-600 transition hover:text-red-700"
                     >
-                        Se deconnecter
+                        {t('common.logout')}
                     </button>
                 </section>
             </div>

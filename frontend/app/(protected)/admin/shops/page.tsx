@@ -18,6 +18,7 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import { ShopDialog, ShopData } from './components/ShopDialog'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type Shop = {
     id: string
@@ -35,6 +36,7 @@ type Shop = {
 
 export default function ShopsPage() {
     const { session, adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [shops, setShops] = useState<Shop[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -52,7 +54,7 @@ export default function ShopsPage() {
             setShops(data)
         } catch (error) {
             console.error('Failed to load shops', error)
-            toast.error('Erreur lors du chargement des commerces')
+            toast.error(t('admin.shops.toast.loadError'))
         } finally {
             setLoading(false)
         }
@@ -87,21 +89,21 @@ export default function ShopsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">Gestion des commerces</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('admin.shops.title')}</h1>
                     <p className="text-gray-500 mt-1">
-                        {shops.length} commerces enregistres dans la region.
+                        {shops.length} {t('admin.shops.subtitleCount')}
                     </p>
                 </div>
                 <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
                     <Plus className="mr-2 h-4 w-4" />
-                    Nouveau commerce
+                    {t('admin.shops.add')}
                 </Button>
             </div>
 
             <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border shadow-sm max-w-md">
                 <Search className="w-4 h-4 text-gray-400 ml-2" />
                 <Input
-                    placeholder="Rechercher (nom, commune, contact)..."
+                    placeholder={t('admin.shops.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="border-none shadow-none focus-visible:ring-0"
@@ -112,23 +114,23 @@ export default function ShopsPage() {
                 <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[35%]">Commerce et localisation</TableHead>
-                            <TableHead className="hidden lg:table-cell w-[30%]">Contact</TableHead>
-                            <TableHead className="hidden lg:table-cell w-[25%]">Configuration</TableHead>
-                            <TableHead className="w-[10%] text-right whitespace-nowrap">Actions</TableHead>
+                            <TableHead className="w-[35%]">{t('admin.shops.table.shopLocation')}</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[30%]">{t('admin.shops.table.contact')}</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[25%]">{t('admin.shops.table.configuration')}</TableHead>
+                            <TableHead className="w-[10%] text-right whitespace-nowrap">{t('admin.shops.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                             <TableRow>
                                 <TableCell colSpan={4} className="h-32 text-center text-gray-500 animate-pulse">
-                                    Chargement des donnees...
+                                    {t('admin.shops.table.loadingData')}
                                 </TableCell>
                             </TableRow>
                         ) : filteredShops.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={4} className="h-32 text-center text-gray-500">
-                                    Aucun commerce trouve.
+                                    {t('admin.shops.table.empty')}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -170,7 +172,7 @@ export default function ShopsPage() {
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-xs text-gray-400 italic">Aucun contact</span>
+                                                    <span className="text-xs text-gray-400 italic">{t('admin.shops.contactMissing')}</span>
                                                 )}
                                                 <div className="flex flex-wrap gap-2">
                                                     {shop.hq_name ? (
@@ -179,15 +181,15 @@ export default function ShopsPage() {
                                                             {shop.hq_name}
                                                         </Badge>
                                                     ) : (
-                                                        <Badge variant="secondary" className="text-xs font-normal">Independant</Badge>
+                                                        <Badge variant="secondary" className="text-xs font-normal">{t('admin.shops.independent')}</Badge>
                                                     )}
                                                     {shop.tariff_version_id ? (
                                                         <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
-                                                            Tarif actif
+                                                            {t('admin.shops.tariff.active')}
                                                         </span>
                                                     ) : (
                                                         <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
-                                                            Tarif manquant
+                                                            {t('admin.shops.tariff.missing')}
                                                         </span>
                                                     )}
                                                 </div>
@@ -217,7 +219,7 @@ export default function ShopsPage() {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-gray-400 italic">Aucun contact</span>
+                                                <span className="text-xs text-gray-400 italic">{t('admin.shops.contactMissing')}</span>
                                             )}
                                         </div>
                                     </TableCell>
@@ -229,28 +231,28 @@ export default function ShopsPage() {
                                                     {shop.hq_name}
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="secondary" className="text-xs font-normal">Independant</Badge>
+                                                <Badge variant="secondary" className="text-xs font-normal">{t('admin.shops.independent')}</Badge>
                                             )}
 
                                             {shop.tariff_version_id ? (
                                                 <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
-                                                    Tarif actif
+                                                    {t('admin.shops.tariff.active')}
                                                 </span>
                                             ) : (
                                                 <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
-                                                    Tarif manquant
+                                                    {t('admin.shops.tariff.missing')}
                                                 </span>
                                             )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
-                                            <Link href="/admin/dispatch" title="Voir les courses">
+                                            <Link href="/admin/dispatch" title={t('admin.shops.actions.viewDeliveries')}>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-emerald-600">
                                                     <Store className="h-4 w-4" />
                                                 </Button>
                                             </Link>
-                                            <Link href="/admin/billing" title="Voir la facturation">
+                                            <Link href="/admin/billing" title={t('admin.shops.actions.viewBilling')}>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-green-600">
                                                     <Building2 className="h-4 w-4" />
                                                 </Button>
@@ -260,7 +262,7 @@ export default function ShopsPage() {
                                                 size="sm"
                                                 onClick={() => handleEdit(shop)}
                                             >
-                                                Modifier
+                                                {t('common.edit')}
                                             </Button>
                                         </div>
                                     </TableCell>

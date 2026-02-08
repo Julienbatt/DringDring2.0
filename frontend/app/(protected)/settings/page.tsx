@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { roleLabel } from '@/lib/roleLabel'
 import { apiGet, apiPost, apiPut, apiDelete, API_BASE_URL } from '@/lib/api'
 import { MonthInput } from '@/components/ui/month-input'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -15,6 +16,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export default function SettingsPage() {
     const router = useRouter()
+    const { t } = useLanguage()
     const { data: user, loading } = useMe()
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -82,7 +84,7 @@ export default function SettingsPage() {
                 setVatRatePercent(percent)
                 setVatEffectiveFrom(data.effective_from)
             } catch (error: unknown) {
-                toast.error(`Erreur TVA: ${getErrorMessage(error, 'Erreur inconnue')}`)
+                toast.error(`${t('settings.toast.vatError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
             } finally {
                 if (isActive) {
                     setVatLoading(false)
@@ -126,7 +128,7 @@ export default function SettingsPage() {
                     billing_logo_path: data.billing_logo_path || '',
                 })
             } catch (error: unknown) {
-                toast.error(`Erreur facturation: ${getErrorMessage(error, 'Erreur inconnue')}`)
+                toast.error(`${t('settings.toast.billingError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
             } finally {
                 if (isActive) {
                     setBillingLoading(false)
@@ -170,7 +172,7 @@ export default function SettingsPage() {
                     internal_billing_logo_path: data.internal_billing_logo_path || '',
                 })
             } catch (error: unknown) {
-                toast.error(`Erreur facturation interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
+                toast.error(`${t('settings.toast.internalBillingError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
             } finally {
                 if (isActive) {
                     setInternalBillingLoading(false)
@@ -187,7 +189,7 @@ export default function SettingsPage() {
         e.preventDefault()
         if (!newPassword) return
         if (newPassword !== confirmPassword) {
-            toast.error('Les mots de passe ne correspondent pas')
+            toast.error(t('settings.security.passwordMismatch'))
             return
         }
 
@@ -201,11 +203,11 @@ export default function SettingsPage() {
 
             if (error) throw error
 
-            toast.success('Mot de passe mis a jour avec succes')
+            toast.success(t('settings.security.passwordUpdated'))
             setNewPassword('')
             setConfirmPassword('')
         } catch (error: unknown) {
-            toast.error(`Erreur: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.genericError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setUpdating(false)
         }
@@ -220,9 +222,9 @@ export default function SettingsPage() {
         try {
             const { error } = await supabase.auth.updateUser({ email: emailDraft })
             if (error) throw error
-            toast.success('Email mis a jour. Verification envoyee a la nouvelle adresse.')
+            toast.success(t('settings.profile.emailUpdated'))
         } catch (error: unknown) {
-            toast.error(`Erreur email: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.emailError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setEmailUpdating(false)
         }
@@ -238,7 +240,7 @@ export default function SettingsPage() {
         e.preventDefault()
         const parsedPercent = Number(vatRatePercent.replace(',', '.'))
         if (!Number.isFinite(parsedPercent) || parsedPercent <= 0 || parsedPercent >= 100) {
-            toast.error('Valeur TVA invalide')
+            toast.error(t('settings.vat.invalidValue'))
             return
         }
 
@@ -248,7 +250,7 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             const rate = parsedPercent / 100
@@ -258,9 +260,9 @@ export default function SettingsPage() {
                 session.access_token
             )
             setVatEffectiveFrom(response.effective_from)
-            toast.success('TVA mise a jour')
+            toast.success(t('settings.vat.updated'))
         } catch (error: unknown) {
-            toast.error(`Erreur TVA: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.vatError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setVatSaving(false)
         }
@@ -274,7 +276,7 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             const response = await apiPut<typeof billingForm>(
@@ -295,9 +297,9 @@ export default function SettingsPage() {
                 ...response,
                 billing_logo_path: response.billing_logo_path || prev.billing_logo_path,
             }))
-            toast.success('Parametres de facturation mis a jour')
+            toast.success(t('settings.billing.updated'))
         } catch (error: unknown) {
-            toast.error(`Erreur facturation: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.billingError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setBillingSaving(false)
         }
@@ -311,7 +313,7 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             const response = await apiPut<typeof internalBillingForm>(
@@ -332,9 +334,9 @@ export default function SettingsPage() {
                 ...response,
                 internal_billing_logo_path: response.internal_billing_logo_path || prev.internal_billing_logo_path,
             }))
-            toast.success('Facturation interne mise a jour')
+            toast.success(t('settings.internalBilling.updated'))
         } catch (error: unknown) {
-            toast.error(`Erreur facturation interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.internalBillingError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setInternalBillingSaving(false)
         }
@@ -343,7 +345,7 @@ export default function SettingsPage() {
     const handleLogoUpload = async (file: File | null) => {
         if (!file) return
         if (file.size > 2 * 1024 * 1024) {
-            toast.error('Logo trop volumineux (max 2MB)')
+            toast.error(t('settings.logo.tooLarge'))
             return
         }
         setLogoUploading(true)
@@ -351,7 +353,7 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             const form = new FormData()
@@ -372,9 +374,9 @@ export default function SettingsPage() {
                 ...prev,
                 billing_logo_path: data.billing_logo_path || '',
             }))
-            toast.success('Logo charge')
+            toast.success(t('settings.logo.uploaded'))
         } catch (error: unknown) {
-            toast.error(`Erreur logo: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.logoError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setLogoUploading(false)
         }
@@ -386,14 +388,14 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             await apiDelete('/regions/me/logo', session.access_token)
             setBillingForm((prev) => ({ ...prev, billing_logo_path: '' }))
-            toast.success('Logo supprime')
+            toast.success(t('settings.logo.removed'))
         } catch (error: unknown) {
-            toast.error(`Erreur logo: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.logoError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setLogoUploading(false)
         }
@@ -402,7 +404,7 @@ export default function SettingsPage() {
     const handleInternalLogoUpload = async (file: File | null) => {
         if (!file) return
         if (file.size > 2 * 1024 * 1024) {
-            toast.error('Logo trop volumineux (max 2MB)')
+            toast.error(t('settings.logo.tooLarge'))
             return
         }
         setInternalLogoUploading(true)
@@ -410,7 +412,7 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             const form = new FormData()
@@ -431,9 +433,9 @@ export default function SettingsPage() {
                 ...prev,
                 internal_billing_logo_path: data.internal_billing_logo_path || '',
             }))
-            toast.success('Logo interne charge')
+            toast.success(t('settings.internalLogo.uploaded'))
         } catch (error: unknown) {
-            toast.error(`Erreur logo interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.internalLogoError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setInternalLogoUploading(false)
         }
@@ -445,40 +447,40 @@ export default function SettingsPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session?.access_token) {
-                toast.error('Session invalide')
+                toast.error(t('settings.toast.invalidSession'))
                 return
             }
             await apiDelete('/regions/me/internal-logo', session.access_token)
             setInternalBillingForm((prev) => ({ ...prev, internal_billing_logo_path: '' }))
-            toast.success('Logo interne supprime')
+            toast.success(t('settings.internalLogo.removed'))
         } catch (error: unknown) {
-            toast.error(`Erreur logo interne: ${getErrorMessage(error, 'Erreur inconnue')}`)
+            toast.error(`${t('settings.toast.internalLogoError')}: ${getErrorMessage(error, t('common.unknownError'))}`)
         } finally {
             setInternalLogoUploading(false)
         }
     }
 
     if (loading) {
-        return <div className="p-8">Chargement du profil...</div>
+        return <div className="p-8">{t('settings.loadingProfile')}</div>
     }
 
     if (!user) {
-        return <div className="p-8">Utilisateur non trouve</div>
+        return <div className="p-8">{t('settings.userNotFound')}</div>
     }
 
     return (
         <div className="min-h-screen bg-slate-50">
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 pb-16 pt-6 md:px-8">
                 <header className="space-y-2">
-                    <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">Parametres du compte</h1>
-                    <p className="text-sm text-slate-600 md:text-base">Gerez vos informations et la securite du compte.</p>
+                    <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{t('settings.title')}</h1>
+                    <p className="text-sm text-slate-600 md:text-base">{t('settings.subtitle')}</p>
                 </header>
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h2 className="text-base font-semibold text-slate-900">Profil</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('settings.profile.title')}</h2>
                     <form onSubmit={handleEmailUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
-                            <label htmlFor="account-email" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Email</label>
+                            <label htmlFor="account-email" className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.email')}</label>
                             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
                                 <input
                                     id="account-email"
@@ -492,20 +494,20 @@ export default function SettingsPage() {
                                     disabled={!emailDraft || emailDraft === user.email || emailUpdating}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {emailUpdating ? 'Mise a jour...' : 'Modifier email'}
+                                    {emailUpdating ? t('settings.cta.updating') : t('settings.profile.updateEmail')}
                                 </button>
                             </div>
-                            <p className="mt-1 text-xs text-slate-400">Un email de verification peut etre requis par Supabase.</p>
+                            <p className="mt-1 text-xs text-slate-400">{t('settings.profile.emailHint')}</p>
                         </div>
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Role</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.role')}</label>
                             <div className="mt-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                {roleLabel(user.role ?? undefined)}
+                                {t(`role.${user.role}`) !== `role.${user.role}` ? t(`role.${user.role}`) : roleLabel(user.role ?? undefined)}
                             </div>
                         </div>
                         {user.shop_id && (
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">ID Boutique</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.idShop')}</label>
                                 <div className="mt-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-600">
                                     {user.shop_id}
                                 </div>
@@ -513,7 +515,7 @@ export default function SettingsPage() {
                         )}
                         {user.city_id && (
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">ID Commune</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.idCity')}</label>
                                 <div className="mt-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-600">
                                     {user.city_id}
                                 </div>
@@ -521,14 +523,14 @@ export default function SettingsPage() {
                         )}
                         {user.hq_id && (
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">ID HQ</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.idHq')}</label>
                                 <div className="mt-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-600">
                                     {user.hq_id}</div>
                             </div>
                         )}
                         {user.admin_region_id && (
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">ID Region</label>
+                                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{t('settings.profile.idRegion')}</label>
                                 <div className="mt-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-600">
                                     {user.admin_region_id}
                                 </div>
@@ -539,13 +541,13 @@ export default function SettingsPage() {
 
                 {user.role === 'super_admin' && (
                     <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                        <h2 className="text-base font-semibold text-slate-900">Parametres TVA</h2>
+                        <h2 className="text-base font-semibold text-slate-900">{t('settings.vat.title')}</h2>
                         <p className="mt-2 text-sm text-slate-600">
-                            La TVA est appliquee aux factures PDF. Vous pouvez planifier une nouvelle valeur par mois.
+                            {t('settings.vat.subtitle')}
                         </p>
                         <form onSubmit={handleVatUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <label className="text-sm font-medium text-slate-600">Taux TVA (%)</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.vat.rate')}</label>
                                 <input
                                     type="text"
                                     value={vatRatePercent}
@@ -554,18 +556,18 @@ export default function SettingsPage() {
                                     className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
                                 />
                                 <p className="mt-1 text-xs text-slate-400">
-                                    Actif depuis: {vatEffectiveFrom || vatMonth}
+                                    {t('settings.vat.activeSince')}: {vatEffectiveFrom || vatMonth}
                                 </p>
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">Mois d&apos;effet</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.vat.effectiveMonth')}</label>
                                 <MonthInput
                                     value={vatMonth}
                                     onChange={(e) => setVatMonth(e.target.value)}
                                     className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
                                 />
                                 <p className="mt-1 text-xs text-slate-400">
-                                    {vatLoading ? 'Chargement...' : 'Selectionnez un mois pour previsualiser le taux.'}
+                                    {vatLoading ? t('common.loading') : t('settings.vat.monthHint')}
                                 </p>
                             </div>
                             <div className="md:col-span-2 flex justify-end">
@@ -574,7 +576,7 @@ export default function SettingsPage() {
                                     disabled={vatSaving || vatLoading}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {vatSaving ? 'Mise a jour...' : 'Mettre a jour la TVA'}
+                                    {vatSaving ? t('settings.cta.updating') : t('settings.vat.update')}
                                 </button>
                             </div>
                         </form>
@@ -583,13 +585,13 @@ export default function SettingsPage() {
 
                 {user.role === 'admin_region' && (
                     <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                        <h2 className="text-base font-semibold text-slate-900">Facturation regionale</h2>
+                        <h2 className="text-base font-semibold text-slate-900">{t('settings.billing.title')}</h2>
                         <p className="mt-2 text-sm text-slate-600">
-                            Definissez les coordonnees bancaires et le logo pour les factures de votre region.
+                            {t('settings.billing.subtitle')}
                         </p>
                         <form onSubmit={handleBillingUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">Raison sociale</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.legalName')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_name}
@@ -598,17 +600,17 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">IBAN</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.iban')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_iban}
                                     onChange={(e) => setBillingForm((prev) => ({ ...prev, billing_iban: e.target.value }))}
-                                    placeholder="CHxx xxxx xxxx xxxx xxxx x"
+                                    placeholder={t('settings.billing.ibanPlaceholder')}
                                     className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">Rue</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.street')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_street}
@@ -617,7 +619,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">No</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.number')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_house_num}
@@ -626,7 +628,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">NPA</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.postalCode')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_postal_code}
@@ -635,7 +637,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">Ville</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.city')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_city}
@@ -644,7 +646,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">Pays</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.country')}</label>
                                 <input
                                     type="text"
                                     value={billingForm.billing_country}
@@ -653,7 +655,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">Logo facture</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.logo')}</label>
                                 <div className="mt-2 flex flex-wrap items-center gap-3">
                                     <input
                                         type="file"
@@ -663,7 +665,7 @@ export default function SettingsPage() {
                                         className="block text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                                     />
                                     <span className="text-xs text-slate-400">
-                                        {billingForm.billing_logo_path ? 'Logo charge' : 'Aucun logo'}
+                                        {billingForm.billing_logo_path ? t('settings.logo.loaded') : t('settings.logo.none')}
                                     </span>
                                     {billingForm.billing_logo_path && (
                                         <button
@@ -672,11 +674,11 @@ export default function SettingsPage() {
                                             disabled={logoUploading}
                                             className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
                                         >
-                                            Supprimer
+                                            {t('settings.cta.remove')}
                                         </button>
                                     )}
                                 </div>
-                                <p className="mt-1 text-xs text-slate-400">Formats PNG/JPEG, max 2MB.</p>
+                                <p className="mt-1 text-xs text-slate-400">{t('settings.logo.hint')}</p>
                             </div>
                             <div className="md:col-span-2 flex justify-end">
                                 <button
@@ -684,7 +686,7 @@ export default function SettingsPage() {
                                     disabled={billingSaving || billingLoading}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {billingSaving ? 'Mise a jour...' : 'Mettre a jour la facturation'}
+                                    {billingSaving ? t('settings.cta.updating') : t('settings.billing.update')}
                                 </button>
                             </div>
                         </form>
@@ -693,13 +695,13 @@ export default function SettingsPage() {
 
                 {user.role === 'admin_region' && (
                     <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                        <h2 className="text-base font-semibold text-slate-900">Facturation interne (prestataire)</h2>
+                        <h2 className="text-base font-semibold text-slate-900">{t('settings.internalBilling.title')}</h2>
                         <p className="mt-2 text-sm text-slate-600">
-                            Utilise pour la facture interne du prestataire de livraison vers l&apos;association.
+                            {t('settings.internalBilling.subtitle')}
                         </p>
                         <form onSubmit={handleInternalBillingUpdate} className="mt-4 grid gap-4 md:grid-cols-2">
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">Raison sociale</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.legalName')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_name}
@@ -708,17 +710,17 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">IBAN</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.iban')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_iban}
                                     onChange={(e) => setInternalBillingForm((prev) => ({ ...prev, internal_billing_iban: e.target.value }))}
-                                    placeholder="CHxx xxxx xxxx xxxx xxxx x"
+                                    placeholder={t('settings.billing.ibanPlaceholder')}
                                     className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">Rue</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.street')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_street}
@@ -727,7 +729,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">No</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.number')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_house_num}
@@ -736,7 +738,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">NPA</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.postalCode')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_postal_code}
@@ -745,7 +747,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">Ville</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.city')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_city}
@@ -754,7 +756,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-slate-600">Pays</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.billing.country')}</label>
                                 <input
                                     type="text"
                                     value={internalBillingForm.internal_billing_country}
@@ -763,7 +765,7 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="text-sm font-medium text-slate-600">Logo interne</label>
+                                <label className="text-sm font-medium text-slate-600">{t('settings.internalLogo.title')}</label>
                                 <div className="mt-2 flex flex-wrap items-center gap-3">
                                     <input
                                         type="file"
@@ -773,7 +775,7 @@ export default function SettingsPage() {
                                         className="block text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                                     />
                                     <span className="text-xs text-slate-400">
-                                        {internalBillingForm.internal_billing_logo_path ? 'Logo charge' : 'Aucun logo'}
+                                        {internalBillingForm.internal_billing_logo_path ? t('settings.logo.loaded') : t('settings.logo.none')}
                                     </span>
                                     {internalBillingForm.internal_billing_logo_path && (
                                         <button
@@ -782,11 +784,11 @@ export default function SettingsPage() {
                                             disabled={internalLogoUploading}
                                             className="text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
                                         >
-                                            Supprimer
+                                            {t('settings.cta.remove')}
                                         </button>
                                     )}
                                 </div>
-                                <p className="mt-1 text-xs text-slate-400">Formats PNG/JPEG, max 2MB.</p>
+                                <p className="mt-1 text-xs text-slate-400">{t('settings.logo.hint')}</p>
                             </div>
                             <div className="md:col-span-2 flex justify-end">
                                 <button
@@ -794,7 +796,7 @@ export default function SettingsPage() {
                                     disabled={internalBillingSaving || internalBillingLoading}
                                     className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                    {internalBillingSaving ? 'Mise a jour...' : 'Mettre a jour la facturation interne'}
+                                    {internalBillingSaving ? t('settings.cta.updating') : t('settings.internalBilling.update')}
                                 </button>
                             </div>
                         </form>
@@ -802,10 +804,10 @@ export default function SettingsPage() {
                 )}
 
                 <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <h2 className="text-base font-semibold text-slate-900">Securite</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('settings.security.title')}</h2>
                     <form onSubmit={handlePasswordUpdate} className="mt-4 space-y-4">
                         <div>
-                            <label htmlFor="new-password" className="text-sm font-medium text-slate-600">Nouveau mot de passe</label>
+                            <label htmlFor="new-password" className="text-sm font-medium text-slate-600">{t('settings.security.newPassword')}</label>
                             <input
                                 id="new-password"
                                 type="password"
@@ -815,10 +817,10 @@ export default function SettingsPage() {
                                 minLength={6}
                                 className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
                             />
-                            <p className="mt-1 text-xs text-slate-400">Minimum 6 caracteres.</p>
+                            <p className="mt-1 text-xs text-slate-400">{t('settings.security.minHint')}</p>
                         </div>
                         <div>
-                            <label htmlFor="confirm-password" className="text-sm font-medium text-slate-600">Confirmer le mot de passe</label>
+                            <label htmlFor="confirm-password" className="text-sm font-medium text-slate-600">{t('settings.security.confirmPassword')}</label>
                             <input
                                 id="confirm-password"
                                 type="password"
@@ -835,7 +837,7 @@ export default function SettingsPage() {
                                 disabled={!newPassword || !confirmPassword || updating}
                                 className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                             >
-                                {updating ? 'Mise a jour...' : 'Mettre a jour'}
+                                {updating ? t('settings.cta.updating') : t('settings.cta.update')}
                             </button>
                         </div>
                     </form>
@@ -846,7 +848,7 @@ export default function SettingsPage() {
                         onClick={handleLogout}
                         className="text-sm font-semibold text-red-600 transition hover:text-red-700"
                     >
-                        Se deconnecter
+                        {t('common.logout')}
                     </button>
                 </section>
             </div>

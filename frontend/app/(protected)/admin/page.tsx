@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 interface Delivery {
   status: string
@@ -22,6 +23,7 @@ interface Courier {
 
 export default function AdminDashboardPage() {
   const { adminContextRegion } = useAuth()
+  const { t } = useLanguage()
   const [stats, setStats] = useState({
     todayTotal: 0,
     todayPending: 0,
@@ -86,118 +88,118 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900">Tableau de bord</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">{t('admin.dashboard.title')}</h1>
         <p className="text-slate-500">
-          Vue d ensemble pour le {capitalizedToday}.
+          {t('admin.dashboard.subtitle').replace('{date}', capitalizedToday)}
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Livraisons du jour</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admin.dashboard.kpi.todayOrders')}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '-' : stats.todayTotal}</div>
-            <p className="text-xs text-muted-foreground">Commandes recues aujourd hui</p>
+            <p className="text-xs text-muted-foreground">{t('admin.dashboard.kpi.todayOrdersHint')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En cours</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admin.dashboard.kpi.pending')}</CardTitle>
             <Clock className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
               {loading ? '-' : stats.todayPending}
             </div>
-            <p className="text-xs text-muted-foreground">Necessitent une action</p>
+            <p className="text-xs text-muted-foreground">{t('admin.dashboard.kpi.pendingHint')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Terminees</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admin.dashboard.kpi.completed')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {loading ? '-' : stats.todayCompleted}
             </div>
-            <p className="text-xs text-muted-foreground">Livrees avec succes</p>
+            <p className="text-xs text-muted-foreground">{t('admin.dashboard.kpi.completedHint')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Flotte active</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admin.dashboard.kpi.activeFleet')}</CardTitle>
             <Bike className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
               {loading ? '-' : `${stats.activeCouriers} / ${stats.totalCouriers}`}
             </div>
-            <p className="text-xs text-muted-foreground">Coursiers disponibles</p>
+            <p className="text-xs text-muted-foreground">{t('admin.dashboard.kpi.activeFleetHint')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Km a velo (mois)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admin.dashboard.kpi.kmMonth')}</CardTitle>
             <Bike className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
               {ecoLoading || !ecoStats ? '-' : ecoStats.distance_km.toFixed(1)}
             </div>
-            <p className="text-xs text-muted-foreground">Estimation aller-retour</p>
+            <p className="text-xs text-muted-foreground">{t('admin.dashboard.kpi.kmHint')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">CO2 economise (kg)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('admin.dashboard.kpi.co2Saved')}</CardTitle>
             <Leaf className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
               {ecoLoading || !ecoStats ? '-' : ecoStats.co2_saved_kg.toFixed(1)}
             </div>
-            <p className="text-xs text-muted-foreground">Base voiture 93.6 g/km</p>
+            <p className="text-xs text-muted-foreground">{t('admin.dashboard.kpi.co2Hint')}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Acces rapide</h2>
+        <h2 className="text-xl font-semibold">{t('admin.dashboard.quickAccess')}</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Link href="/admin/dispatch">
             <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
               <Activity className="w-6 h-6 text-emerald-600" />
-              <span>Gerer le dispatch</span>
+              <span>{t('admin.dashboard.quick.dispatch')}</span>
             </Button>
           </Link>
 
           <Link href="/admin/clients">
             <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
               <Users className="w-6 h-6 text-emerald-600" />
-              <span>Gerer les clients</span>
+              <span>{t('admin.dashboard.quick.clients')}</span>
             </Button>
           </Link>
 
           <Link href="/admin/shops">
             <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
               <Store className="w-6 h-6 text-emerald-600" />
-              <span>Gerer les commerces</span>
+              <span>{t('admin.dashboard.quick.shops')}</span>
             </Button>
           </Link>
 
           <Link href="/admin/couriers">
             <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
               <Bike className="w-6 h-6 text-emerald-600" />
-              <span>Gerer la flotte</span>
+              <span>{t('admin.dashboard.quick.couriers')}</span>
             </Button>
           </Link>
         </div>
@@ -206,31 +208,31 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="bg-emerald-50 border-emerald-100">
           <CardHeader>
-            <CardTitle className="text-emerald-800 text-lg">Facturation et rapports</CardTitle>
+            <CardTitle className="text-emerald-800 text-lg">{t('admin.dashboard.billingCard.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-emerald-700 mb-4">
-              Consultez les rapports mensuels et gerez la facturation des commerces.
+              {t('admin.dashboard.billingCard.subtitle')}
             </p>
             <Link href="/admin/billing">
-              <Button className="bg-emerald-600 hover:bg-emerald-700">Acceder a la facturation</Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700">{t('admin.dashboard.billingCard.cta')}</Button>
             </Link>
           </CardContent>
         </Card>
         <Card className="bg-gray-50 border-gray-100">
           <CardHeader>
-            <CardTitle className="text-gray-800 text-lg">Configuration</CardTitle>
+            <CardTitle className="text-gray-800 text-lg">{t('admin.dashboard.configCard.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-4">
-              Gerez les tarifs de livraison et les zones de couverture (communes partenaires).
+              {t('admin.dashboard.configCard.subtitle')}
             </p>
             <div className="flex gap-2">
               <Link href="/admin/tariffs">
-                <Button variant="secondary">Tarifs</Button>
+                <Button variant="secondary">{t('admin.dashboard.configCard.tariffs')}</Button>
               </Link>
               <Link href="/admin/cities">
-                <Button variant="secondary">Communes partenaires</Button>
+                <Button variant="secondary">{t('admin.dashboard.configCard.partnerCities')}</Button>
               </Link>
             </div>
           </CardContent>

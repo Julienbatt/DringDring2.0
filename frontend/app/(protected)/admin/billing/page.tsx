@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type BillingDocument = {
     id: string
@@ -52,43 +53,6 @@ type BillingLine = {
     shop_name: string | null
 }
 
-const recipientTypeLabels = {
-    COMMUNE: 'Commune',
-    HQ: 'HQ',
-    SHOP_INDEP: 'Commerce independant',
-    INTERNAL: 'Interne',
-} as const
-
-const MONTH_LABELS = [
-    'Janvier',
-    'Fevrier',
-    'Mars',
-    'Avril',
-    'Mai',
-    'Juin',
-    'Juillet',
-    'Aout',
-    'Septembre',
-    'Octobre',
-    'Novembre',
-    'Decembre',
-]
-
-const MONTH_SHORT_LABELS = [
-    'Janv',
-    'Fevr',
-    'Mars',
-    'Avr',
-    'Mai',
-    'Juin',
-    'Juil',
-    'Aout',
-    'Sept',
-    'Oct',
-    'Nov',
-    'Dec',
-]
-
 function getCurrentMonth() {
     const now = new Date()
     now.setMonth(now.getMonth() - 1)
@@ -96,14 +60,15 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${month}`
 }
 
-function formatMonth(value: string) {
+function formatMonth(value: string, locale: string) {
     const date = new Date(value.length === 7 ? `${value}-01` : value)
     if (Number.isNaN(date.getTime())) return value
-    return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
+    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
 }
 
 export default function BillingPage() {
     const { adminContextRegion, user } = useAuth()
+    const { t, locale } = useLanguage()
     const searchParams = useSearchParams()
     const router = useRouter()
     const paramMonth = searchParams.get('month')
@@ -180,7 +145,7 @@ export default function BillingPage() {
             }
         } catch (error) {
             console.error('Failed to load billing data', error)
-            toast.error('Erreur lors du chargement des donnees')
+            toast.error(t('admin.billing.toast.loadError'))
         } finally {
             if (requestId === loadAllRequestRef.current) {
                 setLoading(false)
@@ -209,10 +174,10 @@ export default function BillingPage() {
                 session.access_token
             )
             loadAll()
-            toast.success('Facturation recalculee')
+            toast.success(t('admin.billing.toast.recalculated'))
         } catch (error) {
             console.error('Refresh failed', error)
-            toast.error('Erreur lors du recalcul')
+            toast.error(t('admin.billing.toast.recalculateError'))
         } finally {
             setRefreshing(false)
         }
@@ -246,14 +211,14 @@ export default function BillingPage() {
             a.remove()
         } catch (error) {
             console.error('Export failed', error)
-            toast.error("Erreur lors de l'export")
+            toast.error(t('admin.billing.toast.exportError'))
         }
     }
 
     const downloadZip = async (recipientType: 'COMMUNE' | 'HQ' | 'SHOP_INDEP', filename: string) => {
         try {
             if (!userIsRegional()) {
-                toast.error('Selectionnez une entreprise regionale')
+                toast.error(t('admin.billing.toast.selectRegion'))
                 return
             }
             const supabase = createClient()
@@ -277,7 +242,7 @@ export default function BillingPage() {
                     detail = raw
                 }
                 if (response.status === 404 && (String(detail).includes('No billing documents found') || String(detail).includes('No deliveries for this period'))) {
-                    toast.info('Aucun document pour cette periode')
+                    toast.info(t('admin.billing.toast.noDocuments'))
                     return
                 }
                 throw new Error(detail || 'ZIP download failed')
@@ -294,7 +259,7 @@ export default function BillingPage() {
             window.URL.revokeObjectURL(url)
         } catch (error) {
             console.error('ZIP download failed', error)
-            toast.error('Erreur lors du telechargement ZIP')
+            toast.error(t('admin.billing.toast.zipError'))
         }
     }
 
@@ -332,7 +297,7 @@ export default function BillingPage() {
             window.URL.revokeObjectURL(urlObject)
         } catch (error) {
             console.error('PDF download failed', error)
-            toast.error('Erreur lors du telechargement')
+            toast.error(t('admin.billing.toast.downloadError'))
         }
     }
 
@@ -340,9 +305,17 @@ export default function BillingPage() {
         .split('-')
         .map((value, index) => (index === 0 ? Number(value) : Number(value) - 1)) as [number, number]
 
+    const i18nLocaleMap = {
+        fr: 'fr-CH',
+        de: 'de-CH',
+        it: 'it-CH',
+        en: 'en-CH',
+    } as const
+    const dateLocale = i18nLocaleMap[locale] ?? 'fr-CH'
+
     const formatMonthLabel = (year: number, monthIndex: number) => {
-        const label = MONTH_LABELS[monthIndex] || ''
-        return `${label} ${year}`
+        const date = new Date(year, monthIndex, 1)
+        return new Intl.DateTimeFormat(dateLocale, { month: 'long', year: 'numeric' }).format(date)
     }
 
     const getMonthValue = (year: number, monthIndex: number) => {
@@ -390,20 +363,31 @@ export default function BillingPage() {
     const handleInternalPdf = () => {
         const internalDoc = internalDocuments[0]
         if (!internalDoc) {
-            toast.info('Aucun document interne pour cette periode.')
+            toast.info(t('admin.billing.toast.noInternalDocument'))
             return
         }
         handleDownloadPdf(internalDoc.id, internalDoc.recipient_name)
+    }
+
+    const monthShortLabels = Array.from({ length: 12 }, (_, index) =>
+        new Intl.DateTimeFormat(dateLocale, { month: 'short' }).format(new Date(2026, index, 1))
+    )
+
+    const recipientTypeLabels: Record<BillingDocument['recipient_type'], string> = {
+        COMMUNE: t('admin.billing.recipientType.city'),
+        HQ: t('admin.billing.recipientType.hq'),
+        SHOP_INDEP: t('admin.billing.recipientType.independentShop'),
+        INTERNAL: t('admin.billing.recipientType.internal'),
     }
 
     return (
         <div className="p-8 space-y-6">
             <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Facturation regionale</h1>
-                    <p className="text-muted-foreground">Gestion des clotures mensuelles</p>
+                    <h1 className="text-2xl font-bold tracking-tight">{t('admin.billing.title')}</h1>
+                    <p className="text-muted-foreground">{t('admin.billing.subtitle')}</p>
                     <p className="text-xs text-emerald-700 mt-1">
-                        Periode analysee: {formatMonth(selectedMonth)}.
+                        {t('admin.billing.period')}: {formatMonth(selectedMonth, dateLocale)}.
                     </p>
                 </div>
 
@@ -417,7 +401,7 @@ export default function BillingPage() {
                                         variant="ghost"
                                         size="icon-sm"
                                         onClick={() => stepMonth(-1)}
-                                        aria-label="Mois precedent"
+                                        aria-label={t('admin.billing.prevMonth')}
                                     >
                                         <ChevronLeft className="h-4 w-4" />
                                     </Button>
@@ -434,7 +418,7 @@ export default function BillingPage() {
                                         variant="ghost"
                                         size="icon-sm"
                                         onClick={() => stepMonth(1)}
-                                        aria-label="Mois suivant"
+                                        aria-label={t('admin.billing.nextMonth')}
                                     >
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
@@ -447,7 +431,7 @@ export default function BillingPage() {
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 onClick={() => setPickerYear((prev) => prev - 1)}
-                                                aria-label="Annee precedente"
+                                                aria-label={t('admin.billing.prevYear')}
                                             >
                                                 <ChevronLeft className="h-4 w-4" />
                                             </Button>
@@ -457,13 +441,13 @@ export default function BillingPage() {
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 onClick={() => setPickerYear((prev) => prev + 1)}
-                                                aria-label="Annee suivante"
+                                                aria-label={t('admin.billing.nextYear')}
                                             >
                                                 <ChevronRight className="h-4 w-4" />
                                             </Button>
                                         </div>
                                         <div className="mt-2 grid grid-cols-3 gap-2">
-                                            {MONTH_SHORT_LABELS.map((label, index) => {
+                                            {monthShortLabels.map((label, index) => {
                                                 const isSelected = pickerYear === selectedYear && index === selectedMonthIndex
                                                 return (
                                                     <button
@@ -497,7 +481,7 @@ export default function BillingPage() {
                                     checked={previewMode}
                                     onChange={(e) => setPreviewMode(e.target.checked)}
                                 />
-                                Mode preview (sans gel)
+                                {t('admin.billing.preview')}
                             </label>
                         </div>
                         <Button
@@ -506,14 +490,14 @@ export default function BillingPage() {
                             disabled={loading || refreshing}
                             variant="default"
                         >
-                            {refreshing ? 'Recalcul...' : 'Recalculer la facturation'}
+                            {refreshing ? t('admin.billing.recalculating') : t('admin.billing.recalculate')}
                         </Button>
                     </div>
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                             <Button size="sm" variant="outline" onClick={handleInternalPdf}>
                                 <FileText className="mr-2 h-4 w-4" />
-                                PDF Interne
+                                {t('admin.billing.pdfInternal')}
                             </Button>
                             <Button
                                 size="sm"
@@ -521,7 +505,7 @@ export default function BillingPage() {
                                 onClick={() => downloadZip('HQ', `factures-hq-${selectedMonth}.zip`)}
                             >
                                 <FileText className="mr-2 h-4 w-4" />
-                                PDF HQ
+                                {t('admin.billing.pdfHq')}
                             </Button>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -531,7 +515,7 @@ export default function BillingPage() {
                                 onClick={() => downloadZip('COMMUNE', `factures-communes-${selectedMonth}.zip`)}
                             >
                                 <FileText className="mr-2 h-4 w-4" />
-                                PDF Communes & zones
+                                {t('admin.billing.pdfCities')}
                             </Button>
                             <Button
                                 size="sm"
@@ -539,7 +523,7 @@ export default function BillingPage() {
                                 onClick={() => downloadZip('SHOP_INDEP', `factures-commerces-${selectedMonth}.zip`)}
                             >
                                 <FileText className="mr-2 h-4 w-4" />
-                                PDF Commerces independants
+                                {t('admin.billing.pdfIndependentShops')}
                             </Button>
                         </div>
                     </div>
@@ -549,21 +533,21 @@ export default function BillingPage() {
             {!loading && !hasAnyData ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
                     <h2 className="text-sm font-semibold text-slate-900">
-                        Aucune donnee de facturation pour {formatMonth(selectedMonth)}
+                        {t('admin.billing.noDataTitle')} {formatMonth(selectedMonth)}
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
-                        Lance un recalcul puis verifie qu&apos;il existe des livraisons consolidees sur la periode.
+                        {t('admin.billing.noDataBody')}
                     </p>
                 </div>
             ) : null}
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-                    <div className="text-sm font-medium text-muted-foreground">Total facture TTC (periode)</div>
+                    <div className="text-sm font-medium text-muted-foreground">{t('admin.billing.kpi.totalTtc')}</div>
                     <div className="text-2xl font-bold">
                         CHF {totalBilledTtc.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">Factures externes</div>
+                    <div className="text-xs text-muted-foreground mt-1">{t('admin.billing.kpi.externalInvoices')}</div>
                 </div>
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <div className="text-sm font-medium text-muted-foreground">
@@ -572,19 +556,19 @@ export default function BillingPage() {
                     <div className="text-2xl font-bold">
                         CHF {totalBilledVat.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">Charge fiscale de la periode</div>
+                    <div className="text-xs text-muted-foreground mt-1">{t('admin.billing.kpi.vatLoad')}</div>
                 </div>
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-                    <div className="text-sm font-medium text-muted-foreground">Total HT (periode)</div>
+                    <div className="text-sm font-medium text-muted-foreground">{t('admin.billing.kpi.totalHt')}</div>
                     <div className="text-2xl font-bold">
                         CHF {totalBilledHt.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                     </div>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-6">
-                    <div className="text-sm font-medium text-emerald-800">Payeurs externes actifs</div>
+                    <div className="text-sm font-medium text-emerald-800">{t('admin.billing.kpi.activeExternalPayers')}</div>
                     <div className="text-2xl font-bold text-slate-900">{externalPayers}</div>
                     <div className="text-xs text-emerald-700 mt-1">
-                        {filteredExternalDeliveries} livraisons | {totalDocuments} documents
+                        {filteredExternalDeliveries} {t('admin.billing.kpi.deliveries')} | {totalDocuments} {t('admin.billing.kpi.documents')}
                     </div>
                 </div>
             </div>
@@ -592,9 +576,9 @@ export default function BillingPage() {
             <div className="rounded-md border bg-white">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
                     <div>
-                        <div className="text-lg font-semibold">Factures externes</div>
+                        <div className="text-lg font-semibold">{t('admin.billing.external.title')}</div>
                         <div className="text-sm text-muted-foreground">
-                            Communes, HQ et commerces independants. Chaque payeur recoit sa facture.
+                            {t('admin.billing.external.subtitle')}
                         </div>
                     </div>
                     <select
@@ -605,39 +589,39 @@ export default function BillingPage() {
                             setSelectedRecipientKey('all')
                         }}
                     >
-                        <option value="ALL">Tous les payeurs externes</option>
-                        <option value="COMMUNE">Communes & zones</option>
-                        <option value="HQ">HQ</option>
-                        <option value="SHOP_INDEP">Commerces independants</option>
+                        <option value="ALL">{t('admin.billing.external.filter.all')}</option>
+                        <option value="COMMUNE">{t('admin.billing.external.filter.cities')}</option>
+                        <option value="HQ">{t('admin.billing.external.filter.hq')}</option>
+                        <option value="SHOP_INDEP">{t('admin.billing.external.filter.independentShops')}</option>
                     </select>
                 </div>
                 <div className="flex flex-wrap gap-3 px-4 py-2 text-xs text-muted-foreground">
-                    <span>Payeurs: {filteredExternalDocuments.length}</span>
-                    <span>Livraisons: {filteredExternalDeliveries}</span>
+                    <span>{t('admin.billing.external.payers')}: {filteredExternalDocuments.length}</span>
+                    <span>{t('admin.billing.external.deliveries')}: {filteredExternalDeliveries}</span>
                     <span>
-                        Montant TTC: CHF {filteredExternalAmount.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        {t('admin.billing.external.amountTtc')}: CHF {filteredExternalAmount.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                     </span>
                 </div>
                 <div className="table-scroll">
                     <Table className="min-w-[900px]">
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Payeur</TableHead>
-                            <TableHead className="text-right">Livraisons</TableHead>
-                            <TableHead className="text-right">Montant facture (TTC)</TableHead>
-                            <TableHead className="text-center">Statut</TableHead>
-                            <TableHead className="text-right">Action</TableHead>
+                            <TableHead>{t('admin.billing.table.type')}</TableHead>
+                            <TableHead>{t('admin.billing.table.payer')}</TableHead>
+                            <TableHead className="text-right">{t('admin.billing.table.deliveries')}</TableHead>
+                            <TableHead className="text-right">{t('admin.billing.table.amountTtc')}</TableHead>
+                            <TableHead className="text-center">{t('admin.billing.table.status')}</TableHead>
+                            <TableHead className="text-right">{t('admin.billing.table.action')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">Chargement...</TableCell>
+                                <TableCell colSpan={6} className="h-24 text-center">{t('common.loading')}</TableCell>
                             </TableRow>
                         ) : filteredExternalDocuments.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucune donnee pour ce mois.</TableCell>
+                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">{t('admin.billing.noDataForMonth')}</TableCell>
                             </TableRow>
                         ) : (
                             filteredExternalDocuments.map((row) => (
@@ -651,7 +635,7 @@ export default function BillingPage() {
                                         CHF {Number(row.amount_ttc).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline">{row.status || 'En cours'}</Badge>
+                                        <Badge variant="outline">{row.status || t('admin.billing.inProgress')}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -681,30 +665,30 @@ export default function BillingPage() {
 
             <div className="rounded-md border bg-white">
                 <div className="px-4 py-3 border-b border-gray-200">
-                    <div className="text-lg font-semibold">Facture interne</div>
+                    <div className="text-lg font-semibold">{t('admin.billing.internal.title')}</div>
                     <div className="text-sm text-muted-foreground">
-                        Facture globale pour l&apos;association regionale (montant total des livraisons).
+                        {t('admin.billing.internal.subtitle')}
                     </div>
                 </div>
                 <div className="table-scroll">
                     <Table className="min-w-[900px]">
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Association</TableHead>
-                            <TableHead className="text-right">Livraisons</TableHead>
-                            <TableHead className="text-right">Montant facture (TTC)</TableHead>
-                            <TableHead className="text-center">Statut</TableHead>
-                            <TableHead className="text-right">Action</TableHead>
+                            <TableHead>{t('admin.billing.table.association')}</TableHead>
+                            <TableHead className="text-right">{t('admin.billing.table.deliveries')}</TableHead>
+                            <TableHead className="text-right">{t('admin.billing.table.amountTtc')}</TableHead>
+                            <TableHead className="text-center">{t('admin.billing.table.status')}</TableHead>
+                            <TableHead className="text-right">{t('admin.billing.table.action')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">Chargement...</TableCell>
+                                <TableCell colSpan={5} className="h-24 text-center">{t('common.loading')}</TableCell>
                             </TableRow>
                         ) : internalDocuments.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">Aucune donnee pour ce mois.</TableCell>
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">{t('admin.billing.noDataForMonth')}</TableCell>
                             </TableRow>
                         ) : (
                             internalDocuments.map((row) => (
@@ -715,7 +699,7 @@ export default function BillingPage() {
                                         CHF {Number(row.amount_ttc).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline">{row.status || 'En cours'}</Badge>
+                                        <Badge variant="outline">{row.status || t('admin.billing.inProgress')}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -746,9 +730,9 @@ export default function BillingPage() {
             <div className="rounded-md border bg-white p-4 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <div>
-                        <div className="text-lg font-semibold">Audit des livraisons (factures externes)</div>
+                        <div className="text-lg font-semibold">{t('admin.billing.audit.title')}</div>
                         <div className="text-sm text-muted-foreground">
-                            Liste des lignes de facturation. Une livraison peut apparaitre plusieurs fois (1 par payeur).
+                            {t('admin.billing.audit.subtitle')}
                         </div>
                     </div>
                     <select
@@ -758,12 +742,12 @@ export default function BillingPage() {
                     >
                         <option value="all">
                             {externalFilter === 'COMMUNE'
-                                ? 'Toutes les communes'
-                                : externalFilter === 'HQ'
-                                    ? 'Tous les HQ'
-                                    : externalFilter === 'SHOP_INDEP'
-                                        ? 'Tous les commerces'
-                                        : 'Tous les payeurs'}
+                                        ? t('admin.billing.audit.recipients.allCities')
+                                        : externalFilter === 'HQ'
+                                            ? t('admin.billing.audit.recipients.allHq')
+                                            : externalFilter === 'SHOP_INDEP'
+                                                ? t('admin.billing.audit.recipients.allShops')
+                                                : t('admin.billing.audit.recipients.allPayers')}
                         </option>
                         {filteredExternalDocuments.map((row) => (
                             <option key={row.id} value={`${row.recipient_type}:${row.recipient_id}`}>
@@ -776,24 +760,24 @@ export default function BillingPage() {
                     <Table className="min-w-[1100px]">
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="whitespace-nowrap">Date</TableHead>
-                            <TableHead className="min-w-[220px]">Payeur</TableHead>
-                            <TableHead className="min-w-[200px]">Commerce</TableHead>
-                            <TableHead className="min-w-[160px]">Client</TableHead>
-                            <TableHead className="min-w-[220px]">Commune partenaire</TableHead>
-                            <TableHead className="text-right whitespace-nowrap min-w-[80px]">Sacs</TableHead>
-                            <TableHead className="text-right whitespace-nowrap min-w-[190px] pr-4">Montant a facturer (CHF)</TableHead>
+                            <TableHead className="whitespace-nowrap">{t('admin.billing.table.date')}</TableHead>
+                            <TableHead className="min-w-[220px]">{t('admin.billing.table.payer')}</TableHead>
+                            <TableHead className="min-w-[200px]">{t('admin.billing.table.shop')}</TableHead>
+                            <TableHead className="min-w-[160px]">{t('admin.billing.table.client')}</TableHead>
+                            <TableHead className="min-w-[220px]">{t('admin.billing.table.partnerCity')}</TableHead>
+                            <TableHead className="text-right whitespace-nowrap min-w-[80px]">{t('admin.billing.table.bags')}</TableHead>
+                            <TableHead className="text-right whitespace-nowrap min-w-[190px] pr-4">{t('admin.billing.table.amountDue')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {detailLoading ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-20 text-center">Chargement...</TableCell>
+                                <TableCell colSpan={7} className="h-20 text-center">{t('common.loading')}</TableCell>
                             </TableRow>
                         ) : visibleDetails.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={7} className="h-20 text-center text-muted-foreground">
-                                    Aucune livraison pour cette periode.
+                                    {t('admin.billing.audit.noDeliveries')}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -803,7 +787,7 @@ export default function BillingPage() {
                                 const payeurLabel = doc?.recipient_name ?? recipientTypeLabels[row.recipient_type] ?? row.recipient_type
                                 return (
                                     <TableRow key={row.id}>
-                                        <TableCell className="whitespace-nowrap">{new Date(row.delivery_date).toLocaleDateString('fr-CH')}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{new Date(row.delivery_date).toLocaleDateString(dateLocale)}</TableCell>
                                         <TableCell className="max-w-[260px] truncate" title={payeurLabel}>{payeurLabel}</TableCell>
                                         <TableCell className="max-w-[220px] truncate" title={row.shop_name || ''}>{row.shop_name || '-'}</TableCell>
                                         <TableCell className="max-w-[180px] truncate" title={row.client_name || ''}>{row.client_name || '-'}</TableCell>

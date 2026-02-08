@@ -17,11 +17,13 @@ import {
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { CityDialog, CityData } from './components/CityDialog'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export const dynamic = 'force-dynamic'
 
 export default function AdminCitiesPage() {
     const { adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [cities, setCities] = useState<CityData[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -43,7 +45,7 @@ export default function AdminCitiesPage() {
             setCities(data)
         } catch (error) {
             console.error('Failed to load cities', error)
-            toast.error('Erreur lors du chargement')
+            toast.error(t('admin.cities.toast.loadError'))
         } finally {
             setLoading(false)
         }
@@ -130,36 +132,36 @@ export default function AdminCitiesPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">Communes partenaires & Zones</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('admin.cities.title')}</h1>
                     <p className="text-gray-500 mt-1">
-                        Gerez les municipalites desservies par votre region.
+                        {t('admin.cities.subtitle')}
                     </p>
                     <p className="text-xs text-emerald-700 mt-1">
-                        Cette vue est aussi votre argument commercial pour montrer la couverture locale DringDring.
+                        {t('admin.cities.marketingHint')}
                     </p>
                 </div>
 
                 <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
                     <Plus className="mr-2 h-4 w-4" />
-                    Ajouter une commune partenaire
+                    {t('admin.cities.addPartnerCity')}
                 </Button>
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-                    <div className="text-xs uppercase tracking-wider text-emerald-700">Communes partenaires</div>
+                    <div className="text-xs uppercase tracking-wider text-emerald-700">{t('admin.cities.kpi.partnerCities')}</div>
                     <div className="mt-1 text-2xl font-semibold text-slate-900">{totalCommunes}</div>
-                    <div className="text-xs text-slate-600">points d&apos;ancrage institutionnels</div>
+                    <div className="text-xs text-slate-600">{t('admin.cities.kpi.partnerCitiesHint')}</div>
                 </div>
                 <div className="rounded-xl border bg-white p-4">
-                    <div className="text-xs uppercase tracking-wider text-slate-500">Zones de service</div>
+                    <div className="text-xs uppercase tracking-wider text-slate-500">{t('admin.cities.kpi.serviceZones')}</div>
                     <div className="mt-1 text-2xl font-semibold text-slate-900">{totalZones}</div>
-                    <div className="text-xs text-slate-600">extensions territoriales</div>
+                    <div className="text-xs text-slate-600">{t('admin.cities.kpi.serviceZonesHint')}</div>
                 </div>
                 <div className="rounded-xl border bg-white p-4">
-                    <div className="text-xs uppercase tracking-wider text-slate-500">Qualite de maillage</div>
+                    <div className="text-xs uppercase tracking-wider text-slate-500">{t('admin.cities.kpi.networkQuality')}</div>
                     <div className="mt-1 text-2xl font-semibold text-slate-900">{zonesWithoutParent}</div>
-                    <div className="text-xs text-slate-600">zones sans commune parente</div>
+                    <div className="text-xs text-slate-600">{t('admin.cities.kpi.networkQualityHint')}</div>
                 </div>
             </div>
 
@@ -167,7 +169,7 @@ export default function AdminCitiesPage() {
                 <Search className="w-4 h-4 text-gray-400 ml-2" />
                 <Input
                     type="search"
-                    placeholder="Rechercher une commune partenaire..."
+                    placeholder={t('admin.cities.searchPlaceholder')}
                     className="border-none shadow-none focus-visible:ring-0"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -178,17 +180,17 @@ export default function AdminCitiesPage() {
                 <Table className="w-full table-fixed min-w-[980px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[34%]">Commune partenaire</TableHead>
-                            <TableHead className="hidden lg:table-cell w-[24%]">Contact Administratif</TableHead>
-                            <TableHead className="hidden lg:table-cell w-[30%]">Coordonnees</TableHead>
-                            <TableHead className="w-[12%] text-right whitespace-nowrap">Actions</TableHead>
+                            <TableHead className="w-[34%]">{t('admin.cities.table.partnerCity')}</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[24%]">{t('admin.cities.table.adminContact')}</TableHead>
+                            <TableHead className="hidden lg:table-cell w-[30%]">{t('admin.cities.table.contactDetails')}</TableHead>
+                            <TableHead className="w-[12%] text-right whitespace-nowrap">{t('admin.cities.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={4} className="text-center h-32 animate-pulse text-gray-400">Chargement...</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={4} className="text-center h-32 animate-pulse text-gray-400">{t('common.loading')}</TableCell></TableRow>
                         ) : visibleGroups.length === 0 && visibleOrphans.length === 0 ? (
-                            <TableRow><TableCell colSpan={4} className="text-center h-32 text-muted-foreground">Aucune commune partenaire trouvee.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={4} className="text-center h-32 text-muted-foreground">{t('admin.cities.table.empty')}</TableCell></TableRow>
                         ) : (
                             <>
                                 {visibleGroups.map(({ parent, children }) => {
@@ -203,11 +205,11 @@ export default function AdminCitiesPage() {
                                                         </div>
                                                         <span className="text-base">{parent.name}</span>
                                                         <span className="ml-2 text-[11px] uppercase tracking-wide text-emerald-700 bg-emerald-50 px-2 py-1 rounded">
-                                                            Commune
+                                                            {t('admin.cities.badge.city')}
                                                         </span>
                                                         {totalZones > 0 && (
                                                             <span className="text-xs text-gray-500">
-                                                                Zones: {totalZones}
+                                                                {t('admin.cities.zonesCount')}: {totalZones}
                                                             </span>
                                                         )}
                                                     </div>
@@ -240,7 +242,7 @@ export default function AdminCitiesPage() {
                                                             {parent.contact_person}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-gray-400 text-xs italic">Non defini</span>
+                                                        <span className="text-gray-400 text-xs italic">{t('admin.cities.notDefined')}</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="hidden lg:table-cell">
@@ -263,7 +265,7 @@ export default function AdminCitiesPage() {
                                                         size="sm"
                                                         onClick={() => handleEdit(parent)}
                                                     >
-                                                        Modifier
+                                                        {t('common.edit')}
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
@@ -276,11 +278,11 @@ export default function AdminCitiesPage() {
                                                             </div>
                                                             <span className="text-base">{child.name}</span>
                                                             <span className="ml-2 text-[11px] uppercase tracking-wide text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                                                                Zone
+                                                                {t('admin.cities.badge.zone')}
                                                             </span>
                                                         </div>
                                                         <div className="text-xs text-emerald-700 mt-1 ml-16">
-                                                            Zone de {parent.name}
+                                                            {t('admin.cities.zoneOf')} {parent.name}
                                                         </div>
                                                     {child.address && (
                                                         <div className="text-xs text-gray-500 mt-1 ml-16">{child.address}</div>
@@ -311,7 +313,7 @@ export default function AdminCitiesPage() {
                                                             {child.contact_person}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-gray-400 text-xs italic">Non defini</span>
+                                                        <span className="text-gray-400 text-xs italic">{t('admin.cities.notDefined')}</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="hidden lg:table-cell">
@@ -334,7 +336,7 @@ export default function AdminCitiesPage() {
                                                             size="sm"
                                                             onClick={() => handleEdit(child)}
                                                         >
-                                                            Modifier
+                                                            {t('common.edit')}
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -346,7 +348,7 @@ export default function AdminCitiesPage() {
                                     <>
                                         <TableRow>
                                             <TableCell colSpan={4} className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                                                Zones sans commune parente
+                                                {t('admin.cities.orphanZones')}
                                             </TableCell>
                                         </TableRow>
                                         {visibleOrphans.map((city) => (
@@ -358,7 +360,7 @@ export default function AdminCitiesPage() {
                                                         </div>
                                                         <span className="text-base">{city.name}</span>
                                                         <span className="ml-2 text-[11px] uppercase tracking-wide text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                                                            Zone
+                                                            {t('admin.cities.badge.zone')}
                                                         </span>
                                                     </div>
                                                     {city.address && <div className="text-xs text-gray-500 mt-1 ml-10">{city.address}</div>}
@@ -388,7 +390,7 @@ export default function AdminCitiesPage() {
                                                             {city.contact_person}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-gray-400 text-xs italic">Non defini</span>
+                                                        <span className="text-gray-400 text-xs italic">{t('admin.cities.notDefined')}</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell className="hidden lg:table-cell">
@@ -411,7 +413,7 @@ export default function AdminCitiesPage() {
                                                         size="sm"
                                                         onClick={() => handleEdit(city)}
                                                     >
-                                                        Modifier
+                                                        {t('common.edit')}
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>

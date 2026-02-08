@@ -16,11 +16,13 @@ import { apiGet } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import { HqDialog, HqData } from './components/HqDialog'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export const dynamic = 'force-dynamic'
 
 export default function AdminHqsPage() {
   const { session } = useAuth()
+  const { t } = useLanguage()
   const [hqs, setHqs] = useState<HqData[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -35,7 +37,7 @@ export default function AdminHqsPage() {
       setHqs(data)
     } catch (error) {
       console.error('Failed to load HQ', error)
-      toast.error('Erreur lors du chargement des HQ')
+      toast.error(t('admin.hq.toast.loadError'))
     } finally {
       setLoading(false)
     }
@@ -68,14 +70,14 @@ export default function AdminHqsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Gestion des HQ</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('admin.hq.title')}</h1>
           <p className="text-gray-500 mt-1">
-            {hqs.length} HQ enregistres dans la region.
+            {hqs.length} {t('admin.hq.subtitleCount')}
           </p>
         </div>
         <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="mr-2 h-4 w-4" />
-          Ajouter un HQ
+          {t('admin.hq.add')}
         </Button>
       </div>
 
@@ -83,7 +85,7 @@ export default function AdminHqsPage() {
         <Search className="w-4 h-4 text-gray-400 ml-2" />
         <Input
           type="search"
-          placeholder="Rechercher (nom, adresse, contact)..."
+          placeholder={t('admin.hq.searchPlaceholder')}
           className="border-none shadow-none focus-visible:ring-0"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -94,22 +96,22 @@ export default function AdminHqsPage() {
         <Table className="w-full table-fixed min-w-[860px]">
           <TableHeader className="bg-gray-50/50">
             <TableRow>
-              <TableHead className="w-[40%]">HQ et localisation</TableHead>
-              <TableHead className="w-[45%]">Contact</TableHead>
-              <TableHead className="w-[15%] text-right whitespace-nowrap">Actions</TableHead>
+              <TableHead className="w-[40%]">{t('admin.hq.table.hqLocation')}</TableHead>
+              <TableHead className="w-[45%]">{t('admin.hq.table.contact')}</TableHead>
+              <TableHead className="w-[15%] text-right whitespace-nowrap">{t('admin.hq.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center h-32 animate-pulse text-gray-400">
-                  Chargement...
+                  {t('common.loading')}
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center h-32 text-muted-foreground">
-                  Aucun HQ trouve.
+                  {t('admin.hq.table.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -128,7 +130,7 @@ export default function AdminHqsPage() {
                             {hq.address}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400 italic">Adresse non renseignee</span>
+                          <span className="text-xs text-gray-400 italic">{t('admin.hq.addressMissing')}</span>
                         )}
                       </div>
                     </div>
@@ -156,13 +158,13 @@ export default function AdminHqsPage() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400 italic">Aucun contact</span>
+                        <span className="text-xs text-gray-400 italic">{t('admin.hq.contactMissing')}</span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(hq)}>
-                      Modifier
+                      {t('common.edit')}
                     </Button>
                   </TableCell>
                 </TableRow>
