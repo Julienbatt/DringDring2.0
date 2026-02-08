@@ -68,6 +68,21 @@ def _normalize_qr_city(value: str | None) -> str | None:
     return city or None
 
 
+def _extract_postal_city_from_address(address: str | None) -> tuple[str | None, str | None]:
+    if not address:
+        return None, None
+    value = address.strip()
+    if not value:
+        return None, None
+    # Keep the trailing "1950 Sion" block from full address strings.
+    matches = re.findall(r"(\d{4})\s+([^\n,]+)$", value, flags=re.MULTILINE)
+    if not matches:
+        return None, None
+    postal, city = matches[-1]
+    city = city.strip()
+    return (postal.strip() or None, city or None)
+
+
 def _safe_pdf_filename(value: str | None, fallback: str) -> str:
     base = (value or "").strip()
     if not base:
@@ -246,23 +261,30 @@ def _build_billing_document_pdf_bytes(document_id: str, preview: int, jwt_claims
         fallback_postal_code = billing_postal_code
         fallback_city = billing_city
     elif recipient_type == "COMMUNE" and city_id:
+        address_postal, address_city = _extract_postal_city_from_address(city_address)
+        if address_postal:
+            fallback_postal_code = address_postal
+        if address_city:
+            fallback_city = address_city
         with get_db_connection(jwt_claims) as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT postal_code
-                    FROM city_postal_code
-                    WHERE city_id = %s
-                    ORDER BY postal_code
-                    LIMIT 1
-                    """,
-                    (city_id,),
-                )
-                row = cur.fetchone()
-                fallback_postal_code = row[0] if row else None
-                cur.execute("SELECT name FROM city WHERE id = %s", (city_id,))
-                row = cur.fetchone()
-                fallback_city = row[0] if row else None
+                if not fallback_postal_code:
+                    cur.execute(
+                        """
+                        SELECT postal_code
+                        FROM city_postal_code
+                        WHERE city_id = %s
+                        ORDER BY postal_code
+                        LIMIT 1
+                        """,
+                        (city_id,),
+                    )
+                    row = cur.fetchone()
+                    fallback_postal_code = row[0] if row else None
+                if not fallback_city:
+                    cur.execute("SELECT name FROM city WHERE id = %s", (city_id,))
+                    row = cur.fetchone()
+                    fallback_city = row[0] if row else None
     elif recipient_type == "SHOP_INDEP" and shop_city_id:
         with get_db_connection(jwt_claims) as conn:
             with conn.cursor() as cur:

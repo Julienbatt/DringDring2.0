@@ -1667,7 +1667,7 @@ def get_city_monthly_pdf(
 
             cur.execute(
                 """
-                SELECT name, admin_region_id
+                SELECT name, admin_region_id, address
                 FROM city
                 WHERE id = %s
                 """,
@@ -1676,7 +1676,7 @@ def get_city_monthly_pdf(
             city_row = cur.fetchone()
             if not city_row:
                 raise HTTPException(status_code=404, detail="City not found")
-            city_name, admin_region_id = city_row
+            city_name, admin_region_id, city_address = city_row
 
             if not admin_region_id:
                 raise HTTPException(status_code=400, detail="Admin region missing for city")
@@ -1743,6 +1743,8 @@ def get_city_monthly_pdf(
 
     reference_seed = f"COMMUNE{city_id}{period_month.strftime('%Y%m')}"
     reference = generate_reference(billing["billing_iban"] or "", reference_seed)
+    city_postal_code, city_only_name = _extract_postal_city_from_address(city_address)
+    city_street, city_house_num = _split_address_parts(city_address)
 
     pdf_buffer = build_recipient_invoice_pdf(
         recipient_label="Commune partenaire",
@@ -1751,6 +1753,10 @@ def get_city_monthly_pdf(
         rows=invoice_rows,
         vat_rate=vat_rate,
         is_preview=preview,
+        recipient_street=city_street,
+        recipient_house_num=city_house_num,
+        recipient_postal_code=city_postal_code,
+        recipient_city=city_only_name,
         payment_message=f"Facturation commune DringDring {period_month.strftime('%Y-%m')}",
         reference=reference,
         creditor_iban=billing["billing_iban"],
@@ -2177,6 +2183,16 @@ def _split_address_parts(value: str | None) -> tuple[str | None, str | None]:
     if match:
         return match.group("street"), match.group("num")
     return address, None
+
+
+def _extract_postal_city_from_address(value: str | None) -> tuple[str | None, str | None]:
+    if not value:
+        return None, None
+    matches = re.findall(r"(\d{4})\s+([^\n,]+)$", value.strip(), flags=re.MULTILINE)
+    if not matches:
+        return None, None
+    postal_code, city = matches[-1]
+    return (postal_code.strip() or None, city.strip() or None)
 
 
 def _get_admin_region_billing(cur, admin_region_id: str) -> dict:

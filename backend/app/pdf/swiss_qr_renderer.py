@@ -44,6 +44,7 @@ PAYMENT_SECTION_HEIGHT = 105 * mm
 # QR Code dimensions
 QR_SIZE = 46 * mm
 QR_MARGIN_LEFT = 5 * mm  # From left edge of payment section
+QR_BASELINE_Y = 35 * mm  # Align QR top near the right "Compte / Payable a" block.
 
 # Swiss Cross dimensions (centered in QR)
 SWISS_CROSS_SIZE = 7 * mm
@@ -441,7 +442,7 @@ def render_swiss_qr_bill(
         )
         
         qr_drawing = _generate_qr_code_with_cross(qr_data, QR_SIZE)
-        qr_drawing.drawOn(canvas, payment_x, y_position + 17 * mm)
+        qr_drawing.drawOn(canvas, payment_x, y_position + QR_BASELINE_Y)
         
     except Exception as e:
         # Fallback: draw error message

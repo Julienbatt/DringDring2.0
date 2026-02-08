@@ -165,6 +165,8 @@ def build_recipient_invoice_with_qr_bill(
                     ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
                     ("ALIGN", (0, 0), (0, 0), "LEFT"),
                     ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+                    ("BOX", (0, 0), (-1, -1), 0, colors.white),
+                    ("INNERGRID", (0, 0), (-1, -1), 0, colors.white),
                     ("LEFTPADDING", (0, 0), (-1, -1), 0),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 0),
                     ("TOPPADDING", (0, 0), (-1, -1), 0),
