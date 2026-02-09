@@ -3,9 +3,11 @@
 import { Suspense, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMe } from '../hooks/useMe'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function ReportsContent() {
   const router = useRouter()
+  const { t } = useLanguage()
   const { data, loading, error } = useMe()
   const role = data?.role
 
@@ -18,7 +20,7 @@ function ReportsContent() {
   if (loading) {
     return (
       <div className="p-8 text-sm text-gray-600">
-        Chargement de votre espace...
+        {t('reports.page.loadingSpace')}
       </div>
     )
   }
@@ -30,13 +32,13 @@ function ReportsContent() {
   if (!data?.role) {
     return (
       <div className="p-8 text-sm text-gray-600">
-        Aucun role attribue.
+        {t('reports.page.noRole')}
       </div>
     )
   }
 
   if (['city', 'hq', 'shop'].includes(data.role)) {
-    return <div className="p-8 text-sm text-gray-600">Redirection...</div>
+    return <div className="p-8 text-sm text-gray-600">{t('reports.page.redirecting')}</div>
   }
 
   if (
@@ -47,21 +49,26 @@ function ReportsContent() {
   ) {
     return (
       <div className="p-8 text-sm text-gray-600">
-        Vue de reporting pour ce role: en cours de construction.
+        {t('reports.page.inProgress')}
       </div>
     )
   }
 
   return (
     <div className="p-8 text-sm text-gray-600">
-      Aucune vue de reporting disponible pour ce role.
+      {t('reports.page.unavailable')}
     </div>
   )
 }
 
+function ReportsFallback() {
+  const { t } = useLanguage()
+  return <div className="p-8 text-sm text-gray-600">{t('common.loading')}</div>
+}
+
 export default function ReportsPage() {
   return (
-    <Suspense fallback={<div>Chargement...</div>}>
+    <Suspense fallback={<ReportsFallback />}>
       <ReportsContent />
     </Suspense>
   )

@@ -111,7 +111,7 @@ export default function AdminRegionDashboard() {
                 <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <p className="text-xs uppercase tracking-[0.2em] text-emerald-600">Programme reward</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-emerald-600">{t('admin.regionLanding.reward.overline')}</p>
                             <h2 className="text-xl font-semibold text-slate-900">{t('admin.regionLanding.reward.title')}</h2>
                             <p className="text-sm text-slate-500">
                                 {t('admin.regionLanding.reward.window', { months: rewardStats?.window_months ?? 6 })}

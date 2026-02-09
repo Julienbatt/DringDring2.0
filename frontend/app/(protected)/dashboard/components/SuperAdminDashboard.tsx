@@ -10,6 +10,7 @@ import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import BrandLogo from '@/components/BrandLogo'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 
 type AdminRegion = {
@@ -24,6 +25,7 @@ type AdminRegion = {
 }
 
 export default function SuperAdminDashboard() {
+  const { t } = useLanguage()
   const { session, setAdminContext } = useAuth()
   const router = useRouter()
   const [regions, setRegions] = useState<AdminRegion[]>([])
@@ -37,7 +39,7 @@ export default function SuperAdminDashboard() {
         const data = await apiGet<AdminRegion[]>('/regions', session.access_token)
         setRegions(data)
       } catch (error) {
-        console.error('Failed to load regions', error)
+        console.error(t('super.dashboard.loadError'), error)
       } finally {
         setLoading(false)
       }
@@ -66,11 +68,11 @@ export default function SuperAdminDashboard() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">Super admin</p>
-                <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">Pilotage global</h1>
+                <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{t('super.dashboard.title')}</h1>
               </div>
             </div>
             <p className="text-sm text-slate-600 md:text-base">
-              Entrez dans une entreprise regionale pour acceder aux ecrans operationnels.
+              {t('super.dashboard.subtitle')}
             </p>
           </div>
         </section>
@@ -78,13 +80,13 @@ export default function SuperAdminDashboard() {
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Entreprises regionales de livraison</h2>
+              <h2 className="text-lg font-semibold text-slate-900">{t('super.dashboard.regionsTitle')}</h2>
               <p className="text-sm text-slate-600">
-                Selectionnez une entreprise regionale pour acceder a ses operations.
+                {t('super.dashboard.regionsSubtitle')}
               </p>
             </div>
             <Link href="/super/regions" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
-              Gerer les entreprises
+              {t('super.dashboard.manageRegions')}
             </Link>
           </div>
 
@@ -92,42 +94,42 @@ export default function SuperAdminDashboard() {
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Rechercher une entreprise regionale..."
+              placeholder={t('super.dashboard.searchPlaceholder')}
             />
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {loading ? (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
-                Chargement des entreprises regionales...
+                {t('super.dashboard.loading')}
               </div>
             ) : filteredRegions.length === 0 ? (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
-                Aucune entreprise regionale trouvee.
+                {t('super.dashboard.empty')}
               </div>
             ) : (
               filteredRegions.map((region) => (
                 <div key={region.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <MapPin className="h-4 w-4" />
-                        {region.canton_name || 'Canton non defini'}
-                      </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                          <MapPin className="h-4 w-4" />
+                          {region.canton_name || t('super.dashboard.cantonUndefined')}
+                        </div>
                       <h3 className="text-lg font-semibold text-slate-900">{region.name}</h3>
                       {region.contact_email && (
                         <p className="text-xs text-slate-500">{region.contact_email}</p>
                       )}
                     </div>
                     <span className={`rounded-full px-2 py-1 text-xs ${region.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
-                      {region.active ? 'Actif' : 'Inactif'}
+                      {region.active ? t('super.dashboard.active') : t('super.dashboard.inactive')}
                     </span>
                   </div>
                   <Button
                     className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700"
                     onClick={() => handleEnterRegion(region)}
                   >
-                    Entrer dans cette entreprise
+                    {t('super.dashboard.enterRegion')}
                   </Button>
                 </div>
               ))
@@ -142,8 +144,8 @@ export default function SuperAdminDashboard() {
           >
             <Building2 className="h-6 w-6 text-emerald-600" />
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Gerer les entreprises regionales</h3>
-              <p className="text-sm text-slate-600">Creation, activation, contacts et rattachements.</p>
+              <h3 className="text-base font-semibold text-slate-900">{t('super.dashboard.cardRegionsTitle')}</h3>
+              <p className="text-sm text-slate-600">{t('super.dashboard.cardRegionsDesc')}</p>
             </div>
           </Link>
           <Link
@@ -152,8 +154,8 @@ export default function SuperAdminDashboard() {
           >
             <Users className="h-6 w-6 text-emerald-600" />
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Gerer les utilisateurs</h3>
-              <p className="text-sm text-slate-600">Roles, acces et rattachements des comptes.</p>
+              <h3 className="text-base font-semibold text-slate-900">{t('super.dashboard.cardUsersTitle')}</h3>
+              <p className="text-sm text-slate-600">{t('super.dashboard.cardUsersDesc')}</p>
             </div>
           </Link>
         </section>

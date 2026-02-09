@@ -7,6 +7,7 @@ import { useCustomerDeliveries } from '../hooks/useCustomerDeliveries'
 import { useEcoStats } from '@/app/(protected)/hooks/useEcoStats'
 import { useCustomerStats } from '../hooks/useCustomerStats'
 import BrandLogo from '@/components/BrandLogo'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getStatusStep(status: string) {
     if (status === 'delivered') return 3
@@ -14,28 +15,45 @@ function getStatusStep(status: string) {
     return 1 // created
 }
 
-function formatTime(value: string | null) {
+function getLocaleTag(locale: string) {
+    if (locale === 'de') return 'de-CH'
+    if (locale === 'it') return 'it-CH'
+    if (locale === 'en') return 'en-CH'
+    return 'fr-CH'
+}
+
+function formatTime(value: string | null, localeTag: string) {
     if (!value) return '-'
-    return new Date(value).toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' })
+    return new Date(value).toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatDate(value: string) {
-    return new Date(value).toLocaleDateString('fr-CH', { day: '2-digit', month: 'long' })
+function formatDate(value: string, localeTag: string) {
+    return new Date(value).toLocaleDateString(localeTag, { day: '2-digit', month: 'long' })
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, t: (key: string, vars?: Record<string, string | number>) => string) {
     if (status === 'delivered') {
-        return { label: 'Livree', tone: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: CheckCircle2 }
+        return { label: t('customer.dashboard.status.delivered'), tone: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: CheckCircle2 }
     }
     if (status === 'picked_up') {
-        return { label: 'En route', tone: 'text-sky-700 bg-sky-50 border-sky-200', icon: MapPin }
+        return { label: t('customer.dashboard.status.onRoad'), tone: 'text-sky-700 bg-sky-50 border-sky-200', icon: MapPin }
     }
-    return { label: 'Planifiee', tone: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock }
+    return { label: t('customer.dashboard.status.planned'), tone: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock }
 }
 
-const DAY_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+const DAY_LABEL_KEYS = [
+    'customer.dashboard.days.sunday',
+    'customer.dashboard.days.monday',
+    'customer.dashboard.days.tuesday',
+    'customer.dashboard.days.wednesday',
+    'customer.dashboard.days.thursday',
+    'customer.dashboard.days.friday',
+    'customer.dashboard.days.saturday',
+]
 
 export default function CustomerDashboard() {
+    const { t, locale } = useLanguage()
+    const localeTag = getLocaleTag(locale)
     const { data, loading, error, refresh } = useCustomerDeliveries()
     const activeDeliveries = data?.filter((delivery) => delivery.status !== 'delivered') ?? []
     const recentHistory = data?.filter((delivery) => delivery.status === 'delivered').slice(0, 3) ?? []
@@ -48,7 +66,9 @@ export default function CustomerDashboard() {
     const favoriteDayLabel =
         customerStats?.top_day === null || customerStats?.top_day === undefined
             ? '-'
-            : DAY_LABELS[customerStats.top_day] || '-'
+            : DAY_LABEL_KEYS[customerStats.top_day]
+                ? t(DAY_LABEL_KEYS[customerStats.top_day])
+                : '-'
     const favoriteShopLabel = customerStats?.top_shop_name || '-'
 
     return (
@@ -63,12 +83,12 @@ export default function CustomerDashboard() {
                                         <BrandLogo width={180} height={54} className="h-10 w-auto md:h-12" />
                                     </div>
                                     <div>
-                                        <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">DringDring</p>
-                                        <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">Tableau client</h1>
+                                        <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">{t('customer.dashboard.brand')}</p>
+                                        <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{t('customer.dashboard.title')}</h1>
                                     </div>
                                 </div>
                                 <p className="max-w-xl text-sm text-slate-600 md:text-base">
-                                    Toutes vos livraisons en cours, vos impacts et l&apos;historique en un seul endroit.
+                                    {t('customer.dashboard.subtitle')}
                                 </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
@@ -76,28 +96,28 @@ export default function CustomerDashboard() {
                                     onClick={refresh}
                                     className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
                                 >
-                                    Actualiser
+                                    {t('customer.dashboard.refresh')}
                                 </button>
                                 <Link
                                     href="/customer/support"
                                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1 text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:text-emerald-700"
                                 >
                                     <MessageCircle className="h-4 w-4" />
-                                    Support
+                                    {t('customer.dashboard.support')}
                                 </Link>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">En cours</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.inProgress')}</p>
                                 <p className="text-2xl font-semibold text-slate-900">{activeDeliveries.length}</p>
                             </div>
                             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Livrees (mois)</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.deliveredMonth')}</p>
                                 <p className="text-2xl font-semibold text-emerald-700">{deliveredMonth}</p>
                             </div>
                             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Livraisons (mois)</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.deliveriesMonth')}</p>
                                 <p className="text-2xl font-semibold text-slate-900">
                                     {ecoLoading || !ecoStats ? monthlyDeliveries.length : ecoStats.deliveries}
                                 </p>
@@ -105,44 +125,44 @@ export default function CustomerDashboard() {
                             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400">
                                     <Leaf className="h-4 w-4 text-emerald-500" />
-                                    CO2 economise
+                                    {t('customer.dashboard.kpi.co2Saved')}
                                 </div>
                                 <p className="text-2xl font-semibold text-emerald-700">
-                                    {ecoLoading || !ecoStats ? '-' : `${ecoStats.co2_saved_kg.toFixed(1)} kg`}
+                                    {ecoLoading || !ecoStats ? '-' : t('customer.dashboard.kpi.kgValue', { value: ecoStats.co2_saved_kg.toFixed(1) })}
                                 </p>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Commerce favori</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.favoriteShop')}</p>
                                 <p className="text-base font-semibold text-slate-900">
                                     {statsLoading ? '...' : favoriteShopLabel}
                                 </p>
                                 <p className="text-xs text-slate-400">
-                                    {statsLoading || !customerStats ? '-' : `${customerStats.top_shop_deliveries} livraisons`}
+                                    {statsLoading || !customerStats ? '-' : t('customer.dashboard.kpi.deliveriesCount', { count: customerStats.top_shop_deliveries })}
                                 </p>
                             </div>
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Jour favori</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.favoriteDay')}</p>
                                 <p className="text-base font-semibold text-slate-900">
                                     {statsLoading ? '...' : favoriteDayLabel}
                                 </p>
                                 <p className="text-xs text-slate-400">
-                                    {statsLoading || !customerStats ? '-' : `${customerStats.top_day_deliveries} livraisons`}
+                                    {statsLoading || !customerStats ? '-' : t('customer.dashboard.kpi.deliveriesCount', { count: customerStats.top_day_deliveries })}
                                 </p>
                             </div>
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Sacs (mois)</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.bagsMonth')}</p>
                                 <p className="text-2xl font-semibold text-slate-900">
                                     {statsLoading || !customerStats ? '-' : customerStats.total_bags}
                                 </p>
                             </div>
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Km pour vous</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.kmForYou')}</p>
                                 <p className="text-2xl font-semibold text-emerald-700">
                                     {statsLoading || !customerStats ? '-' : customerStats.total_distance_km.toFixed(1)}
                                 </p>
-                                <p className="text-xs text-slate-400">Estimation</p>
+                                <p className="text-xs text-slate-400">{t('customer.dashboard.kpi.estimate')}</p>
                             </div>
                         </div>
                     </div>
@@ -160,30 +180,30 @@ export default function CustomerDashboard() {
                     </div>
                 ) : !data || data.length === 0 ? (
                     <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center shadow-sm">
-                        <h2 className="mb-2 text-xl font-semibold text-slate-900">Aucune commande active</h2>
-                        <p className="text-slate-500">Vos futures livraisons apparaitront ici.</p>
+                        <h2 className="mb-2 text-xl font-semibold text-slate-900">{t('customer.dashboard.empty.title')}</h2>
+                        <p className="text-slate-500">{t('customer.dashboard.empty.subtitle')}</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-base sm:text-lg font-semibold text-slate-900">Livraisons en cours</h2>
+                            <h2 className="text-base sm:text-lg font-semibold text-slate-900">{t('customer.dashboard.currentDeliveries')}</h2>
                             <Link href="/customer/deliveries" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
-                                Voir l&apos;historique
+                                {t('customer.dashboard.viewHistory')}
                             </Link>
                         </div>
 
                         {activeDeliveries.length === 0 ? (
                             <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
-                                <p className="text-sm font-medium text-slate-600">Aucune livraison en cours.</p>
-                                <p className="mt-1 text-xs text-slate-400">Retrouvez toutes vos livraisons dans l&apos;historique.</p>
+                                <p className="text-sm font-medium text-slate-600">{t('customer.dashboard.noCurrent.title')}</p>
+                                <p className="mt-1 text-xs text-slate-400">{t('customer.dashboard.noCurrent.subtitle')}</p>
                             </div>
                         ) : null}
 
                         {activeDeliveries.map((delivery) => {
                             const currentStep = getStatusStep(delivery.status)
-                            const badge = statusBadge(delivery.status)
+                            const badge = statusBadge(delivery.status, t)
                             const StatusIcon = badge.icon
-                            const updateTime = formatTime(delivery.status_updated_at || delivery.delivery_date)
+                            const updateTime = formatTime(delivery.status_updated_at || delivery.delivery_date, localeTag)
 
                             return (
                                 <div key={delivery.delivery_id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md">
@@ -191,17 +211,19 @@ export default function CustomerDashboard() {
                                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                             <div>
                                                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
-                                                    Commande du {formatDate(delivery.delivery_date)}
+                                                    {t('customer.dashboard.orderOf', { date: formatDate(delivery.delivery_date, localeTag) })}
                                                 </div>
                                                 <h2 className="text-xl sm:text-2xl font-semibold text-slate-900">{delivery.shop_name}</h2>
-                                                <p className="mt-1 text-sm text-slate-500">{delivery.bags} sac{delivery.bags > 1 ? 's' : ''}</p>
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    {t('customer.dashboard.bagsCount', { count: delivery.bags })}
+                                                </p>
                                             </div>
                                             <div className="flex flex-col items-end gap-2">
                                                 <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${badge.tone}`}>
                                                     <StatusIcon className="h-4 w-4" />
                                                     {badge.label}
                                                 </div>
-                                                <div className="text-xs text-slate-500">Maj: {updateTime}</div>
+                                                <div className="text-xs text-slate-500">{t('customer.dashboard.updatedAt', { time: updateTime })}</div>
                                                 <div className="rounded-full bg-slate-100 px-4 py-1 text-xs font-semibold text-slate-700">
                                                     {delivery.time_window}
                                                 </div>
@@ -217,9 +239,9 @@ export default function CustomerDashboard() {
 
                                             <div className="relative flex w-full justify-between">
                                                 {[
-                                                    { label: 'Validee', step: 1 },
-                                                    { label: 'En route', step: 2 },
-                                                    { label: 'Livree', step: 3 },
+                                                    { label: t('customer.dashboard.steps.validated'), step: 1 },
+                                                    { label: t('customer.dashboard.steps.onRoad'), step: 2 },
+                                                    { label: t('customer.dashboard.steps.delivered'), step: 3 },
                                                 ].map((item) => (
                                                     <div key={item.step} className="flex flex-col items-center gap-2">
                                                         <div
@@ -247,12 +269,12 @@ export default function CustomerDashboard() {
                                     </div>
 
                                     <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-4">
-                                        <span className="text-xs text-slate-500">Besoin d&apos;aide ?</span>
+                                        <span className="text-xs text-slate-500">{t('customer.dashboard.help')}</span>
                                         <Link
                                             href="/customer/support"
                                             className="text-sm font-semibold text-slate-700 transition hover:text-slate-900"
                                         >
-                                            Contacter le support
+                                            {t('customer.dashboard.contactSupport')}
                                         </Link>
                                     </div>
                                 </div>
@@ -262,9 +284,9 @@ export default function CustomerDashboard() {
                         {recentHistory.length > 0 && (
                             <div className="rounded-2xl border border-slate-100 bg-white p-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-base font-semibold text-slate-900">Historique recent</h3>
+                                    <h3 className="text-base font-semibold text-slate-900">{t('customer.dashboard.recentHistory')}</h3>
                                     <a href="/customer/deliveries" className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
-                                        Voir tout
+                                        {t('customer.dashboard.viewAll')}
                                     </a>
                                 </div>
                                 <div className="mt-4 space-y-3">
@@ -273,11 +295,11 @@ export default function CustomerDashboard() {
                                             <div>
                                                 <div className="font-semibold text-slate-900">{delivery.shop_name}</div>
                                                 <div className="text-xs text-slate-500">
-                                                    {new Date(delivery.delivery_date).toLocaleDateString('fr-CH')} - {delivery.bags} sac{delivery.bags > 1 ? 's' : ''}
+                                                    {new Date(delivery.delivery_date).toLocaleDateString(localeTag)} - {t('customer.dashboard.bagsCount', { count: delivery.bags })}
                                                 </div>
                                             </div>
                                             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
-                                                Livree
+                                                {t('customer.dashboard.status.delivered')}
                                             </span>
                                         </div>
                                     ))}

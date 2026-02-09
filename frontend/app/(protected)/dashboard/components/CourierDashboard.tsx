@@ -4,13 +4,23 @@ import { useState } from 'react'
 import { useCourierDeliveries } from '../hooks/useCourierDeliveries'
 import { useCourierActions } from '../hooks/useCourierActions'
 import { StatusBadge } from '@/components/StatusBadge'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getToday() {
     const now = new Date()
     return now.toISOString().slice(0, 10)
 }
 
+function toLocaleTag(locale: string) {
+    if (locale === 'de') return 'de-CH'
+    if (locale === 'it') return 'it-CH'
+    if (locale === 'en') return 'en-CH'
+    return 'fr-CH'
+}
+
 export default function CourierDashboard() {
+    const { t, locale } = useLanguage()
+    const localeTag = toLocaleTag(locale)
     const [selectedDate, setSelectedDate] = useState(getToday())
     const { data, loading, error, refresh } = useCourierDeliveries(selectedDate)
     const { updateStatus, updating } = useCourierActions()
@@ -24,7 +34,7 @@ export default function CourierDashboard() {
         return `https://www.google.com/maps/dir/?api=1&destination=${query}`
     }
 
-    const selectedDateLabel = new Date(selectedDate).toLocaleDateString('fr-CH', {
+    const selectedDateLabel = new Date(selectedDate).toLocaleDateString(localeTag, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -36,14 +46,14 @@ export default function CourierDashboard() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-3">
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Espace Coursier</h1>
-                            <p className="text-xs sm:text-sm text-gray-500">Feuille de route · {selectedDateLabel}</p>
+                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('courier.dashboard.title')}</h1>
+                            <p className="text-xs sm:text-sm text-gray-500">{t('courier.dashboard.subtitle')} · {selectedDateLabel}</p>
                         </div>
                         <button
                             onClick={refresh}
                             className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 sm:hidden"
                         >
-                            Actualiser
+                            {t('courier.dashboard.refresh')}
                         </button>
                     </div>
 
@@ -58,7 +68,7 @@ export default function CourierDashboard() {
                             onClick={refresh}
                             className="hidden sm:inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100"
                         >
-                            Actualiser
+                            {t('courier.dashboard.refresh')}
                         </button>
                     </div>
                 </div>
@@ -74,13 +84,13 @@ export default function CourierDashboard() {
                 </div>
             ) : !data || data.length === 0 ? (
                 <div className="bg-white border border-gray-200 text-gray-600 p-12 rounded-xl text-center shadow-sm flex flex-col items-center gap-4">
-                    <p>Aucune livraison prévue pour cette date.</p>
+                    <p>{t('courier.dashboard.emptyForDate')}</p>
                 </div>
             ) : (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="text-base sm:text-lg font-semibold text-gray-800">
-                            {data.length} Missions
+                            {data.length} {t('courier.dashboard.missions')}
                         </h2>
                     </div>
 
@@ -119,7 +129,7 @@ export default function CourierDashboard() {
                                             <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 ${isPending ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300'}`}></div>
                                             <div className="flex justify-between items-start gap-3">
                                                 <div>
-                                                    <h3 className="text-sm font-medium text-gray-500 mb-1">Retrait</h3>
+                                                    <h3 className="text-sm font-medium text-gray-500 mb-1">{t('courier.dashboard.pickup')}</h3>
                                                     <p className="font-bold text-gray-900 text-base sm:text-lg">{delivery.shop_name}</p>
                                                     <p className="text-sm text-gray-600">{delivery.shop_address}</p>
                                                 </div>
@@ -128,22 +138,22 @@ export default function CourierDashboard() {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                                                    title="Ouvrir dans Maps"
+                                                    title={t('courier.dashboard.openMaps')}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                                     </svg>
-                                                    Itinéraire
+                                                    {t('courier.dashboard.route')}
                                                 </a>
                                             </div>
                                             <div className="mt-2 inline-flex items-center gap-2 bg-gray-100 px-2 py-1 rounded text-sm font-medium text-gray-700">
-                                                Sacs: {delivery.bags}
+                                                {t('courier.dashboard.bags')}: {delivery.bags}
                                             </div>
 
                                             {isPending && !isCancelled && (
                                                 <div className="mt-4 text-sm text-gray-500">
-                                                    Statut en attente de livraison.
+                                                    {t('courier.dashboard.waitingDelivery')}
                                                 </div>
                                             )}
                                             {!isDelivered && !isCancelled && (
@@ -161,7 +171,7 @@ export default function CourierDashboard() {
                                                                 : 'bg-blue-600 text-white hover:bg-blue-700'
                                                         }`}
                                                     >
-                                                        {isPickedUp ? 'Collecté ✓' : 'Collecte'}
+                                                        {isPickedUp ? t('courier.dashboard.collectedDone') : t('courier.dashboard.collect')}
                                                     </button>
                                                     <button
                                                         onClick={async () => {
@@ -176,16 +186,16 @@ export default function CourierDashboard() {
                                                                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
                                                         }`}
                                                     >
-                                                        Livrer
+                                                        {t('courier.dashboard.deliver')}
                                                     </button>
                                                     <span className="text-xs text-gray-500">
-                                                        {isPickedUp ? 'Collecté' : 'À collecter'}
+                                                        {isPickedUp ? t('courier.dashboard.collected') : t('courier.dashboard.toCollect')}
                                                     </span>
                                                 </div>
                                             )}
                                             {isCancelled && (
                                                 <div className="mt-4 text-sm font-medium text-red-600">
-                                                    Livraison annulée.
+                                                    {t('courier.dashboard.cancelled')}
                                                 </div>
                                             )}
                                         </div>
@@ -195,8 +205,8 @@ export default function CourierDashboard() {
                                             <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 ${isDelivered ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}></div>
                                             <div className="flex justify-between items-start gap-3">
                                                 <div>
-                                                    <h3 className="text-sm font-medium text-gray-500 mb-1">Livraison</h3>
-                                                    <p className="font-bold text-gray-900 text-base sm:text-lg">{delivery.client_name || 'Client'}</p>
+                                                    <h3 className="text-sm font-medium text-gray-500 mb-1">{t('courier.dashboard.delivery')}</h3>
+                                                    <p className="font-bold text-gray-900 text-base sm:text-lg">{delivery.client_name || t('courier.dashboard.clientFallback')}</p>
                                                     <p className="text-sm text-gray-600">
                                                         {delivery.client_address}<br />
                                                         {delivery.client_postal_code} {delivery.client_city}
@@ -207,19 +217,19 @@ export default function CourierDashboard() {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-100"
-                                                    title="Ouvrir dans Maps"
+                                                    title={t('courier.dashboard.openMaps')}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                                                     </svg>
-                                                    Itinéraire
+                                                    {t('courier.dashboard.route')}
                                                 </a>
                                             </div>
 
                                             {isDelivered && (
                                                 <div className="mt-4 text-sm text-green-600 font-medium">
-                                                    Livraison terminee.
+                                                    {t('courier.dashboard.deliveredDone')}
                                                 </div>
                                             )}
                                         </div>
