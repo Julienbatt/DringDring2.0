@@ -87,7 +87,7 @@ export default function CityDashboard() {
     `${t('city.dashboard.kpi.subvention')}: ${formatCHF(totalSubvention, localeTag)}`,
     `${t('city.dashboard.kpi.cmsShare')}: ${cmsSharePct.toFixed(1)}% (${cmsDeliveries} ${t('city.dashboard.kpi.deliveries').toLowerCase()})`,
     `${t('city.dashboard.kpi.perDay')}: ${deliveriesPerDay.toFixed(1)} (${t('city.dashboard.kpi.evolution')} ${trendLabel})`,
-    `${t('city.dashboard.eco.title')}: ${co2Saved.toFixed(1)} kg CO2, ${kmByBike.toFixed(1)} km`,
+    `${t('city.dashboard.eco.title')}: ${co2Saved.toFixed(1)} ${t('city.dashboard.unit.kgCo2')}, ${kmByBike.toFixed(1)} ${t('city.dashboard.unit.km')}`,
   ].join('\n')
 
   const handleCopySummary = async () => {
@@ -162,7 +162,7 @@ export default function CityDashboard() {
       <section className="grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="text-xs uppercase tracking-wider text-slate-500">{t('city.dashboard.kpi.deliveries')}</div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : totalDeliveries}</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{statsLoading ? t('common.loading') : totalDeliveries}</div>
           <div className="text-xs text-slate-500">{t('city.dashboard.kpi.evolution')} {trendLabel}</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -170,7 +170,7 @@ export default function CityDashboard() {
             <Users className="h-4 w-4 text-emerald-600" />
             {t('city.dashboard.kpi.beneficiaries')}
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : uniqueClients}</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{statsLoading ? t('common.loading') : uniqueClients}</div>
           <div className="text-xs text-slate-500">{t('city.dashboard.kpi.households')}</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -178,13 +178,13 @@ export default function CityDashboard() {
             <Building2 className="h-4 w-4 text-emerald-600" />
             {t('city.dashboard.kpi.activeShops')}
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : activeShops}</div>
+          <div className="mt-2 text-2xl font-semibold text-slate-900">{statsLoading ? t('common.loading') : activeShops}</div>
           <div className="text-xs text-slate-500">{t('city.dashboard.kpi.partnerNetwork')}</div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="text-xs uppercase tracking-wider text-slate-500">{t('city.dashboard.kpi.subvention')}</div>
           <div className="mt-2 text-2xl font-semibold text-slate-900">
-            {statsLoading ? '...' : formatCHF(totalSubvention, localeTag)}
+            {statsLoading ? t('common.loading') : formatCHF(totalSubvention, localeTag)}
           </div>
           <div className="text-xs text-slate-500">{t('city.dashboard.kpi.budgetEngaged')}</div>
         </div>
@@ -219,18 +219,18 @@ export default function CityDashboard() {
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl border bg-white p-4">
               <div className="text-xs text-slate-500">{t('city.dashboard.social.cmsDeliveries')}</div>
-              <div className="text-2xl font-semibold text-slate-900">{statsLoading ? '...' : cmsDeliveries}</div>
+              <div className="text-2xl font-semibold text-slate-900">{statsLoading ? t('common.loading') : cmsDeliveries}</div>
             </div>
             <div className="rounded-xl border bg-white p-4">
               <div className="text-xs text-slate-500">{t('city.dashboard.social.cmsShare')}</div>
               <div className="text-2xl font-semibold text-slate-900">
-                {statsLoading ? '...' : `${cmsSharePct.toFixed(1)}%`}
+                {statsLoading ? t('common.loading') : `${cmsSharePct.toFixed(1)}%`}
               </div>
             </div>
             <div className="rounded-xl border bg-white p-4">
               <div className="text-xs text-slate-500">{t('city.dashboard.social.perDay')}</div>
               <div className="text-2xl font-semibold text-slate-900">
-                {statsLoading ? '...' : deliveriesPerDay.toFixed(1)}
+                {statsLoading ? t('common.loading') : deliveriesPerDay.toFixed(1)}
               </div>
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function CityDashboard() {
                 {t('city.dashboard.eco.co2')}
               </div>
               <div className="text-2xl font-semibold text-slate-900">
-                {ecoLoading ? '...' : `${co2Saved.toFixed(1)} kg`}
+                {ecoLoading ? t('common.loading') : `${co2Saved.toFixed(1)} ${t('city.dashboard.unit.kg')}`}
               </div>
             </div>
             <div className="rounded-xl border bg-white p-4">
@@ -255,7 +255,7 @@ export default function CityDashboard() {
                 {t('city.dashboard.eco.km')}
               </div>
               <div className="text-2xl font-semibold text-slate-900">
-                {ecoLoading ? '...' : `${kmByBike.toFixed(1)} km`}
+                {ecoLoading ? t('common.loading') : `${kmByBike.toFixed(1)} ${t('city.dashboard.unit.km')}`}
               </div>
             </div>
           </div>

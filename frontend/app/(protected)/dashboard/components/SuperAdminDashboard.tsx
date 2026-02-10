@@ -46,7 +46,7 @@ export default function SuperAdminDashboard() {
     }
 
     loadRegions()
-  }, [session?.access_token])
+  }, [session?.access_token, t])
 
   const filteredRegions = regions.filter((region) =>
     region.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -67,7 +67,7 @@ export default function SuperAdminDashboard() {
                 <BrandLogo width={180} height={54} className="h-10 w-auto md:h-12" />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">Super admin</p>
+                <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">{t('super.dashboard.overline')}</p>
                 <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{t('super.dashboard.title')}</h1>
               </div>
             </div>
