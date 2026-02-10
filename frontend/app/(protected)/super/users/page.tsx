@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { roleLabel } from '@/lib/roleLabel'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type UserData = {
     id: string
@@ -47,6 +48,7 @@ type UserUpdatePayload = {
 }
 
 export default function SuperAdminUsersPage() {
+    const { t, locale } = useLanguage()
     const { session } = useAuth()
     const [users, setUsers] = useState<UserData[]>([])
     const [loading, setLoading] = useState(true)
@@ -63,11 +65,11 @@ export default function SuperAdminUsersPage() {
             setUsers(data)
         } catch (error) {
             console.error('Failed to load users', error)
-            toast.error('Erreur chargement utilisateurs')
+            toast.error(t('super.users.toast.loadError'))
         } finally {
             setLoading(false)
         }
-    }, [session])
+    }, [session, t])
 
     useEffect(() => {
         if (session?.access_token) {
@@ -105,21 +107,21 @@ export default function SuperAdminUsersPage() {
 
         try {
             await apiPut(`/users/${editingUser.id}`, payload, session.access_token)
-            toast.success('Utilisateur mis a jour')
+            toast.success(t('super.users.toast.updated'))
             loadUsers()
             setIsDialogOpen(false)
         } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : 'Erreur inconnue'
-            toast.error('Erreur mise a jour: ' + message)
+            const message = e instanceof Error ? e.message : t('common.unknownError')
+            toast.error(`${t('super.users.toast.updateError')}: ${message}`)
         }
     }
 
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-2xl font-bold mb-4">Gestion des utilisateurs</h1>
+                <h1 className="text-2xl font-bold mb-4">{t('super.users.title')}</h1>
                 <p className="text-gray-500">
-                    Definissez les roles et associez les utilisateurs aux entites (region, commerce, commune partenaire).
+                    {t('super.users.subtitle')}
                 </p>
             </header>
 
@@ -128,15 +130,15 @@ export default function SuperAdminUsersPage() {
                     <TableHeader className="bg-gray-50">
                         <TableRow>
                             <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead className="hidden lg:table-cell">Contexte (ID)</TableHead>
-                            <TableHead className="hidden lg:table-cell">Derniere connexion</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>{t('super.users.table.role')}</TableHead>
+                            <TableHead className="hidden lg:table-cell">{t('super.users.table.context')}</TableHead>
+                            <TableHead className="hidden lg:table-cell">{t('super.users.table.lastLogin')}</TableHead>
+                            <TableHead className="text-right">{t('super.users.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={5} className="text-center p-8">Chargement...</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="text-center p-8">{t('common.loading')}</TableCell></TableRow>
                         ) : users.map(u => (
                             <TableRow key={u.id}>
                                 <TableCell className="font-medium">{u.email}</TableCell>
@@ -146,16 +148,16 @@ export default function SuperAdminUsersPage() {
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell font-mono text-xs text-gray-500">
-                                    {u.admin_region_id && <div>Entreprise regionale: {u.admin_region_id}</div>}
-                                    {u.shop_id && <div>Commerce: {u.shop_id}</div>}
-                                    {u.city_id && <div>Commune: {u.city_id}</div>}
+                                    {u.admin_region_id && <div>{t('super.users.context.region')}: {u.admin_region_id}</div>}
+                                    {u.shop_id && <div>{t('super.users.context.shop')}: {u.shop_id}</div>}
+                                    {u.city_id && <div>{t('super.users.context.city')}: {u.city_id}</div>}
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell text-sm text-gray-500">
-                                    {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Jamais'}
+                                    {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString(locale === 'de' ? 'de-CH' : locale === 'it' ? 'it-CH' : locale === 'en' ? 'en-CH' : 'fr-CH') : t('super.users.never')}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button size="sm" variant="ghost" onClick={() => handleEdit(u)}>
-                                        Modifier
+                                        {t('common.edit')}
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -167,43 +169,43 @@ export default function SuperAdminUsersPage() {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Modifier utilisateur</DialogTitle>
+                        <DialogTitle>{t('super.users.dialog.title')}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="text-sm font-medium">{editingUser?.email}</div>
 
                         <div className="space-y-2">
-                            <Label>Role</Label>
+                            <Label>{t('super.users.table.role')}</Label>
                             <Select value={role} onValueChange={setRole}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="authenticated">Utilisateur (sans droits)</SelectItem>
-                                    <SelectItem value="super_admin">Super admin</SelectItem>
-                                    <SelectItem value="admin_region">Entreprise regionale de livraison</SelectItem>
-                                    <SelectItem value="shop">Responsable commerce</SelectItem>
-                                    <SelectItem value="city">Responsable commune</SelectItem>
-                                    <SelectItem value="hq">HQ / Comptabilite</SelectItem>
+                                    <SelectItem value="authenticated">{t('super.users.role.authenticated')}</SelectItem>
+                                    <SelectItem value="super_admin">{t('super.users.role.superAdmin')}</SelectItem>
+                                    <SelectItem value="admin_region">{t('super.users.role.adminRegion')}</SelectItem>
+                                    <SelectItem value="shop">{t('super.users.role.shop')}</SelectItem>
+                                    <SelectItem value="city">{t('super.users.role.city')}</SelectItem>
+                                    <SelectItem value="hq">{t('super.users.role.hq')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
                         {['admin_region', 'shop', 'city', 'hq'].includes(role) && (
                             <div className="space-y-2">
-                                <Label>ID de l entite liee (region, commerce, commune, HQ)</Label>
+                                <Label>{t('super.users.dialog.entityId')}</Label>
                                 <Input
                                     value={contextId}
                                     onChange={e => setContextId(e.target.value)}
                                     placeholder="UUID..."
                                 />
                                 <p className="text-xs text-gray-500">
-                                    Copiez l ID depuis les pages de gestion (communes partenaires, commerces, etc.)
+                                    {t('super.users.dialog.entityHelp')}
                                 </p>
                             </div>
                         )}
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
-                        <Button onClick={handleSave}>Enregistrer</Button>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('common.cancel')}</Button>
+                        <Button onClick={handleSave}>{t('super.users.save')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

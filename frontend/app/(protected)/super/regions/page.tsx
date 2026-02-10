@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiGet, apiPost } from '@/lib/api'
@@ -31,6 +31,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 interface AdminRegion {
     id: string
@@ -48,6 +49,7 @@ interface Canton {
 }
 
 export default function RegionsPage() {
+    const { t } = useLanguage()
     const [regions, setRegions] = useState<AdminRegion[]>([])
     const [cantons, setCantons] = useState<Canton[]>([])
     const [loading, setLoading] = useState(true)
@@ -61,9 +63,9 @@ export default function RegionsPage() {
 
     useEffect(() => {
         loadData()
-    }, [])
+    }, [loadData])
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
@@ -78,15 +80,15 @@ export default function RegionsPage() {
             setCantons(cantonsData)
         } catch (error) {
             console.error('Failed to load data', error)
-            toast.error("Erreur lors du chargement des donnees")
+            toast.error(t('super.regions.toast.loadError'))
         } finally {
             setLoading(false)
         }
-    }
+    }, [t])
 
     const handleCreate = async () => {
         if (!newName) {
-            toast.error("Le nom est requis")
+            toast.error(t('super.regions.toast.nameRequired'))
             return
         }
 
@@ -103,7 +105,7 @@ export default function RegionsPage() {
                 active: true
             }, session.access_token)
 
-            toast.success("Region creee avec succes")
+            toast.success(t('super.regions.toast.created'))
             setIsDialogOpen(false)
             setNewName('')
             setNewAddress('')
@@ -112,7 +114,7 @@ export default function RegionsPage() {
             loadData() // Refresh
         } catch (error) {
             console.error('Failed to create region', error)
-            toast.error("Erreur lors de la creation")
+            toast.error(t('super.regions.toast.createError'))
         }
     }
 
@@ -124,56 +126,56 @@ export default function RegionsPage() {
     return (
         <div className="p-8 space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Gestion des entreprises regionales de livraison</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{t('super.regions.title')}</h1>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" />
-                            Nouvelle entreprise regionale
+                            {t('super.regions.new')}
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Creer une entreprise regionale</DialogTitle>
+                            <DialogTitle>{t('super.regions.dialog.title')}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="name">Nom de l entreprise regionale</Label>
+                                <Label htmlFor="name">{t('super.regions.dialog.name')}</Label>
                                 <Input
                                     id="name"
-                                    placeholder="ex: Velocite Sion"
+                                    placeholder={t('super.regions.dialog.namePlaceholder')}
                                     value={newName}
                                     onChange={(e) => setNewName(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Recherche adresse (Suisse)</Label>
+                                <Label>{t('super.regions.dialog.addressSearch')}</Label>
                                 <AddressAutocomplete onSelect={handleAddressSelect} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="address">Adresse (Optionnel)</Label>
+                                <Label htmlFor="address">{t('super.regions.dialog.address')}</Label>
                                 <Input
                                     id="address"
-                                    placeholder="ex: Rue du Rhone 1"
+                                    placeholder={t('super.regions.dialog.addressPlaceholder')}
                                     value={newAddress}
                                     onChange={(e) => setNewAddress(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email Contact (Optionnel)</Label>
+                                <Label htmlFor="email">{t('super.regions.dialog.email')}</Label>
                                 <Input
                                     id="email"
-                                    placeholder="ex: info@velocite-sion.ch"
+                                    placeholder={t('super.regions.dialog.emailPlaceholder')}
                                     value={newEmail}
                                     onChange={(e) => setNewEmail(e.target.value)}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="canton">Canton (Optionnel)</Label>
+                                <Label htmlFor="canton">{t('super.regions.dialog.canton')}</Label>
                                 <Select onValueChange={setSelectedCanton} value={selectedCanton}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Selectionner un canton" />
+                                        <SelectValue placeholder={t('super.regions.dialog.cantonPlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {cantons.map((c) => (
@@ -186,7 +188,7 @@ export default function RegionsPage() {
                             </div>
                         </div>
                         <Button onClick={handleCreate} className="w-full">
-                            Creer
+                            {t('super.regions.dialog.create')}
                         </Button>
                     </DialogContent>
                 </Dialog>
@@ -196,23 +198,23 @@ export default function RegionsPage() {
                 <Table className="min-w-[800px]">
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Nom</TableHead>
-                            <TableHead>Canton</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Adresse</TableHead>
-                            <TableHead>Statut</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>{t('super.regions.table.name')}</TableHead>
+                            <TableHead>{t('super.regions.table.canton')}</TableHead>
+                            <TableHead>{t('super.regions.table.email')}</TableHead>
+                            <TableHead>{t('super.regions.table.address')}</TableHead>
+                            <TableHead>{t('super.regions.table.status')}</TableHead>
+                            <TableHead className="text-right">{t('super.regions.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">Chargement...</TableCell>
+                                <TableCell colSpan={6} className="h-24 text-center">{t('common.loading')}</TableCell>
                             </TableRow>
                         ) : regions.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                    Aucune region trouvee.
+                                    {t('super.regions.empty')}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -225,7 +227,7 @@ export default function RegionsPage() {
                                     <TableCell>
                                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${region.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                                             }`}>
-                                            {region.active ? 'Actif' : 'Inactif'}
+                                            {region.active ? t('super.regions.status.active') : t('super.regions.status.inactive')}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -237,7 +239,7 @@ export default function RegionsPage() {
                                                 window.location.href = '/admin/couriers'
                                             }}
                                         >
-                                            Gerer
+                                            {t('super.regions.manage')}
                                         </Button>
                                     </TableCell>
                                 </TableRow>

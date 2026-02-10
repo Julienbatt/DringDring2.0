@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { apiGet } from '@/lib/api'
 import { useAuth } from '../../providers/AuthProvider'
 import { toast } from 'sonner'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import {
   Table,
   TableBody,
@@ -26,6 +27,7 @@ type Shop = {
 }
 
 export default function HQShopsPage() {
+  const { t } = useLanguage()
   const { session } = useAuth()
   const [shops, setShops] = useState<Shop[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,11 +41,11 @@ export default function HQShopsPage() {
       setShops(data)
     } catch (error) {
       console.error('Failed to load HQ shops', error)
-      toast.error('Erreur lors du chargement des commerces')
+      toast.error(t('hq.shops.toast.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [session])
+  }, [session, t])
 
   useEffect(() => {
     if (session?.access_token) {
@@ -66,45 +68,46 @@ export default function HQShopsPage() {
   const shopsWithContact = shops.filter(
     (shop) => Boolean(String(shop.contact_person ?? '').trim() || String(shop.phone ?? '').trim())
   ).length
+  const subtitle = t('hq.shops.subtitle').replace('{count}', String(shops.length))
 
   return (
     <div className="space-y-6 p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Commerces du groupe
+            {t('hq.shops.title')}
           </h1>
           <p className="text-gray-500 mt-1">
-            {shops.length} commerces rattaches a votre siege.
+            {subtitle}
           </p>
           <p className="text-xs text-emerald-700 mt-1">
-            Cette page sert aussi de vitrine reseau pour vos equipes terrain.
+            {t('hq.shops.helper')}
           </p>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-          <div className="text-xs uppercase tracking-wider text-emerald-700">Couverture</div>
+          <div className="text-xs uppercase tracking-wider text-emerald-700">{t('hq.shops.kpi.coverage')}</div>
           <div className="mt-1 text-2xl font-semibold text-slate-900">{uniqueCities}</div>
-          <div className="text-xs text-slate-600">communes partenaires actives</div>
+          <div className="text-xs text-slate-600">{t('hq.shops.kpi.activeCities')}</div>
         </div>
         <div className="rounded-xl border bg-white p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Commerces actifs</div>
+          <div className="text-xs uppercase tracking-wider text-slate-500">{t('hq.shops.kpi.activeShops')}</div>
           <div className="mt-1 text-2xl font-semibold text-slate-900">{shops.length}</div>
-          <div className="text-xs text-slate-600">dans votre portefeuille HQ</div>
+          <div className="text-xs text-slate-600">{t('hq.shops.kpi.hqPortfolio')}</div>
         </div>
         <div className="rounded-xl border bg-white p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Qualite de contact</div>
+          <div className="text-xs uppercase tracking-wider text-slate-500">{t('hq.shops.kpi.contactQuality')}</div>
           <div className="mt-1 text-2xl font-semibold text-slate-900">{shopsWithContact}</div>
-          <div className="text-xs text-slate-600">fiches avec contact renseigne</div>
+          <div className="text-xs text-slate-600">{t('hq.shops.kpi.withContact')}</div>
         </div>
       </div>
 
       <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border shadow-sm max-w-md">
         <Search className="w-4 h-4 text-gray-400 ml-2" />
         <Input
-          placeholder="Rechercher (nom, commune, contact)..."
+          placeholder={t('hq.shops.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="border-none shadow-none focus-visible:ring-0"
@@ -115,23 +118,23 @@ export default function HQShopsPage() {
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow className="bg-gray-50">
-              <TableHead>Commerce</TableHead>
-              <TableHead>Commune</TableHead>
-              <TableHead className="hidden lg:table-cell">Adresse</TableHead>
-              <TableHead className="hidden lg:table-cell">Contact</TableHead>
+              <TableHead>{t('hq.shops.table.shop')}</TableHead>
+              <TableHead>{t('hq.shops.table.city')}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t('hq.shops.table.address')}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t('hq.shops.table.contact')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-20 text-center">
-                  Chargement...
+                  {t('common.loading')}
                 </TableCell>
               </TableRow>
             ) : filteredShops.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-20 text-center text-muted-foreground">
-                  Aucun commerce pour ce siege. Ajoutez des partenaires pour activer votre couverture.
+                  {t('hq.shops.empty')}
                 </TableCell>
               </TableRow>
             ) : (

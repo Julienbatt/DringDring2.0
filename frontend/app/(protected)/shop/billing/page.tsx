@@ -8,6 +8,7 @@ import { useShopDeliveries } from '../../reports/hooks/useShopDeliveries'
 import { useShopPeriods } from '../../reports/hooks/useShopPeriods'
 import { Button } from '@/components/ui/button'
 import { useMe } from '../../hooks/useMe'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type ShopDeliveryRow = Record<string, unknown>
 
@@ -17,50 +18,22 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${month}`
 }
 
-function formatCHF(value: number) {
-  return `CHF ${value.toLocaleString('fr-CH', {
+function formatCHF(value: number, localeTag: string) {
+  return `CHF ${value.toLocaleString(localeTag, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
 }
 
-function formatMonth(value: string) {
+function formatMonth(value: string, localeTag: string) {
   const date = new Date(value.length === 7 ? `${value}-01` : value)
   if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
+  return date.toLocaleDateString(localeTag, { month: 'long', year: 'numeric' })
 }
 
-const MONTH_LABELS = [
-  'Janvier',
-  'Fevrier',
-  'Mars',
-  'Avril',
-  'Mai',
-  'Juin',
-  'Juillet',
-  'Aout',
-  'Septembre',
-  'Octobre',
-  'Novembre',
-  'Decembre',
-]
-
-const MONTH_SHORT_LABELS = [
-  'Janv',
-  'Fevr',
-  'Mars',
-  'Avr',
-  'Mai',
-  'Juin',
-  'Juil',
-  'Aout',
-  'Sept',
-  'Oct',
-  'Nov',
-  'Dec',
-]
-
 export default function ShopBillingPage() {
+  const { t, locale } = useLanguage()
+  const localeTag = locale === 'de' ? 'de-CH' : locale === 'it' ? 'it-CH' : locale === 'en' ? 'en-CH' : 'fr-CH'
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const { data: deliveries, loading, error } = useShopDeliveries(selectedMonth)
   const { data: periods, loading: periodsLoading, error: periodsError } = useShopPeriods()
@@ -169,8 +142,15 @@ export default function ShopBillingPage() {
     .split('-')
     .map((value, index) => (index === 0 ? Number(value) : Number(value) - 1)) as [number, number]
 
+  const monthLabels = Array.from({ length: 12 }, (_, monthIndex) =>
+    new Intl.DateTimeFormat(localeTag, { month: 'long' }).format(new Date(2024, monthIndex, 1))
+  )
+  const monthShortLabels = Array.from({ length: 12 }, (_, monthIndex) =>
+    new Intl.DateTimeFormat(localeTag, { month: 'short' }).format(new Date(2024, monthIndex, 1))
+  )
+
   const formatMonthLabel = (year: number, monthIndex: number) => {
-    const label = MONTH_LABELS[monthIndex] || ''
+    const label = monthLabels[monthIndex] || ''
     return `${label} ${year}`
   }
 
@@ -189,12 +169,12 @@ export default function ShopBillingPage() {
     <div className="p-8 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Facturation commerce</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t('shop.billing.title')}</h1>
           <p className="text-muted-foreground">
-            Historique mensuel, totaux et pieces comptables.
+            {t('shop.billing.subtitle')}
           </p>
           <p className="text-xs text-emerald-700 mt-1">
-            Periode active: {formatMonth(selectedMonth)}.
+            {t('shop.billing.activePeriod')}: {formatMonth(selectedMonth, localeTag)}.
           </p>
         </div>
         <div className="relative" ref={monthPickerRef}>
@@ -204,7 +184,7 @@ export default function ShopBillingPage() {
               variant="ghost"
               size="icon-sm"
               onClick={() => stepMonth(-1)}
-              aria-label="Mois precedent"
+              aria-label={t('shop.billing.prevMonth')}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -221,7 +201,7 @@ export default function ShopBillingPage() {
               variant="ghost"
               size="icon-sm"
               onClick={() => stepMonth(1)}
-              aria-label="Mois suivant"
+              aria-label={t('shop.billing.nextMonth')}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -250,7 +230,7 @@ export default function ShopBillingPage() {
                 </Button>
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2">
-                {MONTH_SHORT_LABELS.map((label, index) => {
+                {monthShortLabels.map((label, index) => {
                   const isSelected = pickerYear === selectedYear && index === selectedMonthIndex
                   return (
                     <button
@@ -279,43 +259,42 @@ export default function ShopBillingPage() {
       {!loading && activeDeliveries.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
           <h2 className="text-sm font-semibold text-slate-900">
-            Aucune livraison facturee sur {formatMonth(selectedMonth)}
+            {t('shop.billing.noDeliveriesOn')} {formatMonth(selectedMonth, localeTag)}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Vous pouvez continuer a creer des livraisons depuis l&apos;ecran Livraisons.
-            Les PDF officiels apparaissent apres gel de periode.
+            {t('shop.billing.noDeliveriesHelp')}
           </p>
         </div>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Part entreprise regionale (TTC)</div>
-          <div className="text-2xl font-bold">{formatCHF(totalAdminRegion)}</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('shop.billing.kpi.regionShare')}</div>
+          <div className="text-2xl font-bold">{formatCHF(totalAdminRegion, localeTag)}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            Base des livraisons non annulees
+            {t('shop.billing.kpi.regionShareHint')}
           </div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Livraisons</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('shop.billing.kpi.deliveries')}</div>
           <div className="text-2xl font-bold">{totalDeliveries}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            Operations prises en compte
+            {t('shop.billing.kpi.deliveriesHint')}
           </div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Sacs</div>
+          <div className="text-sm font-medium text-muted-foreground">{t('shop.billing.kpi.bags')}</div>
           <div className="text-2xl font-bold">{totalBags}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            Volume logistique mensuel
+            {t('shop.billing.kpi.bagsHint')}
           </div>
         </div>
       </div>
 
       <div className="rounded-md border bg-white p-4 space-y-4">
-        <div className="text-lg font-semibold">Historique des livraisons</div>
+        <div className="text-lg font-semibold">{t('shop.billing.history.title')}</div>
         {loading ? (
-          <div className="text-sm text-gray-500">Chargement...</div>
+          <div className="text-sm text-gray-500">{t('common.loading')}</div>
         ) : error ? (
           <div className="text-sm text-red-600">{error}</div>
         ) : activeDeliveries.length > 0 ? (
@@ -323,11 +302,11 @@ export default function ShopBillingPage() {
             <table className="min-w-full border-collapse text-sm">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="border px-3 py-2 text-left font-medium text-gray-700">Date</th>
-                  <th className="border px-3 py-2 text-left font-medium text-gray-700">Client</th>
-                  <th className="border px-3 py-2 text-left font-medium text-gray-700">Adresse</th>
-                  <th className="border px-3 py-2 text-right font-medium text-gray-700">Sacs</th>
-                  <th className="border px-3 py-2 text-right font-medium text-gray-700">Montant facture (TTC)</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-700">{t('shop.billing.history.date')}</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-700">{t('shop.billing.history.client')}</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-700">{t('shop.billing.history.address')}</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-700">{t('shop.billing.history.bags')}</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-700">{t('shop.billing.history.amountTtc')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -340,7 +319,7 @@ export default function ShopBillingPage() {
                     <td className="border px-3 py-2 whitespace-nowrap">{row.address || '-'}</td>
                     <td className="border px-3 py-2 text-right">{row.bags ?? '-'}</td>
                     <td className="border px-3 py-2 text-right">
-                      {formatCHF(Number(row.share_admin_region) || 0)}
+                      {formatCHF(Number(row.share_admin_region) || 0, localeTag)}
                     </td>
                   </tr>
                 ))}
@@ -348,18 +327,18 @@ export default function ShopBillingPage() {
             </table>
           </div>
         ) : (
-          <div className="text-sm text-gray-500">Aucune livraison.</div>
+          <div className="text-sm text-gray-500">{t('shop.billing.history.empty')}</div>
         )}
       </div>
 
       <div className="rounded-md border bg-white p-4 space-y-4">
-        <div className="text-lg font-semibold">Factures par periode</div>
+        <div className="text-lg font-semibold">{t('shop.billing.periods.title')}</div>
         {isHqDependentShop ? (
           <div className="text-sm text-gray-500">
-            Facturation geree par le HQ. Aucun PDF commerce n&apos;est disponible pour ce compte.
+            {t('shop.billing.periods.hqManaged')}
           </div>
         ) : periodsLoading ? (
-          <div className="text-sm text-gray-500">Chargement...</div>
+          <div className="text-sm text-gray-500">{t('common.loading')}</div>
         ) : periodsError ? (
           <div className="text-sm text-red-600">{periodsError}</div>
         ) : periods && periods.length > 0 ? (
@@ -367,12 +346,12 @@ export default function ShopBillingPage() {
             <table className="min-w-full border-collapse text-sm">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="border px-3 py-2 text-left font-medium text-gray-700">Type</th>
-                  <th className="border px-3 py-2 text-left font-medium text-gray-700">Payeur</th>
-                  <th className="border px-3 py-2 text-right font-medium text-gray-700">Livraisons</th>
-                  <th className="border px-3 py-2 text-right font-medium text-gray-700">Montant facture (TTC)</th>
-                  <th className="border px-3 py-2 text-left font-medium text-gray-700">Statut</th>
-                  <th className="border px-3 py-2 text-right font-medium text-gray-700">Action</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-700">{t('shop.billing.periods.type')}</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-700">{t('shop.billing.periods.payer')}</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-700">{t('shop.billing.periods.deliveries')}</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-700">{t('shop.billing.periods.amountTtc')}</th>
+                  <th className="border px-3 py-2 text-left font-medium text-gray-700">{t('shop.billing.periods.status')}</th>
+                  <th className="border px-3 py-2 text-right font-medium text-gray-700">{t('shop.billing.periods.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,7 +359,7 @@ export default function ShopBillingPage() {
                   const periodKey = String(row.period_month).slice(0, 7)
                   const deliveriesCount = Number(row.deliveries || 0)
                   const amountTtc = Number(row.amount_ttc || 0)
-                  const statusLabel = row.frozen_at ? 'Gelee' : 'En cours'
+                  const statusLabel = row.frozen_at ? t('shop.billing.periods.frozen') : t('shop.billing.periods.ongoing')
                   return (
                     <tr key={index} className="odd:bg-white even:bg-gray-50">
                       <td className="border px-3 py-2">
@@ -392,10 +371,10 @@ export default function ShopBillingPage() {
                         <div className="font-medium text-slate-900">
                           {row.shop_name || 'Commerce'}
                         </div>
-                        <div className="text-xs text-slate-500">{formatMonth(row.period_month)}</div>
+                        <div className="text-xs text-slate-500">{formatMonth(row.period_month, localeTag)}</div>
                       </td>
                       <td className="border px-3 py-2 text-right">{deliveriesCount}</td>
-                      <td className="border px-3 py-2 text-right">{formatCHF(amountTtc)}</td>
+                      <td className="border px-3 py-2 text-right">{formatCHF(amountTtc, localeTag)}</td>
                       <td className="border px-3 py-2">
                         <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                           {statusLabel}
@@ -429,7 +408,7 @@ export default function ShopBillingPage() {
           </div>
         ) : (
           <div className="text-sm text-gray-500">
-            Aucune periode gelee. Les exports officiels seront disponibles apres cloture mensuelle.
+            {t('shop.billing.periods.empty')}
           </div>
         )}
       </div>
