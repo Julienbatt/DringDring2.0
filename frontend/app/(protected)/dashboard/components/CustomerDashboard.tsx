@@ -136,7 +136,7 @@ export default function CustomerDashboard() {
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
                                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.favoriteShop')}</p>
                                 <p className="text-base font-semibold text-slate-900">
-                                    {statsLoading ? '...' : favoriteShopLabel}
+                                    {statsLoading ? t('common.loading') : favoriteShopLabel}
                                 </p>
                                 <p className="text-xs text-slate-400">
                                     {statsLoading || !customerStats ? '-' : t('customer.dashboard.kpi.deliveriesCount', { count: customerStats.top_shop_deliveries })}
@@ -145,7 +145,7 @@ export default function CustomerDashboard() {
                             <div className="rounded-2xl border border-slate-100 bg-white p-4">
                                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.dashboard.kpi.favoriteDay')}</p>
                                 <p className="text-base font-semibold text-slate-900">
-                                    {statsLoading ? '...' : favoriteDayLabel}
+                                    {statsLoading ? t('common.loading') : favoriteDayLabel}
                                 </p>
                                 <p className="text-xs text-slate-400">
                                     {statsLoading || !customerStats ? '-' : t('customer.dashboard.kpi.deliveriesCount', { count: customerStats.top_day_deliveries })}

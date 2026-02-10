@@ -501,19 +501,19 @@ export default function DispatchPage() {
                     onClick={() => setActiveTab('todo')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'todo' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    {t('admin.dispatch.tab.todo')} ({pendingDeliveries.length})
+                    {t('admin.dispatch.tab.todo', { count: pendingDeliveries.length })}
                     </button>
                     <button
                     onClick={() => setActiveTab('assigned')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'assigned' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    {t('admin.dispatch.tab.assigned')} ({assignedDeliveries.length})
+                    {t('admin.dispatch.tab.assigned', { count: assignedDeliveries.length })}
                     </button>
                     <button
                     onClick={() => setActiveTab('done')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'done' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    {t('admin.dispatch.tab.done')} ({completedDeliveries.length})
+                    {t('admin.dispatch.tab.done', { count: completedDeliveries.length })}
                     </button>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-gray-600">

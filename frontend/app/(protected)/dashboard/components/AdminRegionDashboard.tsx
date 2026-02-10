@@ -8,9 +8,21 @@ import { useRewardStats } from '@/app/(protected)/hooks/useRewardStats'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export default function AdminRegionDashboard() {
-    const { t } = useLanguage()
+    const { t, locale } = useLanguage()
     const { adminContextRegion } = useAuth()
     const currentMonth = new Date().toISOString().slice(0, 7)
+    const localeTag =
+        locale === 'de'
+            ? 'de-CH'
+            : locale === 'it'
+                ? 'it-CH'
+                : locale === 'en'
+                    ? 'en-CH'
+                    : 'fr-CH'
+    const monthLabel = new Intl.DateTimeFormat(localeTag, {
+        month: 'long',
+        year: 'numeric',
+    }).format(new Date(`${currentMonth}-01T00:00:00`))
     const { data: ecoStats, loading: ecoLoading } = useEcoStats(
         currentMonth,
         adminContextRegion?.id
@@ -24,6 +36,12 @@ export default function AdminRegionDashboard() {
         Silver: 'border-slate-200 bg-slate-100 text-slate-700',
         Bronze: 'border-orange-200 bg-orange-50 text-orange-700',
         Base: 'border-slate-200 bg-white text-slate-500',
+    }
+    const tierLabels: Record<string, string> = {
+        Gold: t('admin.regionLanding.reward.tier.gold'),
+        Silver: t('admin.regionLanding.reward.tier.silver'),
+        Bronze: t('admin.regionLanding.reward.tier.bronze'),
+        Base: t('admin.regionLanding.reward.tier.base'),
     }
 
     const quickLinks = [
@@ -75,7 +93,7 @@ export default function AdminRegionDashboard() {
                         <p className="mt-2 text-2xl font-semibold text-slate-900">
                             {ecoLoading || !ecoStats ? '-' : ecoStats.deliveries}
                         </p>
-                        <p className="mt-1 text-sm text-slate-500">{t('admin.regionLanding.kpi.period', { month: currentMonth })}</p>
+                        <p className="mt-1 text-sm text-slate-500">{t('admin.regionLanding.kpi.period', { month: monthLabel })}</p>
                     </div>
                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5 shadow-sm">
                         <p className="text-xs uppercase tracking-[0.2em] text-emerald-600">{t('admin.regionLanding.kpi.km')}</p>
@@ -162,7 +180,7 @@ export default function AdminRegionDashboard() {
                                         <span
                                             className={`rounded-full border px-3 py-1 text-xs font-semibold ${tierStyles[row.tier] ?? tierStyles.Base}`}
                                         >
-                                            {row.tier}
+                                            {tierLabels[row.tier] ?? row.tier}
                                         </span>
                                         <div className="text-right text-xs text-slate-500">
                                             {t('admin.regionLanding.reward.score', { score: row.score.toFixed(2) })}

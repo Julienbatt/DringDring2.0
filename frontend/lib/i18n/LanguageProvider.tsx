@@ -14,7 +14,7 @@ const STORAGE_KEY = 'dringdring.locale'
 type LanguageContextType = {
   locale: Locale
   setLocale: (locale: Locale) => void
-  t: (key: string) => string
+  t: (key: string, params?: Record<string, string | number>) => string
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -40,7 +40,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   const t = useMemo(() => {
-    return (key: string) => messages[locale]?.[key] ?? messages[DEFAULT_LOCALE]?.[key] ?? key
+    return (key: string, params?: Record<string, string | number>) => {
+      const raw = messages[locale]?.[key] ?? messages[DEFAULT_LOCALE]?.[key] ?? key
+      if (!params) return raw
+      return raw.replace(/\{(\w+)\}/g, (_, token: string) => {
+        const value = params[token]
+        return value === undefined || value === null ? `{${token}}` : String(value)
+      })
+    }
   }, [locale])
 
   return (

@@ -533,7 +533,7 @@ export default function BillingPage() {
             {!loading && !hasAnyData ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
                     <h2 className="text-sm font-semibold text-slate-900">
-                        {t('admin.billing.noDataTitle')} {formatMonth(selectedMonth)}
+                        {t('admin.billing.noDataTitle')} {formatMonth(selectedMonth, dateLocale)}
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
                         {t('admin.billing.noDataBody')}
