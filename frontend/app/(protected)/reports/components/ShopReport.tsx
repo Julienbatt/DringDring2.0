@@ -12,6 +12,7 @@ import { useShopDeliveries } from '../hooks/useShopDeliveries'
 import { useShopPeriods } from '../hooks/useShopPeriods'
 import { useShopStats } from '@/app/(protected)/reports/hooks/useShopStats'
 import { useMe } from '../../hooks/useMe'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function getCurrentMonth() {
   const now = new Date()
@@ -26,18 +27,27 @@ function getToday() {
   return `${now.getFullYear()}-${month}-${day}`
 }
 
-function formatCHF(value: number | null | undefined) {
+function formatCHF(value: number | null | undefined, localeTag: string) {
   if (value === null || value === undefined || Number.isNaN(value)) return ''
-  return `CHF ${value.toLocaleString('fr-CH', {
+  return `CHF ${value.toLocaleString(localeTag, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
 }
 
-function formatDate(value: unknown) {
+function formatDateInput(value: unknown) {
   if (!value) return ''
   const asText = String(value)
   return asText.slice(0, 10)
+}
+
+function formatDateDisplay(value: unknown, localeTag: string) {
+  if (!value) return ''
+  const asText = String(value)
+  const normalized = asText.length === 7 ? `${asText}-01` : asText
+  const date = new Date(normalized)
+  if (Number.isNaN(date.getTime())) return asText
+  return date.toLocaleDateString(localeTag)
 }
 
 function formatPercent(value: number | null | undefined) {
@@ -81,30 +91,18 @@ const TABLE_COLUMNS = [
   'amount_due',
 ]
 
-const TABLE_LABELS: Record<string, string> = {
-  short_code: 'N°',
-  delivery_date: 'Date',
-  client_name: 'Client',
-  address: 'Adresse',
-  city_name: 'Commune partenaire',
-  bags: 'Sacs',
-  basket_value: 'Valeur des courses (CHF)',
-  status: 'Statut',
-  amount_due: 'Montant facture (TTC)',
-}
-
 const EDITABLE_STATUSES = new Set(['created', 'assigned'])
 const DELIVERY_EDIT_GRACE_HOURS = 48
 
-function formatStatus(value: unknown) {
+function formatStatus(value: unknown, locale: string) {
   const raw = String(value ?? '').toLowerCase()
   if (!raw) return '-'
-  if (raw === 'created') return 'Creee'
-  if (raw === 'assigned') return 'En cours'
-  if (raw === 'picked_up') return 'En cours'
-  if (raw === 'delivered') return 'Livree'
-  if (raw === 'issue') return 'Incident'
-  if (raw === 'cancelled') return 'Annulee'
+  if (raw === 'created') return locale === 'de' ? 'Erstellt' : locale === 'it' ? 'Creata' : locale === 'en' ? 'Created' : 'Creee'
+  if (raw === 'assigned') return locale === 'de' ? 'In Bearbeitung' : locale === 'it' ? 'In corso' : locale === 'en' ? 'In progress' : 'En cours'
+  if (raw === 'picked_up') return locale === 'de' ? 'In Bearbeitung' : locale === 'it' ? 'In corso' : locale === 'en' ? 'In progress' : 'En cours'
+  if (raw === 'delivered') return locale === 'de' ? 'Geliefert' : locale === 'it' ? 'Consegnata' : locale === 'en' ? 'Delivered' : 'Livree'
+  if (raw === 'issue') return locale === 'de' ? 'Vorfall' : locale === 'it' ? 'Problema' : locale === 'en' ? 'Issue' : 'Incident'
+  if (raw === 'cancelled') return locale === 'de' ? 'Storniert' : locale === 'it' ? 'Annullata' : locale === 'en' ? 'Cancelled' : 'Annulee'
   return raw
 }
 
@@ -159,6 +157,109 @@ type DeliveryTableRow = {
 }
 
 export default function ShopReport() {
+  const { locale } = useLanguage()
+  const localeTag =
+    locale === 'de'
+      ? 'de-CH'
+      : locale === 'it'
+        ? 'it-CH'
+        : locale === 'en'
+          ? 'en-CH'
+          : 'fr-CH'
+  const tx = {
+    title: locale === 'de' ? 'Lieferungen - Geschaft' : locale === 'it' ? 'Consegne - Negozio' : locale === 'en' ? 'Deliveries - Shop' : 'Livraisons - Commerce',
+    periodFrozen: locale === 'de' ? 'Zeitraum gesperrt' : locale === 'it' ? 'Periodo bloccato' : locale === 'en' ? 'Frozen period' : 'Periode gelee',
+    byAdminOn: locale === 'de' ? 'von' : locale === 'it' ? 'da' : locale === 'en' ? 'by' : 'par',
+    onDate: locale === 'de' ? 'am' : locale === 'it' ? 'il' : locale === 'en' ? 'on' : 'le',
+    admin: locale === 'de' ? 'Admin' : locale === 'it' ? 'Admin' : locale === 'en' ? 'Admin' : 'Admin',
+    downloadError: locale === 'de' ? 'Download-Fehler' : locale === 'it' ? 'Errore download' : locale === 'en' ? 'Download error' : 'Erreur téléchargement',
+    frozenInfo: locale === 'de' ? 'Zeitraum gesperrt: Erstellung und Simulation sind deaktiviert.' : locale === 'it' ? 'Periodo bloccato: creazione e simulazione disattivate.' : locale === 'en' ? 'Frozen period: creation and simulation are disabled.' : 'Periode gelee : creation et simulation de livraisons desactivees.',
+    loadingConfig: locale === 'de' ? 'Lade Tarifkonfiguration...' : locale === 'it' ? 'Caricamento configurazione tariffaria...' : locale === 'en' ? 'Loading pricing configuration...' : 'Chargement de la configuration tarifaire...',
+    loading: locale === 'de' ? 'Wird geladen...' : locale === 'it' ? 'Caricamento...' : locale === 'en' ? 'Loading...' : 'Chargement...',
+    searchClient: locale === 'de' ? 'Kunden suchen' : locale === 'it' ? 'Cerca un cliente' : locale === 'en' ? 'Search a client' : 'Rechercher un client',
+    save: locale === 'de' ? 'Speichern' : locale === 'it' ? 'Salva' : locale === 'en' ? 'Save' : 'Enregistrer',
+    cancel: locale === 'de' ? 'Abbrechen' : locale === 'it' ? 'Annulla' : locale === 'en' ? 'Cancel' : 'Annuler',
+    clientCms: locale === 'de' ? 'CMS-Kunde' : locale === 'it' ? 'Cliente CMS' : locale === 'en' ? 'CMS client' : 'Client CMS',
+    clientStandard: locale === 'de' ? 'Standardkunde' : locale === 'it' ? 'Cliente standard' : locale === 'en' ? 'Standard client' : 'Client standard',
+    date: locale === 'de' ? 'Datum' : locale === 'it' ? 'Data' : locale === 'en' ? 'Date' : 'Date',
+    deliveryTime: locale === 'de' ? 'Lieferzeit' : locale === 'it' ? 'Ora consegna' : locale === 'en' ? 'Delivery time' : 'Heure de livraison',
+    bags: locale === 'de' ? 'Taschen' : locale === 'it' ? 'Borse' : locale === 'en' ? 'Bags' : 'Sacs',
+    select: locale === 'de' ? 'Auswahlen' : locale === 'it' ? 'Seleziona' : locale === 'en' ? 'Select' : 'Selectionner',
+    notes: locale === 'de' ? 'Hinweise (optional)' : locale === 'it' ? 'Note (opzionale)' : locale === 'en' ? 'Notes (optional)' : 'Remarques / Instructions (facultatif)',
+    notesPlaceholder: locale === 'de' ? 'Code, Etage, Kontakt...' : locale === 'it' ? 'Codice porta, piano, contatto...' : locale === 'en' ? 'Door code, floor, contact...' : 'Code porte, étage, contact spécifique...',
+    orderAmount: locale === 'de' ? 'Bestellbetrag (CHF)' : locale === 'it' ? 'Importo ordine (CHF)' : locale === 'en' ? 'Order amount (CHF)' : 'Montant commande (CHF)',
+    orderAmountHint: locale === 'de' ? 'Pflicht fur Stufen-Tarife.' : locale === 'it' ? 'Obbligatorio per tariffa a scaglioni.' : locale === 'en' ? 'Required for tier pricing.' : 'Obligatoire pour les commerces au tarif palier.',
+    basketValue: locale === 'de' ? 'Warenkorbwert (CHF)' : locale === 'it' ? 'Valore carrello (CHF)' : locale === 'en' ? 'Basket value (CHF)' : 'Valeur des courses (CHF)',
+    optional: locale === 'de' ? 'Optional' : locale === 'it' ? 'Opzionale' : locale === 'en' ? 'Optional' : 'Optionnel',
+    estimate: locale === 'de' ? 'Schatzung' : locale === 'it' ? 'Stima' : locale === 'en' ? 'Estimate' : 'Estimation',
+    totalDelivery: locale === 'de' ? 'Lieferung total' : locale === 'it' ? 'Totale consegna' : locale === 'en' ? 'Delivery total' : 'Total livraison',
+    clientPart: locale === 'de' ? 'Kundenanteil' : locale === 'it' ? 'Quota cliente' : locale === 'en' ? 'Client share' : 'Part client',
+    cityPart: locale === 'de' ? 'Gemeindeanteil' : locale === 'it' ? 'Quota comune' : locale === 'en' ? 'City share' : 'Part commune',
+    regionPart: locale === 'de' ? 'Regionalanteil' : locale === 'it' ? 'Quota regionale' : locale === 'en' ? 'Regional share' : 'Part entreprise regionale',
+    creating: locale === 'de' ? 'Wird gespeichert...' : locale === 'it' ? 'Salvataggio...' : locale === 'en' ? 'Saving...' : 'Enregistrement...',
+    saveChanges: locale === 'de' ? 'Anderungen speichern' : locale === 'it' ? 'Salva modifiche' : locale === 'en' ? 'Save changes' : 'Enregistrer les modifications',
+    createDelivery: locale === 'de' ? 'Lieferung erstellen' : locale === 'it' ? 'Crea consegna' : locale === 'en' ? 'Create delivery' : 'Creer la livraison',
+    editCancel: locale === 'de' ? 'Bearbeitung abbrechen' : locale === 'it' ? 'Annulla modifica' : locale === 'en' ? 'Cancel editing' : 'Annuler la modification',
+    monthlyStats: locale === 'de' ? 'Monatsstatistik' : locale === 'it' ? 'Statistiche del mese' : locale === 'en' ? 'Monthly stats' : 'Stats du mois',
+    billingAmount: locale === 'de' ? 'Rechnungsbetrag (inkl. MwSt)' : locale === 'it' ? 'Importo fatturato (IVA incl.)' : locale === 'en' ? 'Billed amount (incl. VAT)' : 'Montant facture (TTC)',
+    basketAvg: locale === 'de' ? 'Durchschnittlicher Warenkorb' : locale === 'it' ? 'Carrello medio' : locale === 'en' ? 'Average basket' : 'Panier moyen',
+    monthlyDeliveries: locale === 'de' ? 'Lieferungen (Monat)' : locale === 'it' ? 'Consegne (mese)' : locale === 'en' ? 'Deliveries (month)' : 'Livraisons (ce mois)',
+    cmsDeliveries: locale === 'de' ? 'CMS-Lieferungen' : locale === 'it' ? 'Consegne CMS' : locale === 'en' ? 'CMS deliveries' : 'Livraisons CMS',
+    clientsServed: locale === 'de' ? 'Bediente Kunden' : locale === 'it' ? 'Clienti serviti' : locale === 'en' ? 'Clients served' : 'Clients servis',
+    repeatClients: locale === 'de' ? 'Wiederkehrende Kunden' : locale === 'it' ? 'Clienti ricorrenti' : locale === 'en' ? 'Repeat clients' : 'Clients recurrents',
+    topClients: locale === 'de' ? 'Top-Kunden' : locale === 'it' ? 'Top clienti' : locale === 'en' ? 'Top clients' : 'Top clients',
+    noRepeatClient: locale === 'de' ? 'Keine wiederkehrenden Kunden.' : locale === 'it' ? 'Nessun cliente ricorrente.' : locale === 'en' ? 'No repeat clients.' : 'Aucun client recurrent.',
+    operations: locale === 'de' ? 'Betrieb' : locale === 'it' ? 'Operazioni' : locale === 'en' ? 'Operations' : 'Operations',
+    bagsDelivered: locale === 'de' ? 'Gelieferte Taschen' : locale === 'it' ? 'Borse consegnate' : locale === 'en' ? 'Delivered bags' : 'Sacs livres',
+    activeDays: locale === 'de' ? 'Aktive Tage' : locale === 'it' ? 'Giorni attivi' : locale === 'en' ? 'Active days' : 'Jours actifs',
+    deliveriesPerDay: locale === 'de' ? 'Lieferungen / Tag' : locale === 'it' ? 'Consegne / giorno' : locale === 'en' ? 'Deliveries / day' : 'Livraisons / jour',
+    monthPeak: locale === 'de' ? 'Monatsspitze' : locale === 'it' ? 'Picco mensile' : locale === 'en' ? 'Month peak' : 'Pic du mois',
+    history: locale === 'de' ? 'Lieferhistorie' : locale === 'it' ? 'Storico consegne' : locale === 'en' ? 'Delivery history' : 'Historique des livraisons',
+    action: locale === 'de' ? 'Aktion' : locale === 'it' ? 'Azione' : locale === 'en' ? 'Action' : 'Action',
+    edit: locale === 'de' ? 'Bearbeiten' : locale === 'it' ? 'Modifica' : locale === 'en' ? 'Edit' : 'Modifier',
+    cancelAction: locale === 'de' ? 'Stornieren' : locale === 'it' ? 'Annulla' : locale === 'en' ? 'Cancel' : 'Annuler',
+    noDelivery: locale === 'de' ? 'Keine Lieferung.' : locale === 'it' ? 'Nessuna consegna.' : locale === 'en' ? 'No deliveries.' : 'Aucune livraison.',
+    na: locale === 'de' ? 'k.A.' : locale === 'it' ? 'n/d' : locale === 'en' ? 'n/a' : 'n/a',
+    summaryTitle: locale === 'de' ? 'Zusammenfassung zum Teilen' : locale === 'it' ? 'Riepilogo da condividere' : locale === 'en' ? 'Ready-to-share summary' : 'Resume pret a partager',
+    summaryHint: locale === 'de' ? 'Schnelle Kopie fur internes Reporting oder HQ-Kommunikation.' : locale === 'it' ? 'Copia rapida per reporting interno o comunicazione HQ.' : locale === 'en' ? 'Quick copy for internal reporting or HQ communication.' : 'Copie rapide pour votre reporting interne ou communication HQ.',
+    copied: locale === 'de' ? 'Zusammenfassung kopiert' : locale === 'it' ? 'Riepilogo copiato' : locale === 'en' ? 'Summary copied' : 'Resume copie',
+    copyFailed: locale === 'de' ? 'Kopieren nicht moglich' : locale === 'it' ? 'Copia non riuscita' : locale === 'en' ? 'Copy failed' : 'Copie impossible',
+    summaryLine1: locale === 'de' ? 'DringDring - Zusammenfassung Geschaft' : locale === 'it' ? 'DringDring - Riepilogo negozio' : locale === 'en' ? 'DringDring - Shop summary' : 'DringDring - Resume commerce',
+    deliveryCodePrefix: locale === 'de' ? 'Liefercode' : locale === 'it' ? 'Codice consegna' : locale === 'en' ? 'Delivery code' : 'Code de livraison',
+    createEditError: locale === 'de' ? 'Lieferung konnte nicht geandert werden' : locale === 'it' ? 'Impossibile modificare la consegna' : locale === 'en' ? 'Unable to edit delivery' : 'Impossible de modifier la livraison',
+    createError: locale === 'de' ? 'Lieferung konnte nicht erstellt werden' : locale === 'it' ? 'Impossibile creare la consegna' : locale === 'en' ? 'Unable to create delivery' : 'Impossible de creer la livraison',
+    cancelReasonPrompt: locale === 'de' ? 'Stornierungsgrund (optional)?' : locale === 'it' ? 'Motivo annullamento (opzionale)?' : locale === 'en' ? 'Cancellation reason (optional)?' : "Raison de l'annulation (optionnelle) ?",
+    noSession: locale === 'de' ? 'Keine aktive Sitzung' : locale === 'it' ? 'Sessione assente' : locale === 'en' ? 'Missing session' : 'Session inexistante',
+    cancelError: locale === 'de' ? 'Lieferung konnte nicht storniert werden' : locale === 'it' ? 'Impossibile annullare la consegna' : locale === 'en' ? 'Unable to cancel delivery' : "Impossible d'annuler la livraison",
+    configUnavailable: locale === 'de' ? 'Tarifkonfiguration nicht verfugbar.' : locale === 'it' ? 'Configurazione tariffaria non disponibile.' : locale === 'en' ? 'Pricing configuration unavailable.' : 'Configuration tarifaire indisponible.',
+    loadingPlaceholder: locale === 'de' ? 'Laden...' : locale === 'it' ? 'Caricamento...' : locale === 'en' ? 'Loading...' : 'Chargement...',
+    newClient: locale === 'de' ? 'Neuer Kunde' : locale === 'it' ? 'Nuovo cliente' : locale === 'en' ? 'New client' : 'Nouveau Client',
+    client: locale === 'de' ? 'Kunde' : locale === 'it' ? 'Cliente' : locale === 'en' ? 'Client' : 'Client',
+    monthBusinessView: locale === 'de' ? 'Monatliche Business-Sicht' : locale === 'it' ? 'Vista business del mese' : locale === 'en' ? 'Monthly business view' : 'Vue business du mois',
+    conversionRetention: locale === 'de' ? 'Konversion & Bindung' : locale === 'it' ? 'Conversione e fidelizzazione' : locale === 'en' ? 'Conversion & retention' : 'Conversion & fidelisation',
+    impactSocial: locale === 'de' ? 'Sozialer Impact' : locale === 'it' ? 'Impatto sociale' : locale === 'en' ? 'Social impact' : 'Impact social',
+    avgOrderValue: locale === 'de' ? 'Durchschnittlicher Bestellwert' : locale === 'it' ? 'Valore medio ordine' : locale === 'en' ? 'Average order value' : 'Valeur commande moyenne',
+    creatingDelivery: locale === 'de' ? 'Lieferung erstellen' : locale === 'it' ? 'Registra consegna' : locale === 'en' ? 'Register delivery' : 'Enregistrer une livraison',
+    editingDelivery: locale === 'de' ? 'Lieferung bearbeiten' : locale === 'it' ? 'Modifica consegna' : locale === 'en' ? 'Edit delivery' : 'Modifier une livraison',
+    calculationInProgress: locale === 'de' ? 'Berechne Betrag...' : locale === 'it' ? 'Calcolo importo...' : locale === 'en' ? 'Calculating amount...' : 'Calcul du montant...',
+    previewError: locale === 'de' ? 'Betrag konnte nicht berechnet werden' : locale === 'it' ? 'Impossibile calcolare l importo' : locale === 'en' ? 'Unable to calculate amount' : 'Impossible de calculer le montant',
+    profitabilityHint: locale === 'de' ? 'Fur Rentabilitat genutzt, nicht fakturiert.' : locale === 'it' ? 'Usato per redditivita, non fatturato.' : locale === 'en' ? 'Used for profitability, not billed.' : 'Utilise pour la rentabilite, non facture.',
+    vs: locale === 'de' ? 'gegen' : locale === 'it' ? 'vs' : locale === 'en' ? 'vs' : 'vs',
+    allMonth: locale === 'de' ? 'Laufender Monat' : locale === 'it' ? 'Mese in corso' : locale === 'en' ? 'Current month' : 'Mois en cours',
+    perActiveDay: locale === 'de' ? 'Aktive Tage' : locale === 'it' ? 'Giorni attivi' : locale === 'en' ? 'Active days' : 'Jours actifs',
+    none: locale === 'de' ? 'Keine' : locale === 'it' ? 'Nessuno' : locale === 'en' ? 'None' : 'Aucun',
+  } as const
+  const tableLabels: Record<string, string> = {
+    short_code: locale === 'de' ? 'Nr.' : locale === 'it' ? 'N°' : locale === 'en' ? 'No.' : 'N°',
+    delivery_date: tx.date,
+    client_name: locale === 'de' ? 'Kunde' : locale === 'it' ? 'Cliente' : locale === 'en' ? 'Client' : 'Client',
+    address: locale === 'de' ? 'Adresse' : locale === 'it' ? 'Indirizzo' : locale === 'en' ? 'Address' : 'Adresse',
+    city_name: locale === 'de' ? 'Partnergemeinde' : locale === 'it' ? 'Comune partner' : locale === 'en' ? 'Partner city' : 'Commune partenaire',
+    bags: tx.bags,
+    basket_value: tx.basketValue,
+    status: locale === 'de' ? 'Status' : locale === 'it' ? 'Stato' : locale === 'en' ? 'Status' : 'Statut',
+    amount_due: locale === 'de' ? 'Rechnungsbetrag (inkl. MwSt)' : locale === 'it' ? 'Importo fatturato (IVA incl.)' : locale === 'en' ? 'Billed amount (incl. VAT)' : 'Montant facture (TTC)',
+  }
   const [selectedMonth] = useState(getCurrentMonth())
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -442,7 +543,7 @@ export default function ShopReport() {
         const { data: sessionData } = await supabase.auth.getSession()
         const session = sessionData.session
         if (!session) {
-          setPreviewError('Session inexistante')
+          setPreviewError(tx.noSession)
           setPreview(null)
           return
         }
@@ -465,7 +566,7 @@ export default function ShopReport() {
         setPreview(result)
       } catch {
         if (!active) return
-        setPreviewError('Impossible de calculer le montant')
+        setPreviewError(tx.previewError)
         setPreview(null)
       } finally {
         if (active) setPreviewLoading(false)
@@ -484,6 +585,8 @@ export default function ShopReport() {
     formState.time_window,
     tariffType,
     isFrozen, // Dependency added
+    tx.noSession,
+    tx.previewError,
   ])
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -521,7 +624,7 @@ export default function ShopReport() {
       const { data: sessionData } = await supabase.auth.getSession()
       const session = sessionData.session
       if (!session) {
-        setSubmitError('Session inexistante')
+        setSubmitError(tx.noSession)
         return
       }
 
@@ -557,7 +660,7 @@ export default function ShopReport() {
         )
         if (created?.short_code) {
           setLastShortCode(created.short_code)
-          toast.success(`Livraison creee. Code: ${created.short_code}`)
+          toast.success(`${tx.deliveryCodePrefix}: ${created.short_code}`)
         }
       }
       setFormState((prev) => ({
@@ -573,7 +676,7 @@ export default function ShopReport() {
       setFormResetKey((prev) => prev + 1)
       await refresh()
     } catch {
-      setSubmitError(editingDeliveryId ? 'Impossible de modifier la livraison' : 'Impossible de creer la livraison')
+      setSubmitError(editingDeliveryId ? tx.createEditError : tx.createError)
     } finally {
       setSubmitting(false)
     }
@@ -600,7 +703,7 @@ export default function ShopReport() {
     setFormState((prev) => ({
       ...prev,
       client_id: row.client_id || prev.client_id,
-      delivery_date: formatDate(row.delivery_date) || prev.delivery_date,
+      delivery_date: formatDateInput(row.delivery_date) || prev.delivery_date,
       time_window: row.time_window || '',
       bags: row.bags ?? '',
       order_amount: row.order_amount ?? '',
@@ -612,13 +715,13 @@ export default function ShopReport() {
 
   const handleCancelDelivery = async (row: DeliveryTableRow) => {
     if (!row?.delivery_id) return
-    const reason = window.prompt("Raison de l'annulation (optionnelle) ?") ?? ''
+    const reason = window.prompt(tx.cancelReasonPrompt) ?? ''
     try {
       const supabase = createClient()
       const { data: sessionData } = await supabase.auth.getSession()
       const session = sessionData.session
       if (!session) {
-        setSubmitError('Session inexistante')
+        setSubmitError(tx.noSession)
         return
       }
       await apiPost(`/deliveries/shop/${row.delivery_id}/cancel`, { reason }, session.access_token)
@@ -627,7 +730,7 @@ export default function ShopReport() {
       }
       await refresh()
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Impossible d'annuler la livraison"
+      const message = e instanceof Error ? e.message : tx.cancelError
       setSubmitError(message)
     }
   }
@@ -646,13 +749,13 @@ export default function ShopReport() {
         setConfigError(null)
       } catch (e) {
         console.error('Failed to load shop config', e)
-        setConfigError('Configuration tarifaire indisponible.')
+        setConfigError(tx.configUnavailable)
       } finally {
         setConfigLoading(false)
       }
     }
     fetchConfig()
-  }, [])
+  }, [tx.configUnavailable])
 
   const selectedClient = (clients ?? []).find(
     (client) => client.id === formState.client_id
@@ -672,7 +775,7 @@ export default function ShopReport() {
   const kpiDeliveriesTrend = shopStats?.deliveries_change_pct
   const trendLabel =
     kpiDeliveriesTrend === null || kpiDeliveriesTrend === undefined
-      ? 'n/a'
+      ? tx.na
       : `${kpiDeliveriesTrend > 0 ? '+' : ''}${kpiDeliveriesTrend.toFixed(1)}%`
   const trendTone =
     kpiDeliveriesTrend === null || kpiDeliveriesTrend === undefined
@@ -681,20 +784,20 @@ export default function ShopReport() {
         ? 'text-emerald-600'
         : 'text-rose-600'
   const shopSummaryText = [
-    `DringDring - Resume commerce (${selectedMonth})`,
-    `Livraisons: ${kpiTotalDeliveries}`,
-    `Clients actifs: ${kpiUniqueClients} (nouveaux: ${newClients})`,
-    `Part CMS: ${kpiCmsShare.toFixed(1)}%`,
-    `Panier moyen: ${formatCHF(kpiBasketAvg)}`,
-    `Evolution livraisons: ${trendLabel}`,
+    `${tx.summaryLine1} (${selectedMonth})`,
+    `${tx.monthlyDeliveries}: ${kpiTotalDeliveries}`,
+    `${tx.client}s actifs: ${kpiUniqueClients} (${locale === 'de' ? 'neu' : locale === 'it' ? 'nuovi' : locale === 'en' ? 'new' : 'nouveaux'}: ${newClients})`,
+    `${locale === 'de' ? 'CMS-Anteil' : locale === 'it' ? 'Quota CMS' : locale === 'en' ? 'CMS share' : 'Part CMS'}: ${kpiCmsShare.toFixed(1)}%`,
+    `${tx.basketAvg}: ${formatCHF(kpiBasketAvg, localeTag)}`,
+    `${locale === 'de' ? 'Entwicklung Lieferungen' : locale === 'it' ? 'Evoluzione consegne' : locale === 'en' ? 'Delivery trend' : 'Evolution livraisons'}: ${trendLabel}`,
   ].join('\n')
 
   const handleCopySummary = async () => {
     try {
       await navigator.clipboard.writeText(shopSummaryText)
-      toast.success('Resume copie')
+      toast.success(tx.copied)
     } catch {
-      toast.error('Copie impossible')
+      toast.error(tx.copyFailed)
     }
   }
 
@@ -702,14 +805,14 @@ export default function ShopReport() {
     <div className="p-8 space-y-8">
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">Livraisons - Commerce</h1>
+          <h1 className="text-2xl font-semibold">{tx.title}</h1>
           {isFrozen && (
             <div className="flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1">
-              <span className="text-xs font-medium text-orange-700">Periode gelee</span>
+              <span className="text-xs font-medium text-orange-700">{tx.periodFrozen}</span>
               {currentFrozenPeriod && (
                 <>
                   <span className="text-xs text-orange-600">
-                    (par {currentFrozenPeriod.frozen_by_name || 'Admin'} le {formatDate(currentFrozenPeriod.frozen_at)})
+                    ({tx.byAdminOn} {currentFrozenPeriod.frozen_by_name || tx.admin} {tx.onDate} {formatDateDisplay(currentFrozenPeriod.frozen_at, localeTag)})
                   </span>
 
                   {!isHqDependentShop && (
@@ -723,7 +826,7 @@ export default function ShopReport() {
                           const res = await fetch(`${API_BASE_URL}/reports/shop-monthly-pdf?shop_id=${currentFrozenPeriod.shop_id || ''}&month=${selectedMonth}`, {
                             headers: { Authorization: `Bearer ${data.session.access_token}` }
                           })
-                          if (!res.ok) throw new Error("Erreur téléchargement")
+                          if (!res.ok) throw new Error(tx.downloadError)
 
                           const blob = await res.blob()
                           const url = window.URL.createObjectURL(blob)
@@ -735,7 +838,7 @@ export default function ShopReport() {
                           window.URL.revokeObjectURL(url)
                           document.body.removeChild(a)
                         } catch {
-                          alert("Impossible de télécharger le PDF")
+                          alert(tx.downloadError)
                         }
                       }}
                       type="button"
@@ -755,36 +858,36 @@ export default function ShopReport() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-            Vue business du mois
+            {tx.monthBusinessView}
           </h2>
           <span className="text-xs text-slate-500">
-            Conversion & fidelisation
+            {tx.conversionRetention}
           </span>
         </div>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-            <div className="text-xs uppercase tracking-wider text-slate-500">Livraisons</div>
+            <div className="text-xs uppercase tracking-wider text-slate-500">{tx.monthlyDeliveries}</div>
             <div className="mt-1 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : kpiTotalDeliveries}</div>
-            <div className={`text-xs ${trendTone}`}>Evol. {trendLabel}</div>
+            <div className={`text-xs ${trendTone}`}>{locale === 'de' ? 'Entw.' : locale === 'it' ? 'Evol.' : locale === 'en' ? 'Trend' : 'Evol.'} {trendLabel}</div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wider text-slate-500">Clients actifs</div>
+            <div className="text-xs uppercase tracking-wider text-slate-500">{locale === 'de' ? 'Aktive Kunden' : locale === 'it' ? 'Clienti attivi' : locale === 'en' ? 'Active clients' : 'Clients actifs'}</div>
             <div className="mt-1 text-2xl font-semibold text-slate-900">{statsLoading ? '...' : kpiUniqueClients}</div>
-            <div className="text-xs text-slate-500">Nouveaux: {statsLoading ? '...' : newClients}</div>
+            <div className="text-xs text-slate-500">{locale === 'de' ? 'Neu' : locale === 'it' ? 'Nuovi' : locale === 'en' ? 'New' : 'Nouveaux'}: {statsLoading ? '...' : newClients}</div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wider text-slate-500">Part CMS</div>
+            <div className="text-xs uppercase tracking-wider text-slate-500">{locale === 'de' ? 'CMS-Anteil' : locale === 'it' ? 'Quota CMS' : locale === 'en' ? 'CMS share' : 'Part CMS'}</div>
             <div className="mt-1 text-2xl font-semibold text-slate-900">
               {statsLoading ? '...' : `${kpiCmsShare.toFixed(1)}%`}
             </div>
-            <div className="text-xs text-slate-500">Impact social</div>
+            <div className="text-xs text-slate-500">{tx.impactSocial}</div>
           </div>
           <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-            <div className="text-xs uppercase tracking-wider text-emerald-700">Panier moyen</div>
+            <div className="text-xs uppercase tracking-wider text-emerald-700">{tx.basketAvg}</div>
             <div className="mt-1 text-2xl font-semibold text-slate-900">
-              {statsLoading ? '...' : formatCHF(kpiBasketAvg)}
+              {statsLoading ? '...' : formatCHF(kpiBasketAvg, localeTag)}
             </div>
-            <div className="text-xs text-emerald-700/80">Valeur commande moyenne</div>
+            <div className="text-xs text-emerald-700/80">{tx.avgOrderValue}</div>
           </div>
         </div>
       </section>
@@ -792,9 +895,9 @@ export default function ShopReport() {
       <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Resume pret a partager</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{tx.summaryTitle}</h2>
             <p className="text-xs text-slate-600">
-              Copie rapide pour votre reporting interne ou communication HQ.
+              {tx.summaryHint}
             </p>
           </div>
           <button
@@ -802,30 +905,30 @@ export default function ShopReport() {
             onClick={handleCopySummary}
             className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
           >
-            Copier
+            {locale === 'de' ? 'Kopieren' : locale === 'it' ? 'Copia' : locale === 'en' ? 'Copy' : 'Copier'}
           </button>
         </div>
       </section>
 
       <section className="rounded-lg border p-4 space-y-4">
         <h2 className="text-sm font-medium text-gray-700">
-          {editingDeliveryId ? 'Modifier une livraison' : 'Enregistrer une livraison'}
+          {editingDeliveryId ? tx.editingDelivery : tx.creatingDelivery}
         </h2>
 
         {isFrozen && (
           <div className="text-sm text-orange-600">
-            Periode gelee : creation et simulation de livraisons desactivees.
+            {tx.frozenInfo}
           </div>
         )}
         {configLoading && (
-          <div className="text-sm text-gray-500">Chargement de la configuration tarifaire...</div>
+          <div className="text-sm text-gray-500">{tx.loadingConfig}</div>
         )}
         {configError && (
           <div className="text-sm text-red-600">{configError}</div>
         )}
         {lastShortCode && (
           <div className="text-sm text-emerald-700">
-            Code de livraison: <span className="font-semibold">{lastShortCode}</span>
+            {tx.deliveryCodePrefix}: <span className="font-semibold">{lastShortCode}</span>
           </div>
         )}
         {submitError && (
@@ -848,7 +951,7 @@ export default function ShopReport() {
                   client_id: clientId,
                 }))
               }}
-              placeholder={clientsLoading ? 'Chargement...' : 'Rechercher un client'}
+              placeholder={clientsLoading ? tx.loadingPlaceholder : tx.searchClient}
               disabled={Boolean(editingDeliveryId)}
             />
             <button
@@ -857,14 +960,14 @@ export default function ShopReport() {
               onClick={() => setIsCreatingClient(true)}
               disabled={Boolean(editingDeliveryId)}
             >
-              + Nouveau Client
+              + {tx.newClient}
             </button>
           </label>
 
           {isCreatingClient && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
               <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
-                <h3 className="text-lg font-bold mb-4">Nouveau Client</h3>
+                <h3 className="text-lg font-bold mb-4">{tx.newClient}</h3>
 
                 <div className="space-y-4">
                   <label className="block text-sm">
@@ -1001,7 +1104,7 @@ export default function ShopReport() {
                     onClick={() => setIsCreatingClient(false)}
                     className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
                   >
-                    Annuler
+                    {tx.cancel}
                   </button>
                   <button
                     type="button"
@@ -1025,11 +1128,11 @@ export default function ShopReport() {
                 {selectedClient.door_code && <span>Code: {selectedClient.door_code}</span>}
                 {selectedClient.phone && <span>Tél: {selectedClient.phone}</span>}
               </div>
-              <div>{selectedClient.is_cms ? 'Client CMS' : 'Client standard'}</div>
+              <div>{selectedClient.is_cms ? tx.clientCms : tx.clientStandard}</div>
             </div>
           )}
           <label className="text-sm text-gray-600">
-            Date
+            {tx.date}
             <input
               className="mt-1 w-full rounded border px-2 py-1"
               type="text"
@@ -1058,7 +1161,7 @@ export default function ShopReport() {
             />
           </label>
           <label className="text-sm text-gray-600">
-            Heure de livraison
+            {tx.deliveryTime}
             <input
               className="mt-1 w-full rounded border px-2 py-1"
               type="time"
@@ -1070,7 +1173,7 @@ export default function ShopReport() {
           </label>
           {!configLoading && tariffType === 'bags' && (
             <label className="text-sm text-gray-600">
-              Sacs
+              {tx.bags}
               <select
                 className="mt-1 w-full rounded border px-2 py-1"
                 name="bags"
@@ -1078,7 +1181,7 @@ export default function ShopReport() {
                 onChange={handleChange}
                 required
               >
-                <option value="">Selectionner</option>
+                <option value="">{tx.select}</option>
                 {Array.from({ length: 20 }, (_, index) => index + 1).map(
                   (count) => (
                     <option key={count} value={count}>
@@ -1091,20 +1194,20 @@ export default function ShopReport() {
           )}
 
           <label className="text-sm text-gray-600 md:col-span-2">
-            Remarques / Instructions (facultatif)
+            {tx.notes}
             <textarea
               className="mt-1 w-full rounded border px-2 py-1"
               name="notes"
               rows={2}
               value={formState.notes}
               onChange={handleChange}
-              placeholder="Code porte, étage, contact spécifique..."
+              placeholder={tx.notesPlaceholder}
             />
           </label>
 
           {!configLoading && tariffType === 'order_amount' && (
             <label className="text-sm text-gray-600">
-              Montant commande (CHF)
+              {tx.orderAmount}
               <input
                 className="mt-1 w-full rounded border px-2 py-1"
                 type="number"
@@ -1115,14 +1218,14 @@ export default function ShopReport() {
                 required
               />
               <span className="text-xs text-gray-400">
-                Obligatoire pour les commerces au tarif palier.
+                {tx.orderAmountHint}
               </span>
             </label>
           )}
 
           {!configLoading && tariffType === 'bags' && (
             <label className="text-sm text-gray-600">
-              Valeur des courses (CHF)
+              {tx.basketValue}
               <input
                 className="mt-1 w-full rounded border px-2 py-1"
                 type="number"
@@ -1130,10 +1233,10 @@ export default function ShopReport() {
                 name="basket_value"
                 value={formState.basket_value || ''}
                 onChange={handleChange}
-                placeholder="Optionnel"
+                placeholder={tx.optional}
               />
               <span className="text-xs text-gray-400">
-                Utilise pour la rentabilite, non facture.
+                {tx.profitabilityHint}
               </span>
             </label>
           )}
@@ -1145,23 +1248,23 @@ export default function ShopReport() {
           )}
           {previewLoading && (
             <div className="md:col-span-2 text-sm text-gray-500">
-              Calcul du montant...
+              {tx.calculationInProgress}
             </div>
           )}
           {preview && !previewLoading && (
             <div className="md:col-span-2 rounded border bg-gray-50 px-3 py-2 text-sm text-gray-700">
-              <div className="font-medium">Estimation</div>
+              <div className="font-medium">{tx.estimate}</div>
               <div>
-                Total livraison :{' '}
+                {tx.totalDelivery} :{' '}
                 <span className="font-semibold">
-                  {formatCHF(Number(preview.total_price))}
+                  {formatCHF(Number(preview.total_price), localeTag)}
                 </span>
               </div>
-              <div>Part client : {formatCHF(Number(preview.share_client))}</div>
-              <div>Part commune : {formatCHF(Number(preview.share_city))}</div>
+              <div>{tx.clientPart} : {formatCHF(Number(preview.share_client), localeTag)}</div>
+              <div>{tx.cityPart} : {formatCHF(Number(preview.share_city), localeTag)}</div>
               <div>
-                Part entreprise regionale :{' '}
-                {formatCHF(Number(preview.share_admin_region || 0))}
+                {tx.regionPart} :{' '}
+                {formatCHF(Number(preview.share_admin_region || 0), localeTag)}
               </div>
             </div>
           )}
@@ -1172,10 +1275,10 @@ export default function ShopReport() {
               disabled={submitting || !preview || isFrozen || configLoading || Boolean(configError)}
             >
               {submitting
-                ? 'Enregistrement...'
+                ? tx.creating
                 : editingDeliveryId
-                  ? 'Enregistrer les modifications'
-                  : 'Creer la livraison'}
+                  ? tx.saveChanges
+                  : tx.createDelivery}
             </button>
             {editingDeliveryId && (
               <button
@@ -1183,7 +1286,7 @@ export default function ShopReport() {
                 onClick={handleCancelEdit}
                 className="rounded border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
               >
-                Annuler la modification
+                {tx.editCancel}
               </button>
             )}
           </div>
@@ -1191,9 +1294,9 @@ export default function ShopReport() {
       </section >
 
       <section className="space-y-4">
-        <div className="text-sm font-medium text-gray-700">Stats du mois</div>
+        <div className="text-sm font-medium text-gray-700">{tx.monthlyStats}</div>
         {statsLoading ? (
-          <div className="text-sm text-gray-500">Chargement...</div>
+          <div className="text-sm text-gray-500">{tx.loading}</div>
         ) : statsError ? (
           <div className="text-sm text-red-600">{statsError}</div>
         ) : shopStats ? (
@@ -1208,23 +1311,23 @@ export default function ShopReport() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="rounded-xl border bg-white p-4 shadow-sm">
                   <div className="text-sm text-gray-500">Montant facture (TTC)</div>
-                  <div className="text-2xl font-semibold">{formatCHF(shopStats.total_volume_chf)}</div>
-                  <div className="text-xs text-gray-400">Part entreprise regionale</div>
+                  <div className="text-2xl font-semibold">{formatCHF(shopStats.total_volume_chf, localeTag)}</div>
+                  <div className="text-xs text-gray-400">{tx.regionPart}</div>
                 </div>
                 <div className="rounded-xl border bg-white p-4 shadow-sm">
                   <div className="text-sm text-gray-500">Montant des courses</div>
                   <div className="text-2xl font-semibold">
-                    {formatCHF(shopStats.total_basket_value_chf)}
+                    {formatCHF(shopStats.total_basket_value_chf, localeTag)}
                   </div>
                   <div className="text-xs text-gray-400">
-                    Panier moyen: {formatCHF(shopStats.average_basket_value_chf)}
+                    {tx.basketAvg}: {formatCHF(shopStats.average_basket_value_chf, localeTag)}
                   </div>
                 </div>
                 <div className="rounded-xl border bg-white p-4 shadow-sm">
                   <div className="text-sm text-gray-500">Livraisons (ce mois)</div>
                   <div className="text-2xl font-semibold">{shopStats.total_deliveries}</div>
                   <div className="text-xs text-gray-400">
-                    {formatPercent(shopStats.deliveries_change_pct)} vs {shopStats.previous_month}
+                    {formatPercent(shopStats.deliveries_change_pct)} {tx.vs} {shopStats.previous_month}
                   </div>
                 </div>
               </div>
@@ -1251,7 +1354,7 @@ export default function ShopReport() {
                 <div className="rounded-xl border bg-white p-4 shadow-sm">
                   <div className="text-sm text-gray-500">Prise en charge CMS</div>
                   <div className="text-2xl font-semibold">
-                    {formatCHF(shopStats.cms_subsidy_chf)}
+                    {formatCHF(shopStats.cms_subsidy_chf, localeTag)}
                   </div>
                   <div className="text-xs text-gray-400">Participation Velocite</div>
                 </div>
@@ -1289,7 +1392,7 @@ export default function ShopReport() {
                       <div key={client.client_id} className="rounded border px-3 py-2">
                         <div className="text-sm font-medium">{client.client_name}</div>
                         <div className="text-xs text-gray-500">
-                          {client.deliveries} livraisons - {client.bags} sacs
+                          {client.deliveries} {tx.monthlyDeliveries.toLowerCase()} - {client.bags} {tx.bags.toLowerCase()}
                         </div>
                       </div>
                     ))}
@@ -1331,7 +1434,7 @@ export default function ShopReport() {
                     {shopStats.peak_day_deliveries || 0}
                   </div>
                   <div className="text-xs text-gray-400">
-                    {shopStats.peak_day ? formatDate(shopStats.peak_day) : 'n/a'}
+                    {shopStats.peak_day ? formatDateDisplay(shopStats.peak_day, localeTag) : tx.na}
                   </div>
                 </div>
               </div>
@@ -1342,11 +1445,11 @@ export default function ShopReport() {
 
       <section className="space-y-2">
         <h2 className="text-sm font-medium text-gray-700">
-          Historique des livraisons
+          {tx.history}
         </h2>
 
         {loading ? (
-          <div className="text-sm text-gray-500">Chargement...</div>
+          <div className="text-sm text-gray-500">{tx.loading}</div>
         ) : error ? (
           <div className="text-sm text-red-600">{error}</div>
         ) : deliveries && deliveries.length > 0 ? (
@@ -1359,11 +1462,11 @@ export default function ShopReport() {
                       key={col}
                       className="border px-3 py-2 text-left font-medium text-gray-700"
                     >
-                      {TABLE_LABELS[col] ?? col}
+                      {tableLabels[col] ?? col}
                     </th>
                   ))}
                   <th className="border px-3 py-2 text-left font-medium text-gray-700">
-                    Action
+                    {tx.action}
                   </th>
                 </tr>
               </thead>
@@ -1376,17 +1479,17 @@ export default function ShopReport() {
                       const value = row[col]
                       const cell =
                         col === 'amount_due'
-                          ? formatCHF(isCancelled ? 0 : Number(row.share_admin_region || 0))
+                          ? formatCHF(isCancelled ? 0 : Number(row.share_admin_region || 0), localeTag)
                           : col === 'basket_value'
                             ? isCancelled
-                              ? formatCHF(0)
+                              ? formatCHF(0, localeTag)
                               : row.basket_value === null || row.basket_value === undefined || row.basket_value === ''
                                 ? '-'
-                                : formatCHF(Number(row.basket_value))
+                                : formatCHF(Number(row.basket_value), localeTag)
                           : col === 'status'
-                            ? formatStatus(value)
+                            ? formatStatus(value, locale)
                             : col === 'delivery_date'
-                              ? formatDate(value)
+                              ? formatDateDisplay(value, localeTag)
                               : String(value ?? '')
                       return (
                         <td
@@ -1409,7 +1512,7 @@ export default function ShopReport() {
                               onClick={() => handleEditDelivery(row)}
                               disabled={!canEdit}
                             >
-                              Modifier
+                              {tx.edit}
                             </button>
                             <button
                               type="button"
@@ -1417,7 +1520,7 @@ export default function ShopReport() {
                               onClick={() => handleCancelDelivery(row)}
                               disabled={!canEdit}
                             >
-                              Annuler
+                              {tx.cancelAction}
                             </button>
                           </div>
                         )
@@ -1429,7 +1532,7 @@ export default function ShopReport() {
             </table>
           </div>
         ) : (
-          <div className="text-sm text-gray-500">Aucune livraison.</div>
+          <div className="text-sm text-gray-500">{tx.noDelivery}</div>
         )}
       </section>
 
