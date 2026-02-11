@@ -40,7 +40,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     print("Missing SUPABASE_URL or SUPABASE_ANON_KEY.")
     sys.exit(1)
 
-def test_login(email, password):
+def run_login(email, password):
     url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
     headers = {
         "apikey": SUPABASE_KEY,
@@ -78,6 +78,6 @@ def test_login(email, password):
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:
-        test_login(sys.argv[1], sys.argv[2])
+        run_login(sys.argv[1], sys.argv[2])
     else:
-        test_login("superadmin@dringdring.ch", "password")
+        run_login("superadmin@dringdring.ch", "password")

@@ -45,170 +45,166 @@ def get_client_id(city="Sion"):
             row = cur.fetchone()
         return str(row[0])
 
-print("Fetching Test Data...")
 SHOP_EMAIL = "shop_metropole@dringdring.ch"
 HQ_EMAIL = "migros@dringdring.ch"
-
-SHOP_USER_ID = get_user_id(SHOP_EMAIL)
-HQ_USER_ID = get_user_id(HQ_EMAIL)
-CLIENT_ID = get_client_id("Sion")
-
-print(f"Users found. Shop: {SHOP_USER_ID}, HQ: {HQ_USER_ID}")
-
-# Determine current month for testing
-today = datetime.date.today()
-current_month_str = today.strftime("%Y-%m")
-# Choose a date in the current month
-delivery_date = today.strftime("%Y-%m-%d")
-
-# Clean up existing billing_period for this shop/month to ensure test repeatability
-with conn.cursor() as cur:
-    # Get shop id for the user
-    cur.execute("SELECT shop_id FROM profiles WHERE id = %s", (SHOP_USER_ID,))
-    shop_id = cur.fetchone()[0]
-    
-    # Delete billing period if exists
-    cur.execute("DELETE FROM billing_period WHERE shop_id = %s AND period_month = %s", (shop_id, f"{current_month_str}-01"))
-    
-    # FIX DB DATA: Ensure tariff share has admin_region (missing in seed)
-    # 33.33 + 33.33 + 33.34 = 100. Add admin_region: 0
-    cur.execute(
-        """
-        UPDATE tariff_version 
-        SET share = '{"client": 33.33, "shop": 33.33, "city": 33.34, "admin_region": 0.0}'::jsonb
-        WHERE id = (SELECT tariff_version_id FROM shop WHERE id = %s)
-        """,
-        (shop_id,)
-    )
-
-    pass
-
-# Mock Supabase Storage Upload
-patcher_upload = patch("app.core.billing_processing.upload_pdf_bytes")
-mock_upload = patcher_upload.start()
-mock_upload.return_value = f"shop/{shop_id}/{current_month_str}.pdf"
-
-# Mock JWT Decode
-patcher_jwt = patch("app.core.security.jwt.decode")
-mock_jwt_decode = patcher_jwt.start()
-
-# We don't use dependency_overrides anymore, we Mock the JWT decode logic
 transport = ASGITransport(app=app)
 
-async def run_test():
-    
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        print("\nStarting E2E Billing Verification (Async + JWT Mock)")
-        
-        # 1. Shop creates a delivery
-        print(f"\nStep 1: Login as Shop ({SHOP_EMAIL}) and create delivery")
-        
-        # Configure Mock for Shop User
-        mock_jwt_decode.return_value = {
-            "sub": SHOP_USER_ID,
-            "email": SHOP_EMAIL,
-            "role": "authenticated",
-            "app_metadata": {"role": "shop", "shop_id": str(shop_id)},
-            "user_metadata": {}
-        }
-        
-        payload = {
-            "client_id": CLIENT_ID,
-            "delivery_date": delivery_date,
-            "time_window": "08:00-12:00",
-            "bags": 5,
-            "order_amount": None 
-        }
-        
-        # Must send Authorization header for HTTPBearer to pass
-        headers = {"Authorization": "Bearer mock_token"}
-        
-        res = await client.post("/api/v1/deliveries/shop", json=payload, headers=headers)
-        if res.status_code != 201:
-            print(f"Failed to create delivery: {res.text}")
-            return False
-        print("Delivery created successfully")
 
-        # 2. HQ Views Billing
-        print(f"\nStep 2: Login as HQ ({HQ_EMAIL}) and review billing")
-        
-        # Configure Mock for HQ User
-        # We need to find the HQ ID for this user to be correct? 
-        # Actually security.py extracts hq_id from metadata or profile triggers (Supabase usually handles this)
-        # But get_current_user implementation fetches from token payload.
-        # Let's see get_current_user in security.py. It reads app_metadata/user_metadata.
-        # So I should inject the correct role and ID in the mock payload.
-        
-        # We need the HQ ID.
-        with conn.cursor() as cur:
-             cur.execute("SELECT hq_id FROM profiles WHERE id = %s", (HQ_USER_ID,))
-             hq_id = str(cur.fetchone()[0])
+def prepare_context():
+    print("Fetching Test Data...")
+    shop_user_id = get_user_id(SHOP_EMAIL)
+    hq_user_id = get_user_id(HQ_EMAIL)
+    client_id = get_client_id("Sion")
+    print(f"Users found. Shop: {shop_user_id}, HQ: {hq_user_id}")
 
-        mock_jwt_decode.return_value = {
-            "sub": HQ_USER_ID,
-            "email": HQ_EMAIL,
-            "role": "authenticated",
-            "app_metadata": {"role": "hq", "hq_id": hq_id},
-            "user_metadata": {}
-        }
-        
-        res = await client.get(f"/api/v1/reports/hq-billing?month={current_month_str}", headers=headers)
-        if res.status_code != 200:
-            print(f"Failed to fetch HQ billing: {res.text}")
-            return False
-        
-        data = res.json()
-        shop_row = next((r for r in data["rows"] if r["shop_id"] == str(shop_id)), None)
-        if not shop_row:
-            print("Shop not found in HQ billing report")
-            return False
-        
-        print(f"   Found Shop: {shop_row['shop_name']}")
-        print(f"   Deliveries: {shop_row['total_deliveries']}")
-        print(f"   Status: {'Frozen' if shop_row['is_frozen'] else 'Open'}")
-        
-        # 3. HQ Freezes Period
-        print(f"\nStep 3: HQ freezes the period")
-        res = await client.post(
-            f"/api/v1/deliveries/shop/freeze?shop_id={shop_id}&month={current_month_str}&frozen_comment=AutoTest",
-            headers=headers
+    today = datetime.date.today()
+    current_month_str = today.strftime("%Y-%m")
+    delivery_date = today.strftime("%Y-%m-%d")
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT shop_id FROM profiles WHERE id = %s", (shop_user_id,))
+        row = cur.fetchone()
+        if not row or row[0] is None:
+            raise RuntimeError(f"No shop_id linked to profile {shop_user_id}")
+        shop_id = row[0]
+
+        cur.execute(
+            "DELETE FROM billing_period WHERE shop_id = %s AND period_month = %s",
+            (shop_id, f"{current_month_str}-01"),
         )
-        
-        if res.status_code != 200:
-            print(f"Failed to freeze period: {res.text}")
-            return False
-        
-        json_res = res.json()
-        print(f"Period Frozen. PDF Path: {json_res.get('pdf_path')}")
 
-        # 4. Storage Upload Verification
-        if mock_upload.called:
-            print("Backend attempted to upload PDF to Storage (Mocked)")
-        else:
-            print("Upload was not called!")
-            return False
+        cur.execute(
+            """
+            UPDATE tariff_version
+            SET share = '{"client": 33.33, "shop": 33.33, "city": 33.34, "admin_region": 0.0}'::jsonb
+            WHERE id = (SELECT tariff_version_id FROM shop WHERE id = %s)
+            """,
+            (shop_id,),
+        )
 
-        # 5. Shop tries to create delivery in frozen period
-        print(f"\nStep 4: Shop tries to modify frozen period")
-        
-        # Switch back to Shop User
-        mock_jwt_decode.return_value = {
-            "sub": SHOP_USER_ID,
-            "email": SHOP_EMAIL,
-            "role": "authenticated",
-            "app_metadata": {"role": "shop", "shop_id": str(shop_id)},
-            "user_metadata": {}
-        }
+    return {
+        "shop_user_id": shop_user_id,
+        "hq_user_id": hq_user_id,
+        "client_id": client_id,
+        "shop_id": shop_id,
+        "current_month_str": current_month_str,
+        "delivery_date": delivery_date,
+    }
 
-        res = await client.post("/api/v1/deliveries/shop", json=payload, headers=headers)
-        if res.status_code == 409:
-            print("System successfully BLOCKED creation (409 Conflict)")
-        else:
-            print(f"Unexpected status code: {res.status_code}. Should be 409.")
-            return False
+async def run_test():
+    ctx = prepare_context()
+    shop_user_id = ctx["shop_user_id"]
+    hq_user_id = ctx["hq_user_id"]
+    client_id = ctx["client_id"]
+    shop_id = ctx["shop_id"]
+    current_month_str = ctx["current_month_str"]
+    delivery_date = ctx["delivery_date"]
 
-        print("\nALL CHECKS PASSED!")
-        return True
+    patcher_upload = patch("app.core.billing_processing.upload_pdf_bytes")
+    patcher_jwt = patch("app.core.security.jwt.decode")
+    mock_upload = patcher_upload.start()
+    mock_jwt_decode = patcher_jwt.start()
+    mock_upload.return_value = f"shop/{shop_id}/{current_month_str}.pdf"
+
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            print("\nStarting E2E Billing Verification (Async + JWT Mock)")
+
+            print(f"\nStep 1: Login as Shop ({SHOP_EMAIL}) and create delivery")
+            mock_jwt_decode.return_value = {
+                "sub": shop_user_id,
+                "email": SHOP_EMAIL,
+                "role": "authenticated",
+                "app_metadata": {"role": "shop", "shop_id": str(shop_id)},
+                "user_metadata": {},
+            }
+
+            payload = {
+                "client_id": client_id,
+                "delivery_date": delivery_date,
+                "time_window": "08:00-12:00",
+                "bags": 5,
+                "order_amount": None,
+            }
+            headers = {"Authorization": "Bearer mock_token"}
+
+            res = await client.post("/api/v1/deliveries/shop", json=payload, headers=headers)
+            if res.status_code != 201:
+                print(f"Failed to create delivery: {res.text}")
+                return False
+            print("Delivery created successfully")
+
+            print(f"\nStep 2: Login as HQ ({HQ_EMAIL}) and review billing")
+            with conn.cursor() as cur:
+                cur.execute("SELECT hq_id FROM profiles WHERE id = %s", (hq_user_id,))
+                hq_row = cur.fetchone()
+                if not hq_row or hq_row[0] is None:
+                    print(f"No hq_id linked to profile {hq_user_id}")
+                    return False
+                hq_id = str(hq_row[0])
+
+            mock_jwt_decode.return_value = {
+                "sub": hq_user_id,
+                "email": HQ_EMAIL,
+                "role": "authenticated",
+                "app_metadata": {"role": "hq", "hq_id": hq_id},
+                "user_metadata": {},
+            }
+
+            res = await client.get(f"/api/v1/reports/hq-billing?month={current_month_str}", headers=headers)
+            if res.status_code != 200:
+                print(f"Failed to fetch HQ billing: {res.text}")
+                return False
+
+            data = res.json()
+            shop_row = next((r for r in data["rows"] if r["shop_id"] == str(shop_id)), None)
+            if not shop_row:
+                print("Shop not found in HQ billing report")
+                return False
+
+            print(f"   Found Shop: {shop_row['shop_name']}")
+            print(f"   Deliveries: {shop_row['total_deliveries']}")
+            print(f"   Status: {'Frozen' if shop_row['is_frozen'] else 'Open'}")
+
+            print("\nStep 3: HQ freezes the period")
+            res = await client.post(
+                f"/api/v1/deliveries/shop/freeze?shop_id={shop_id}&month={current_month_str}&frozen_comment=AutoTest",
+                headers=headers,
+            )
+            if res.status_code != 200:
+                print(f"Failed to freeze period: {res.text}")
+                return False
+
+            json_res = res.json()
+            print(f"Period Frozen. PDF Path: {json_res.get('pdf_path')}")
+
+            if mock_upload.called:
+                print("Backend attempted to upload PDF to Storage (Mocked)")
+            else:
+                print("Upload was not called!")
+                return False
+
+            print("\nStep 4: Shop tries to modify frozen period")
+            mock_jwt_decode.return_value = {
+                "sub": shop_user_id,
+                "email": SHOP_EMAIL,
+                "role": "authenticated",
+                "app_metadata": {"role": "shop", "shop_id": str(shop_id)},
+                "user_metadata": {},
+            }
+
+            res = await client.post("/api/v1/deliveries/shop", json=payload, headers=headers)
+            if res.status_code == 409:
+                print("System successfully BLOCKED creation (409 Conflict)")
+            else:
+                print(f"Unexpected status code: {res.status_code}. Should be 409.")
+                return False
+
+            print("\nALL CHECKS PASSED!")
+            return True
+    finally:
+        patcher_upload.stop()
+        patcher_jwt.stop()
 
 if __name__ == "__main__":
     try:
@@ -221,6 +217,4 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
     finally:
-        patcher_upload.stop()
-        patcher_jwt.stop()
         conn.close()
