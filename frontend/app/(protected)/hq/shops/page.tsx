@@ -68,7 +68,7 @@ export default function HQShopsPage() {
   const shopsWithContact = shops.filter(
     (shop) => Boolean(String(shop.contact_person ?? '').trim() || String(shop.phone ?? '').trim())
   ).length
-  const subtitle = t('hq.shops.subtitle').replace('{count}', String(shops.length))
+  const subtitle = t('hq.shops.subtitle', { count: shops.length })
 
   return (
     <div className="space-y-6 p-8">
