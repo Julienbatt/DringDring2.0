@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 function normalizeNextPath(nextValue: string | null): string {
   if (!nextValue) return '/dashboard'
@@ -12,6 +13,7 @@ function normalizeNextPath(nextValue: string | null): string {
 export default function AuthCallbackPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLanguage()
 
   useEffect(() => {
     let mounted = true
@@ -91,7 +93,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <div className="rounded-lg border bg-white px-6 py-5 text-sm text-slate-600 shadow-sm">
-        Validation de votre lien...
+        {t('auth.callback.validating')}
       </div>
     </div>
   )

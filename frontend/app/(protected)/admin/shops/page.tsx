@@ -58,7 +58,7 @@ export default function ShopsPage() {
         } finally {
             setLoading(false)
         }
-    }, [session, adminContextRegion])
+    }, [session, adminContextRegion, t])
 
     useEffect(() => {
         if (session?.access_token) {

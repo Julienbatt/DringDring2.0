@@ -95,7 +95,7 @@ export default function SettingsPage() {
         return () => {
             isActive = false
         }
-    }, [user?.role, vatMonth])
+    }, [user?.role, vatMonth, t])
 
     useEffect(() => {
         if (user?.role !== 'admin_region') return
@@ -139,7 +139,7 @@ export default function SettingsPage() {
         return () => {
             isActive = false
         }
-    }, [user?.role])
+    }, [user?.role, t])
 
     useEffect(() => {
         if (user?.role !== 'admin_region') return
@@ -183,7 +183,7 @@ export default function SettingsPage() {
         return () => {
             isActive = false
         }
-    }, [user?.role])
+    }, [user?.role, t])
 
     const handlePasswordUpdate = async (e: FormEvent) => {
         e.preventDefault()
@@ -565,6 +565,7 @@ export default function SettingsPage() {
                                     value={vatMonth}
                                     onChange={(e) => setVatMonth(e.target.value)}
                                     className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none"
+                                    pickerAriaLabel={t('common.openCalendar')}
                                 />
                                 <p className="mt-1 text-xs text-slate-400">
                                     {vatLoading ? t('common.loading') : t('settings.vat.monthHint')}

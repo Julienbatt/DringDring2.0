@@ -103,7 +103,7 @@ function extractFilename(res: Response) {
 }
 
 export default function CityReport() {
-  const { locale } = useLanguage()
+  const { locale, t } = useLanguage()
   const localeTag =
     locale === 'de'
       ? 'de-CH'
@@ -112,65 +112,68 @@ export default function CityReport() {
         : locale === 'en'
           ? 'en-CH'
           : 'fr-CH'
-  const tx = {
-    title: locale === 'de' ? 'Abrechnung - Partnergemeinde' : locale === 'it' ? 'Fatturazione - Comune partner' : locale === 'en' ? 'Billing - Partner city' : 'Facturation - Commune partenaire',
-    period: locale === 'de' ? 'Zeitraum' : locale === 'it' ? 'Periodo' : locale === 'en' ? 'Period' : 'Periode',
-    loading: locale === 'de' ? 'Monatliche Abrechnung wird geladen...' : locale === 'it' ? 'Caricamento della fatturazione mensile...' : locale === 'en' ? 'Loading monthly billing...' : 'Chargement de la facturation mensuelle...',
-    noDataTitle: locale === 'de' ? 'Keine Daten fur' : locale === 'it' ? 'Nessun dato per' : locale === 'en' ? 'No data for' : 'Aucune donnee sur',
-    noDataBody: locale === 'de' ? 'Kein konsolidierter Rechnungsfluss fur diesen Zeitraum.' : locale === 'it' ? 'Nessun flusso fatturato consolidato per questo periodo.' : locale === 'en' ? 'No consolidated billing flow for this period.' : 'Aucun flux facture n\'est disponible pour cette periode.',
-    previousMonth: locale === 'de' ? 'Vorherigen Monat anzeigen' : locale === 'it' ? 'Vedi mese precedente' : locale === 'en' ? 'View previous month' : 'Voir le mois precedent',
-    openBilling: locale === 'de' ? 'Abrechnungsansicht offnen' : locale === 'it' ? 'Apri vista fatturazione' : locale === 'en' ? 'Open billing view' : 'Ouvrir la vue facturation',
-    budgetVolume: locale === 'de' ? 'Budget & Volumen' : locale === 'it' ? 'Budget e volume' : locale === 'en' ? 'Budget & volume' : 'Budget & volume',
-    financialImpact: locale === 'de' ? 'Finanzieller Impact' : locale === 'it' ? 'Impatto finanziario' : locale === 'en' ? 'Financial impact' : 'Impact financier',
-    municipalSubsidy: locale === 'de' ? 'Gemeindesubvention' : locale === 'it' ? 'Sovvenzione comunale' : locale === 'en' ? 'Municipal subsidy' : 'Subvention communale',
-    totalVolume: locale === 'de' ? 'Gesamtvolumen' : locale === 'it' ? 'Volume totale' : locale === 'en' ? 'Total volume' : 'Volume total',
-    deliveries: locale === 'de' ? 'Lieferungen' : locale === 'it' ? 'Consegne' : locale === 'en' ? 'Deliveries' : 'Livraisons',
-    socialImpact: locale === 'de' ? 'Sozialer Impact' : locale === 'it' ? 'Impatto sociale' : locale === 'en' ? 'Social impact' : 'Public & social',
-    cmsImpact: locale === 'de' ? 'CMS-Impact' : locale === 'it' ? 'Impatto CMS' : locale === 'en' ? 'CMS impact' : 'Impact CMS',
-    loadingShort: locale === 'de' ? 'Wird geladen...' : locale === 'it' ? 'Caricamento...' : locale === 'en' ? 'Loading...' : 'Chargement...',
-    cmsDeliveries: locale === 'de' ? 'CMS-Lieferungen' : locale === 'it' ? 'Consegne CMS' : locale === 'en' ? 'CMS deliveries' : 'Livraisons CMS',
-    cmsShare: locale === 'de' ? 'CMS-Anteil' : locale === 'it' ? '% consegne CMS' : locale === 'en' ? '% CMS deliveries' : '% livraisons CMS',
-    cmsCoverage: locale === 'de' ? 'CMS-Ubernahme' : locale === 'it' ? 'Copertura CMS' : locale === 'en' ? 'CMS coverage' : 'Prise en charge CMS',
-    priorityAudience: locale === 'de' ? 'Prioritares Publikum' : locale === 'it' ? 'Pubblico prioritario' : locale === 'en' ? 'Priority audience' : 'Public prioritaire',
-    serviceCoverage: locale === 'de' ? 'Service & Abdeckung' : locale === 'it' ? 'Servizio e copertura' : locale === 'en' ? 'Service & coverage' : 'Service & couverture',
-    paceReach: locale === 'de' ? 'Rhythmus & Reichweite' : locale === 'it' ? 'Ritmo e copertura' : locale === 'en' ? 'Pace & reach' : 'Rythme & reach',
-    uniqueBeneficiaries: locale === 'de' ? 'Einmalige Begunstigte' : locale === 'it' ? 'Beneficiari unici' : locale === 'en' ? 'Unique beneficiaries' : 'Beneficiaires uniques',
-    households: locale === 'de' ? 'Betreute Haushalte' : locale === 'it' ? 'Nuclei serviti' : locale === 'en' ? 'Households served' : 'Menages servis',
-    activeShops: locale === 'de' ? 'Aktive Geschafte' : locale === 'it' ? 'Negozi attivi' : locale === 'en' ? 'Active shops' : 'Commerces actifs',
-    avgBags: locale === 'de' ? 'Durchschnitt Sacke' : locale === 'it' ? 'Borse medie' : locale === 'en' ? 'Average bags' : 'Sacs moyens',
-    activeDays: locale === 'de' ? 'Aktive Tage' : locale === 'it' ? 'Giorni attivi' : locale === 'en' ? 'Active days' : 'Jours actifs',
-    perDay: locale === 'de' ? 'Lieferungen / Tag' : locale === 'it' ? 'Consegne / giorno' : locale === 'en' ? 'Deliveries / day' : 'Livraisons / jour',
-    efficiency: locale === 'de' ? 'Effizienz' : locale === 'it' ? 'Efficienza' : locale === 'en' ? 'Efficiency' : 'Efficience',
-    averageCost: locale === 'de' ? 'Durchschnittskosten' : locale === 'it' ? 'Costo medio' : locale === 'en' ? 'Average cost' : 'Cout moyen',
-    subsidyPerDelivery: locale === 'de' ? 'Subvention / Lieferung' : locale === 'it' ? 'Sovvenzione / consegna' : locale === 'en' ? 'Subsidy / delivery' : 'Subvention / livraison',
-    subsidyPerBeneficiary: locale === 'de' ? 'Subvention / Begunstigter' : locale === 'it' ? 'Sovvenzione / beneficiario' : locale === 'en' ? 'Subsidy / beneficiary' : 'Subvention / beneficiaire',
-    monthlyAverage: locale === 'de' ? 'Monatsdurchschnitt' : locale === 'it' ? 'Media mensile' : locale === 'en' ? 'Monthly average' : 'Moyenne du mois',
-    envImpact: locale === 'de' ? 'Umweltimpact' : locale === 'it' ? 'Impatto ambientale' : locale === 'en' ? 'Environmental impact' : 'Impact environnemental',
-    softMobility: locale === 'de' ? 'Sanfte Mobilitat' : locale === 'it' ? 'Mobilita dolce' : locale === 'en' ? 'Soft mobility' : 'Mobilite douce',
-    bikeKm: locale === 'de' ? 'Km mit Velo (Monat)' : locale === 'it' ? 'Km in bici (mese)' : locale === 'en' ? 'Bike km (month)' : 'Km a velo (mois)',
-    co2Saved: locale === 'de' ? 'CO2 eingespart (kg)' : locale === 'it' ? 'CO2 risparmiata (kg)' : locale === 'en' ? 'CO2 saved (kg)' : 'CO2 economise (kg)',
-    detailByShop: locale === 'de' ? 'Detail nach Geschaft' : locale === 'it' ? 'Dettaglio per negozio' : locale === 'en' ? 'Detail by shop' : 'Detail par commerce',
-    exportCsv: locale === 'de' ? 'CSV exportieren' : locale === 'it' ? 'Esporta CSV' : locale === 'en' ? 'Export CSV' : 'Exporter CSV',
-    downloadPdf: locale === 'de' ? 'PDF herunterladen' : locale === 'it' ? 'Scarica PDF' : locale === 'en' ? 'Download PDF' : 'Telecharger PDF',
-    noDetail: locale === 'de' ? 'Keine Details verfugbar.' : locale === 'it' ? 'Nessun dettaglio disponibile.' : locale === 'en' ? 'No details available.' : 'Aucun detail disponible.',
-    monthPrevAria: locale === 'de' ? 'Vorheriger Monat' : locale === 'it' ? 'Mese precedente' : locale === 'en' ? 'Previous month' : 'Mois precedent',
-    monthNextAria: locale === 'de' ? 'Nachster Monat' : locale === 'it' ? 'Mese successivo' : locale === 'en' ? 'Next month' : 'Mois suivant',
-    yearPrevAria: locale === 'de' ? 'Vorheriges Jahr' : locale === 'it' ? 'Anno precedente' : locale === 'en' ? 'Previous year' : 'Annee precedente',
-    yearNextAria: locale === 'de' ? 'Nächstes Jahr' : locale === 'it' ? 'Anno successivo' : locale === 'en' ? 'Next year' : 'Annee suivante',
-    partnerCity: locale === 'de' ? 'Partnergemeinde' : locale === 'it' ? 'Comune partner' : locale === 'en' ? 'Partner city' : 'Commune partenaire',
-    participationVelocite: locale === 'de' ? 'Beteiligung Velocite' : locale === 'it' ? 'Partecipazione Velocite' : locale === 'en' ? 'Velocite share' : 'Participation Velocite',
-    thisMonth: locale === 'de' ? 'Diesen Monat' : locale === 'it' ? 'Questo mese' : locale === 'en' ? 'This month' : 'Ce mois',
-    monthInProgress: locale === 'de' ? 'Laufender Monat' : locale === 'it' ? 'Mese in corso' : locale === 'en' ? 'Current month' : 'Mois en cours',
-    activeDaysHint: locale === 'de' ? 'Aktive Tage' : locale === 'it' ? 'Giorni attivi' : locale === 'en' ? 'Active days' : 'Jours actifs',
-    totalBags: locale === 'de' ? 'Total Sacke' : locale === 'it' ? 'Totale borse' : locale === 'en' ? 'Total bags' : 'Total sacs',
-    estimateRoundTrip: locale === 'de' ? 'Hin- und Ruckweg Schatzung' : locale === 'it' ? 'Stima andata-ritorno' : locale === 'en' ? 'Round-trip estimate' : 'Estimation aller-retour',
-    carBase: locale === 'de' ? 'Basis Auto 93.6 g/km' : locale === 'it' ? 'Base auto 93.6 g/km' : locale === 'en' ? 'Car baseline 93.6 g/km' : 'Base voiture 93.6 g/km',
+    const tx = {
+    title: t('city.report.title'),
+    period: t('city.report.period'),
+    loading: t('city.report.loading'),
+    noDataTitle: t('city.report.noDataTitle'),
+    noDataBody: t('city.report.noDataBody'),
+    previousMonth: t('city.report.previousMonth'),
+    openBilling: t('city.report.openBilling'),
+    budgetVolume: t('city.report.budgetVolume'),
+    financialImpact: t('city.report.financialImpact'),
+    municipalSubsidy: t('city.report.municipalSubsidy'),
+    totalVolume: t('city.report.totalVolume'),
+    deliveries: t('city.report.deliveries'),
+    socialImpact: t('city.report.socialImpact'),
+    cmsImpact: t('city.report.cmsImpact'),
+    loadingShort: t('city.report.loadingShort'),
+    cmsDeliveries: t('city.report.cmsDeliveries'),
+    cmsDeliveriesHint: t('city.report.cmsDeliveriesHint'),
+    cmsShare: t('city.report.cmsShare'),
+    cmsShareHint: t('city.report.cmsShareHint'),
+    cmsCoverage: t('city.report.cmsCoverage'),
+    priorityAudience: t('city.report.priorityAudience'),
+    priorityAudienceHint: t('city.report.priorityAudienceHint'),
+    serviceCoverage: t('city.report.serviceCoverage'),
+    paceReach: t('city.report.paceReach'),
+    uniqueBeneficiaries: t('city.report.uniqueBeneficiaries'),
+    households: t('city.report.households'),
+    activeShops: t('city.report.activeShops'),
+    avgBags: t('city.report.avgBags'),
+    activeDays: t('city.report.activeDays'),
+    perDay: t('city.report.perDay'),
+    efficiency: t('city.report.efficiency'),
+    averageCost: t('city.report.averageCost'),
+    subsidyPerDelivery: t('city.report.subsidyPerDelivery'),
+    subsidyPerBeneficiary: t('city.report.subsidyPerBeneficiary'),
+    monthlyAverage: t('city.report.monthlyAverage'),
+    envImpact: t('city.report.envImpact'),
+    softMobility: t('city.report.softMobility'),
+    bikeKm: t('city.report.bikeKm'),
+    co2Saved: t('city.report.co2Saved'),
+    detailByShop: t('city.report.detailByShop'),
+    exportCsv: t('city.report.exportCsv'),
+    downloadPdf: t('city.report.downloadPdf'),
+    noDetail: t('city.report.noDetail'),
+    monthPrevAria: t('city.report.monthPrevAria'),
+    monthNextAria: t('city.report.monthNextAria'),
+    yearPrevAria: t('city.report.yearPrevAria'),
+    yearNextAria: t('city.report.yearNextAria'),
+    partnerCity: t('city.report.partnerCity'),
+    participationVelocite: t('city.report.participationVelocite'),
+    thisMonth: t('city.report.thisMonth'),
+    monthInProgress: t('city.report.monthInProgress'),
+    activeDaysHint: t('city.report.activeDaysHint'),
+    totalBags: t('city.report.totalBags'),
+    estimateRoundTrip: t('city.report.estimateRoundTrip'),
+    carBase: t('city.report.carBase'),
   } as const
-  const detailColumnLabels: Record<string, string> = {
-    shop_name: locale === 'de' ? 'Geschaft' : locale === 'it' ? 'Negozio' : locale === 'en' ? 'Shop' : 'Commerce',
+    const detailColumnLabels: Record<string, string> = {
+    shop_name: t('city.report.table.shop_name'),
     total_deliveries: tx.deliveries,
-    total_subvention_due: locale === 'de' ? 'Subvention (CHF)' : locale === 'it' ? 'Sovvenzione (CHF)' : locale === 'en' ? 'Subsidy (CHF)' : 'Subvention (CHF)',
-    total_volume_chf: locale === 'de' ? 'Total CHF' : locale === 'it' ? 'Totale CHF' : locale === 'en' ? 'Total CHF' : 'Total CHF',
+    total_subvention_due: t('city.report.table.total_subvention_due'),
+    total_volume_chf: t('city.report.table.total_volume_chf'),
   }
 
   const { user } = useAuth()
@@ -296,7 +299,7 @@ export default function CityReport() {
   const handleExport = async () => {
     await downloadCsv(
       `/reports/city-billing/export?month=${encodeURIComponent(selectedMonth)}`,
-      locale === 'de' ? 'abrechnung-gemeinde.csv' : locale === 'it' ? 'fatturazione-comune.csv' : locale === 'en' ? 'city-billing.csv' : 'facturation-commune.csv'
+      t('city.report.exportFilename')
     )
   }
 
@@ -306,7 +309,7 @@ export default function CityReport() {
       `/reports/city-monthly-pdf?city_id=${encodeURIComponent(
         cityId
       )}&month=${encodeURIComponent(selectedMonth)}`,
-      `${locale === 'de' ? 'abrechnung-gemeinde' : locale === 'it' ? 'fatturazione-comune' : locale === 'en' ? 'city-billing' : 'facturation-commune'}-${selectedMonth}.pdf`
+      `${t('city.report.pdfFilenamePrefix')}-${selectedMonth}.pdf`
     )
   }
 
@@ -468,7 +471,7 @@ export default function CityReport() {
               <div className="text-sm text-gray-500">{tx.cmsDeliveries}</div>
               <div className="text-2xl font-semibold">{cityStats.cms_deliveries}</div>
               <div className="text-xs text-gray-400">
-                {cityStats.cms_share_pct.toFixed(1)}% des livraisons
+                {tx.cmsDeliveriesHint.replace('{pct}', cityStats.cms_share_pct.toFixed(1))}
               </div>
             </div>
             <div className="rounded-xl border bg-white p-4 shadow-sm">
@@ -476,7 +479,7 @@ export default function CityReport() {
               <div className="text-2xl font-semibold">
                 {cityStats.cms_share_pct.toFixed(1)}%
               </div>
-              <div className="text-xs text-gray-400">Part du total</div>
+              <div className="text-xs text-gray-400">{tx.cmsShareHint}</div>
             </div>
             <div className="rounded-xl border bg-white p-4 shadow-sm">
               <div className="text-sm text-gray-500">{tx.cmsCoverage}</div>
@@ -488,7 +491,7 @@ export default function CityReport() {
             <div className="rounded-xl border bg-white p-4 shadow-sm">
               <div className="text-sm text-gray-500">{tx.priorityAudience}</div>
               <div className="text-2xl font-semibold">{cityStats.cms_unique_clients}</div>
-              <div className="text-xs text-gray-400">Public prioritaire</div>
+              <div className="text-xs text-gray-400">{tx.priorityAudienceHint}</div>
             </div>
           </div>
         ) : null}

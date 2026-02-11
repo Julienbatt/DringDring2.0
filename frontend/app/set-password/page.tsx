@@ -8,10 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export default function SetPasswordPage() {
   const supabase = createClient()
   const router = useRouter()
+  const { t } = useLanguage()
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -42,11 +44,11 @@ export default function SetPasswordPage() {
     e.preventDefault()
 
     if (password.length < 8) {
-      toast.error('Le mot de passe doit contenir au moins 8 caracteres.')
+      toast.error(t('setPassword.error.minLength'))
       return
     }
     if (password !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas.')
+      toast.error(t('setPassword.error.mismatch'))
       return
     }
 
@@ -55,11 +57,11 @@ export default function SetPasswordPage() {
     setLoading(false)
 
     if (error) {
-      toast.error(error.message || 'Impossible de definir le mot de passe.')
+      toast.error(error.message || t('setPassword.error.generic'))
       return
     }
 
-    toast.success('Mot de passe defini. Bienvenue !')
+    toast.success(t('setPassword.success'))
     router.replace('/dashboard')
   }
 
@@ -67,7 +69,7 @@ export default function SetPasswordPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <div className="rounded-lg border bg-white px-6 py-5 text-sm text-slate-600 shadow-sm">
-          Verification de session...
+          {t('setPassword.checkingSession')}
         </div>
       </div>
     )
@@ -77,15 +79,15 @@ export default function SetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Definir votre mot de passe</CardTitle>
+          <CardTitle>{t('setPassword.title')}</CardTitle>
           <CardDescription>
-            Ce mot de passe sera utilise pour vos prochaines connexions.
+            {t('setPassword.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Nouveau mot de passe</Label>
+              <Label htmlFor="password">{t('setPassword.newPassword')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -96,7 +98,7 @@ export default function SetPasswordPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Label htmlFor="confirmPassword">{t('setPassword.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -107,7 +109,7 @@ export default function SetPasswordPage() {
               />
             </div>
             <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={loading}>
-              {loading ? 'Validation...' : 'Enregistrer le mot de passe'}
+              {loading ? t('setPassword.saving') : t('setPassword.save')}
             </Button>
           </form>
         </CardContent>

@@ -92,7 +92,7 @@ async function downloadCsv(path: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-async function downloadPdf(path: string, filename: string) {
+async function downloadPdf(path: string, filename: string, notFrozenMessage: string) {
   const supabase = createClient()
   const { data: sessionData } = await supabase.auth.getSession()
   const session = sessionData.session
@@ -106,7 +106,7 @@ async function downloadPdf(path: string, filename: string) {
   if (!res.ok) {
     const text = await res.text()
     if (res.status === 409 && text.includes('not frozen')) {
-      toast.info('Billing period not frozen for all shops')
+      toast.info(notFrozenMessage)
       return
     }
     throw new Error(`Export failed: ${res.status}`)
@@ -131,7 +131,7 @@ function extractFilename(res: Response) {
 }
 
 export default function HqReport() {
-  const { locale } = useLanguage()
+  const { locale, t } = useLanguage()
   const localeTag =
     locale === 'de'
       ? 'de-CH'
@@ -141,40 +141,94 @@ export default function HqReport() {
           ? 'en-CH'
           : 'fr-CH'
   const tx = {
-    loading: locale === 'de' ? 'Wird geladen...' : locale === 'it' ? 'Caricamento...' : locale === 'en' ? 'Loading...' : 'Chargement...',
-    group: locale === 'de' ? 'Gruppe' : locale === 'it' ? 'Gruppo' : locale === 'en' ? 'Group' : 'Groupe',
-    dashboardTag: locale === 'de' ? 'HQ Dashboard' : locale === 'it' ? 'Dashboard HQ' : locale === 'en' ? 'HQ dashboard' : 'Tableau de bord HQ',
-    title: locale === 'de' ? 'Abrechnung und Impact' : locale === 'it' ? 'Fatturazione e impatto' : locale === 'en' ? 'Billing & impact' : 'Facturation & impact',
-    period: locale === 'de' ? 'Zeitraum' : locale === 'it' ? 'Periodo' : locale === 'en' ? 'Period' : 'Periode',
-    region: locale === 'de' ? 'Region' : locale === 'it' ? 'Regione' : locale === 'en' ? 'Region' : 'Region',
-    allRegions: locale === 'de' ? 'Alle Regionen' : locale === 'it' ? 'Tutte le regioni' : locale === 'en' ? 'All regions' : 'Toutes regions',
-    exportCsv: locale === 'de' ? 'CSV exportieren' : locale === 'it' ? 'Esporta CSV' : locale === 'en' ? 'Export CSV' : 'Exporter CSV',
-    groupPdf: locale === 'de' ? 'Gruppen-PDF' : locale === 'it' ? 'PDF gruppo' : locale === 'en' ? 'Group PDF' : 'PDF groupe',
-    copySummary: locale === 'de' ? 'Zusammenfassung kopieren' : locale === 'it' ? 'Copia riepilogo' : locale === 'en' ? 'Copy summary' : 'Copier resume',
-    summaryCopied: locale === 'de' ? 'Zusammenfassung kopiert' : locale === 'it' ? 'Riepilogo copiato' : locale === 'en' ? 'Summary copied' : 'Resume copie',
-    summaryCopyError: locale === 'de' ? 'Kopieren unmoglich' : locale === 'it' ? 'Copia non disponibile' : locale === 'en' ? 'Copy failed' : 'Copie impossible',
-    noDataTitle: locale === 'de' ? 'Keine konsolidierten Daten diesen Monat' : locale === 'it' ? 'Nessun dato consolidato questo mese' : locale === 'en' ? 'No consolidated data this month' : 'Aucune donnee consolidee ce mois',
-    noDataBody: locale === 'de' ? 'Volumen erscheinen sobald Lieferungen konsolidiert werden.' : locale === 'it' ? 'I volumi appariranno appena le consegne saranno consolidate.' : locale === 'en' ? 'Volumes will appear once deliveries are consolidated.' : 'Les volumes apparaitront des que des livraisons seront consolidees.',
-    previousMonth: locale === 'de' ? 'Vorherigen Monat anzeigen' : locale === 'it' ? 'Vedi mese precedente' : locale === 'en' ? 'View previous month' : 'Voir le mois precedent',
-    viewShops: locale === 'de' ? 'Geschafte anzeigen' : locale === 'it' ? 'Vedi negozi' : locale === 'en' ? 'View shops' : 'Voir les commerces',
-    deliveries: locale === 'de' ? 'Lieferungen' : locale === 'it' ? 'Consegne' : locale === 'en' ? 'Deliveries' : 'Livraisons',
-    detailByShop: locale === 'de' ? 'Details nach Geschaft' : locale === 'it' ? 'Dettaglio per negozio' : locale === 'en' ? 'Detail by shop' : 'Detail par commerce',
-    noDetail: locale === 'de' ? 'Keine Details verfugbar.' : locale === 'it' ? 'Nessun dettaglio disponibile.' : locale === 'en' ? 'No details available.' : 'Aucun detail disponible.',
-    downloadPdf: locale === 'de' ? 'PDF herunterladen' : locale === 'it' ? 'Scarica PDF' : locale === 'en' ? 'Download PDF' : 'Telecharger PDF',
-    all: locale === 'de' ? 'Alle' : locale === 'it' ? 'Tutti' : locale === 'en' ? 'All' : 'Tous',
-    monthPrevAria: locale === 'de' ? 'Vorheriger Monat' : locale === 'it' ? 'Mese precedente' : locale === 'en' ? 'Previous month' : 'Mois precedent',
-    monthNextAria: locale === 'de' ? 'Nachster Monat' : locale === 'it' ? 'Mese successivo' : locale === 'en' ? 'Next month' : 'Mois suivant',
-    yearPrevAria: locale === 'de' ? 'Vorheriges Jahr' : locale === 'it' ? 'Anno precedente' : locale === 'en' ? 'Previous year' : 'Annee precedente',
-    yearNextAria: locale === 'de' ? 'Nachstes Jahr' : locale === 'it' ? 'Anno successivo' : locale === 'en' ? 'Next year' : 'Annee suivante',
+    loading: t('hq.report.loading'),
+    group: t('hq.report.group'),
+    dashboardTag: t('hq.report.dashboardTag'),
+    title: t('hq.report.title'),
+    period: t('hq.report.period'),
+    region: t('hq.report.region'),
+    allRegions: t('hq.report.allRegions'),
+    exportCsv: t('hq.report.exportCsv'),
+    groupPdf: t('hq.report.groupPdf'),
+    copySummary: t('hq.report.copySummary'),
+    summaryCopied: t('hq.report.summaryCopied'),
+    summaryCopyError: t('hq.report.summaryCopyError'),
+    na: t('hq.report.na'),
+    deliveriesSuffix: t('hq.report.deliveriesSuffix'),
+    noDataTitle: t('hq.report.noDataTitle'),
+    noDataBody: t('hq.report.noDataBody'),
+    previousMonth: t('hq.report.previousMonth'),
+    viewShops: t('hq.report.viewShops'),
+    deliveries: t('hq.report.deliveries'),
+    detailByShop: t('hq.report.detailByShop'),
+    noDetail: t('hq.report.noDetail'),
+    downloadPdf: t('hq.report.downloadPdf'),
+    all: t('hq.report.all'),
+    monthPrevAria: t('hq.report.monthPrevAria'),
+    monthNextAria: t('hq.report.monthNextAria'),
+    yearPrevAria: t('hq.report.yearPrevAria'),
+    yearNextAria: t('hq.report.yearNextAria'),
+    financialSubtitle: t('hq.report.financialSubtitle'),
+    financialEngaged: t('hq.report.financialEngaged'),
+    totalOrdersValue: t('hq.report.totalOrdersValue'),
+    operationsCompleted: t('hq.report.operationsCompleted'),
+    subventionPerDelivery: t('hq.report.subventionPerDelivery'),
+    avgCostPerService: t('hq.report.avgCostPerService'),
+    socialTitle: t('hq.report.socialTitle'),
+    socialVolumeHint: t('hq.report.socialVolumeHint'),
+    cmsShareLabel: t('hq.report.cmsShareLabel'),
+    cmsShareHint: t('hq.report.cmsShareHint'),
+    cmsLabel: t('hq.report.cmsLabel'),
+    cmsCoverageLabel: t('hq.report.cmsCoverageLabel'),
+    cmsCoverageHint: t('hq.report.cmsCoverageHint'),
+    serviceTitle: t('hq.report.serviceTitle'),
+    serviceSubtitle: t('hq.report.serviceSubtitle'),
+    clientsServed: t('hq.report.clientsServed'),
+    householdsSupported: t('hq.report.householdsSupported'),
+    activeShopsLabel: t('hq.report.activeShopsLabel'),
+    partnersEngaged: t('hq.report.partnersEngaged'),
+    coveredCitiesLabel: t('hq.report.coveredCitiesLabel'),
+    networkLabel: t('hq.report.networkLabel'),
+    deliveriesPerDayLabel: t('hq.report.deliveriesPerDayLabel'),
+    evolutionShort: t('hq.report.evolutionShort'),
+    regionViewTitle: t('hq.report.regionViewTitle'),
+    regionDeliveries: t('hq.report.regionDeliveries'),
+    regionSubvention: t('hq.report.regionSubvention'),
+    regionVolume: t('hq.report.regionVolume'),
+    envCo2Title: t('hq.report.envCo2Title'),
+    envKmTitle: t('hq.report.envKmTitle'),
+    envRoundTrip: t('hq.report.envRoundTrip'),
+    envBagsTitle: t('hq.report.envBagsTitle'),
+    envBagsAvg: t('hq.report.envBagsAvg'),
+    envBasketAvg: t('hq.report.envBasketAvg'),
+    envValuePerDelivery: t('hq.report.envValuePerDelivery'),
+    backToGlobal: t('hq.report.backToGlobal'),
+    billingNotFrozen: t('hq.report.billingNotFrozen'),
+    cmsDeliveries: t('hq.report.cmsDeliveries'),
+    cmsImpact: t('hq.report.cmsImpact'),
+    commercialImpactByVolume: t('hq.report.commercialImpactByVolume'),
+    envImpact: t('hq.report.envImpact'),
+    envMonthMeasure: t('hq.report.envMonthMeasure'),
+    impactFinancial: t('hq.report.impactFinancial'),
+    noActiveShop: t('hq.report.noActiveShop'),
+    noDataBodyExtended: t('hq.report.noDataBodyExtended'),
+    noPdfDoc: t('hq.report.noPdfDoc'),
+    processedVolume: t('hq.report.processedVolume'),
+    regionalTotals: t('hq.report.regionalTotals'),
+    selectRegionForPdf: t('hq.report.selectRegionForPdf'),
+    subventionHq: t('hq.report.subventionHq'),
+    topShopsMonth: t('hq.report.topShopsMonth'),
+    trackingByPartner: t('hq.report.trackingByPartner'),
+    versusCar: t('hq.report.versusCar'),
   } as const
 
   const detailColumnLabels: Record<string, string> = {
-    shop_name: locale === 'de' ? 'Geschaft' : locale === 'it' ? 'Negozio' : locale === 'en' ? 'Shop' : 'Commerce',
-    city_name: locale === 'de' ? 'Partnergemeinde' : locale === 'it' ? 'Comune partner' : locale === 'en' ? 'Partner city' : 'Commune partenaire',
+    shop_name: t('hq.report.table.shop_name'),
+    city_name: t('hq.report.table.city_name'),
     total_deliveries: tx.deliveries,
-    total_subvention_due: locale === 'de' ? 'HQ-Betrag (CHF)' : locale === 'it' ? 'Importo HQ (CHF)' : locale === 'en' ? 'HQ amount (CHF)' : 'Montant HQ (CHF)',
-    total_volume_chf: locale === 'de' ? 'Total CHF' : locale === 'it' ? 'Totale CHF' : locale === 'en' ? 'Total CHF' : 'Total CHF',
-    actions: locale === 'de' ? 'Aktion' : locale === 'it' ? 'Azione' : locale === 'en' ? 'Action' : 'Action',
+    total_subvention_due: t('hq.report.table.total_subvention_due'),
+    total_volume_chf: t('hq.report.table.total_volume_chf'),
+    actions: t('hq.report.table.actions'),
   }
   const monthLabels = Array.from({ length: 12 }, (_, index) =>
     new Intl.DateTimeFormat(localeTag, { month: 'long' }).format(new Date(2024, index, 1))
@@ -388,7 +442,7 @@ export default function HqReport() {
     .slice(0, 3)
   const deliveriesChangeLabel =
     deliveriesChangePct === null || deliveriesChangePct === undefined
-      ? 'n/a'
+      ? tx.na
       : `${deliveriesChangePct > 0 ? '+' : ''}${deliveriesChangePct.toFixed(1)}%`
   const deliveriesChangeTone =
     deliveriesChangePct === null || deliveriesChangePct === undefined
@@ -402,9 +456,9 @@ export default function HqReport() {
     `${tx.subventionHq}: ${formatCHF(totalSubventionValue, localeTag)}`,
     `${tx.processedVolume}: ${formatCHF(totalVolumeValue, localeTag)}`,
     `${tx.deliveries}: ${totalDeliveries}`,
-    `${tx.subsidyPerDelivery}: ${formatCHF(averageSubventionPerDelivery, localeTag)}`,
-    `CMS: ${cmsSharePct.toFixed(1)}% (${cmsDeliveries} ${tx.deliveriesSuffix})`,
-    `${locale === 'de' ? 'Betreute Kunden' : locale === 'it' ? 'Clienti serviti' : locale === 'en' ? 'Served customers' : 'Clients servis'}: ${uniqueClients} | ${locale === 'de' ? 'Aktive Geschafte' : locale === 'it' ? 'Negozi attivi' : locale === 'en' ? 'Active shops' : 'Commerces actifs'}: ${activeShops} | ${locale === 'de' ? 'Abgedeckte Gemeinden' : locale === 'it' ? 'Comuni coperti' : locale === 'en' ? 'Covered cities' : 'Communes couvertes'}: ${activeCities}`,
+    `${tx.subventionPerDelivery}: ${formatCHF(averageSubventionPerDelivery, localeTag)}`,
+    `${tx.cmsLabel}: ${cmsSharePct.toFixed(1)}% (${cmsDeliveries} ${tx.deliveriesSuffix})`,
+    `${tx.clientsServed}: ${uniqueClients} | ${tx.activeShopsLabel}: ${activeShops} | ${tx.coveredCitiesLabel}: ${activeCities}`,
     `${tx.envImpact}: ${co2SavedKg.toFixed(1)} kg CO2, ${distanceKm.toFixed(1)} km`,
   ].join('\n')
 
@@ -423,16 +477,7 @@ export default function HqReport() {
     if (effectiveSelectedRegionId) {
       params.set('admin_region_id', effectiveSelectedRegionId)
     }
-    await downloadCsv(
-      `/reports/hq-billing/export?${params.toString()}`,
-      locale === 'de'
-        ? 'abrechnung-gruppe.csv'
-        : locale === 'it'
-          ? 'fatturazione-gruppo.csv'
-          : locale === 'en'
-            ? 'group-billing.csv'
-            : 'facturation-groupe.csv'
-    )
+    await downloadCsv(`/reports/hq-billing/export?${params.toString()}`, t('hq.report.exportFilename'))
   }
 
   const handleHqPdf = async () => {
@@ -445,17 +490,19 @@ export default function HqReport() {
     }
     await downloadPdf(
       `/reports/hq-monthly-pdf?${params.toString()}`,
-      `DringDring_HQ_${safeHq}_${selectedMonth}.pdf`
+      `DringDring_HQ_${safeHq}_${selectedMonth}.pdf`,
+      tx.billingNotFrozen
     )
   }
 
   const handlePdf = async (shopId: string, shopName?: string) => {
-    const safeName = shopName ? shopName.replace(/[^a-zA-Z0-9_-]+/g, '_') : 'commerce'
+    const safeName = shopName ? shopName.replace(/[^a-zA-Z0-9_-]+/g, '_') : t('hq.report.shopFilenameFallback')
     await downloadPdf(
       `/reports/shop-monthly-pdf?shop_id=${encodeURIComponent(
         shopId
       )}&month=${encodeURIComponent(selectedMonth)}`,
-      `DringDring_Commerce_${safeName}_${selectedMonth}.pdf`
+      `DringDring_Commerce_${safeName}_${selectedMonth}.pdf`,
+      tx.billingNotFrozen
     )
   }
 
@@ -469,7 +516,7 @@ export default function HqReport() {
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
-                  Tableau de bord HQ
+                  {tx.dashboardTag}
                 </div>
                 <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                   {tx.title} — {hqName}
@@ -585,7 +632,7 @@ export default function HqReport() {
                   disabled={!canDownloadPdf}
                   className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
                 >
-                  PDF groupe
+                  {tx.groupPdf}
                 </button>
                 <button
                   onClick={handleCopySummary}
@@ -601,30 +648,30 @@ export default function HqReport() {
                 <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
                   {tx.impactFinancial}
                 </h2>
-                <span className="text-xs text-emerald-700">Budget & volume</span>
+                <span className="text-xs text-emerald-700">{tx.financialSubtitle}</span>
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-4">
                 <div className="rounded-2xl border border-emerald-100 bg-white p-5">
                   <div className="text-xs uppercase tracking-[0.18em] text-emerald-700">{tx.subventionHq}</div>
                   <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(totalSubventionValue, localeTag)}</div>
-                  <div className="text-xs text-emerald-700/80">Engagement financier du mois</div>
+                  <div className="text-xs text-emerald-700/80">{tx.financialEngaged}</div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.processedVolume}</div>
                   <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(totalVolumeValue, localeTag)}</div>
-                  <div className="text-xs text-slate-500">Valeur totale des commandes</div>
+                  <div className="text-xs text-slate-500">{tx.totalOrdersValue}</div>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-5">
                   <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.deliveries}</div>
                   <div className="mt-2 text-2xl font-semibold text-slate-900">{totalDeliveries}</div>
-                  <div className="text-xs text-slate-500">Operations completees</div>
+                  <div className="text-xs text-slate-500">{tx.operationsCompleted}</div>
                 </div>
                 <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
-                  <div className="text-xs uppercase tracking-[0.18em] text-amber-700">Subvention / livraison</div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-amber-700">{tx.subventionPerDelivery}</div>
                   <div className="mt-2 text-2xl font-semibold text-slate-900">
                     {formatCHF(averageSubventionPerDelivery, localeTag)}
                   </div>
-                  <div className="text-xs text-amber-700/80">Cout moyen par service</div>
+                  <div className="text-xs text-amber-700/80">{tx.avgCostPerService}</div>
                 </div>
               </div>
             </section>
@@ -635,8 +682,7 @@ export default function HqReport() {
           <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
             <h2 className="text-lg font-semibold text-slate-900">{tx.noDataTitle}</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Le dashboard reste disponible pour le pilotage. Les volumes apparaitront des que des
-              livraisons seront consolidees sur {formatMonth(selectedMonth, localeTag)}.
+              {tx.noDataBodyExtended} {formatMonth(selectedMonth, localeTag)}.
             </p>
             <div className="mt-4 flex gap-2">
               <button
@@ -644,7 +690,7 @@ export default function HqReport() {
                 onClick={() => stepMonth(-1)}
                 className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-200 hover:text-emerald-700"
               >
-                Voir le mois precedent
+                {tx.previousMonth}
               </button>
               <button
                 type="button"
@@ -660,7 +706,7 @@ export default function HqReport() {
         <section className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-              Public & social
+              {tx.socialTitle}
             </h2>
             <span className="text-xs text-amber-700">{tx.cmsImpact}</span>
           </div>
@@ -668,17 +714,17 @@ export default function HqReport() {
             <div className="rounded-2xl border border-amber-100 bg-white p-5">
               <div className="text-xs uppercase tracking-[0.18em] text-amber-700">{tx.cmsDeliveries}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">{cmsDeliveries}</div>
-              <div className="text-xs text-amber-700/80">Volume social du mois</div>
+              <div className="text-xs text-amber-700/80">{tx.socialVolumeHint}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">% de livraisons CMS</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.cmsShareLabel}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">{cmsSharePct.toFixed(1)}%</div>
-              <div className="text-xs text-slate-500">Part du total</div>
+              <div className="text-xs text-slate-500">{tx.cmsShareHint}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Prise en charge CMS</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.cmsCoverageLabel}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">{formatCHF(cmsSubsidy, localeTag)}</div>
-              <div className="text-xs text-slate-500">Participation Velocite</div>
+              <div className="text-xs text-slate-500">{tx.cmsCoverageHint}</div>
             </div>
           </div>
         </section>
@@ -686,38 +732,32 @@ export default function HqReport() {
         <section className="rounded-2xl border border-sky-100 bg-sky-50/50 p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
-              Service & couverture
+              {tx.serviceTitle}
             </h2>
-            <span className="text-xs text-sky-700">Rythme & reach</span>
+            <span className="text-xs text-sky-700">{tx.serviceSubtitle}</span>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Clients servis</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.clientsServed}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">{uniqueClients}</div>
-              <div className="text-xs text-slate-500">Menages soutenus</div>
+              <div className="text-xs text-slate-500">{tx.householdsSupported}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                {locale === 'de' ? 'Aktive Geschafte' : locale === 'it' ? 'Negozi attivi' : locale === 'en' ? 'Active shops' : 'Commerces actifs'}
-              </div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.activeShopsLabel}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">{activeShops}</div>
-              <div className="text-xs text-slate-500">Partenaires engages</div>
+              <div className="text-xs text-slate-500">{tx.partnersEngaged}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                {locale === 'de' ? 'Abgedeckte Gemeinden' : locale === 'it' ? 'Comuni coperti' : locale === 'en' ? 'Covered cities' : 'Communes couvertes'}
-              </div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.coveredCitiesLabel}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">{activeCities}</div>
-              <div className="text-xs text-slate-500">Reseau territorial</div>
+              <div className="text-xs text-slate-500">{tx.networkLabel}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                {locale === 'de' ? 'Lieferungen / Tag' : locale === 'it' ? 'Consegne / giorno' : locale === 'en' ? 'Deliveries / day' : 'Livraisons / jour'}
-              </div>
+              <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.deliveriesPerDayLabel}</div>
               <div className="mt-2 text-2xl font-semibold text-slate-900">
                 {deliveriesPerActiveDay.toFixed(1)}
               </div>
-              <div className={`text-xs ${deliveriesChangeTone}`}>Evol. {deliveriesChangeLabel}</div>
+              <div className={`text-xs ${deliveriesChangeTone}`}>{tx.evolutionShort} {deliveriesChangeLabel}</div>
             </div>
           </div>
         </section>
@@ -725,7 +765,7 @@ export default function HqReport() {
         <section className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">Vue par region</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{tx.regionViewTitle}</h2>
               <p className="text-xs text-slate-500">
                 {tx.regionalTotals}
               </p>
@@ -751,13 +791,13 @@ export default function HqReport() {
                   {region.name}
                 </div>
                 <div className="mt-2 text-2xl font-semibold text-slate-900">
-                  {region.deliveries} livraisons
+                  {tx.regionDeliveries.replace('{count}', String(region.deliveries))}
                 </div>
                 <div className="mt-2 text-xs text-slate-500">
-                  Subvention: {formatCHF(region.subvention, localeTag)}
+                  {tx.regionSubvention.replace('{value}', formatCHF(region.subvention, localeTag))}
                 </div>
                 <div className="text-xs text-slate-500">
-                  Volume: {formatCHF(region.volume, localeTag)}
+                  {tx.regionVolume.replace('{value}', formatCHF(region.volume, localeTag))}
                 </div>
               </button>
             ))}
@@ -799,7 +839,7 @@ export default function HqReport() {
                           <div className="text-xs text-slate-500">{shop.city_name}</div>
                         </div>
                         <div className="text-right text-sm font-semibold text-slate-900">
-                          {deliveries} livraisons
+                          {tx.regionDeliveries.replace('{count}', String(deliveries))}
                         </div>
                       </div>
                       <div className="mt-3 h-2 w-full rounded-full bg-white">
@@ -820,28 +860,28 @@ export default function HqReport() {
             <p className="text-xs text-slate-500">{tx.envMonthMeasure}</p>
             <div className="mt-5 space-y-4">
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-                <div className="text-xs uppercase tracking-[0.18em] text-emerald-700">CO2 economise</div>
+                <div className="text-xs uppercase tracking-[0.18em] text-emerald-700">{tx.envCo2Title}</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-900">
                   {co2SavedKg.toFixed(1)} kg
                 </div>
                 <div className="text-xs text-emerald-700/80">{tx.versusCar}</div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Kilometres a velo</div>
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.envKmTitle}</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-900">{distanceKm.toFixed(1)} km</div>
-                <div className="text-xs text-slate-500">Estimation aller-retour</div>
+                <div className="text-xs text-slate-500">{tx.envRoundTrip}</div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Sacs livres</div>
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.envBagsTitle}</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-900">{totalBags}</div>
-                <div className="text-xs text-slate-500">Moyenne {averageBags.toFixed(1)} sacs</div>
+                <div className="text-xs text-slate-500">{tx.envBagsAvg.replace('{avg}', averageBags.toFixed(1))}</div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Panier moyen</div>
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{tx.envBasketAvg}</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-900">
                   {formatCHF(averageBasketValue, localeTag)}
                 </div>
-                <div className="text-xs text-slate-500">Valeur par livraison</div>
+                <div className="text-xs text-slate-500">{tx.envValuePerDelivery}</div>
               </div>
             </div>
           </div>
@@ -879,7 +919,7 @@ export default function HqReport() {
                     : 'border-slate-200 text-slate-600 hover:border-emerald-200'
                 }`}
               >
-                Tous
+                {tx.all}
               </button>
               {regionOptions.map((region) => (
                 <button
@@ -898,7 +938,7 @@ export default function HqReport() {
           )}
 
           {detailRows.length === 0 ? (
-            <div className="mt-4 text-sm text-slate-500">Aucun detail disponible.</div>
+            <div className="mt-4 text-sm text-slate-500">{tx.noDetail}</div>
           ) : (
             <div className="mt-5 overflow-auto rounded-2xl border border-slate-100">
               <table className="min-w-full border-collapse text-sm">

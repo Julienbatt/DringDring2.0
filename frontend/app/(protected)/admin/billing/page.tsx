@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Calendar, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react'
+import { format } from 'date-fns'
+import { de, enUS, fr, it } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import {
     Table,
@@ -58,12 +60,6 @@ function getCurrentMonth() {
     now.setMonth(now.getMonth() - 1)
     const month = String(now.getMonth() + 1).padStart(2, '0')
     return `${now.getFullYear()}-${month}`
-}
-
-function formatMonth(value: string, locale: string) {
-    const date = new Date(value.length === 7 ? `${value}-01` : value)
-    if (Number.isNaN(date.getTime())) return value
-    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
 }
 
 export default function BillingPage() {
@@ -152,7 +148,7 @@ export default function BillingPage() {
                 setDetailLoading(false)
             }
         }
-    }, [adminContextRegion, selectedMonth])
+    }, [adminContextRegion, selectedMonth, t])
 
     useEffect(() => {
         setData(null)
@@ -305,18 +301,18 @@ export default function BillingPage() {
         .split('-')
         .map((value, index) => (index === 0 ? Number(value) : Number(value) - 1)) as [number, number]
 
-    const i18nLocaleMap = {
-        fr: 'fr-CH',
-        de: 'de-CH',
-        it: 'it-CH',
-        en: 'en-CH',
-    } as const
-    const dateLocale = i18nLocaleMap[locale] ?? 'fr-CH'
+    const localeTag = locale === 'de' ? 'de-CH' : locale === 'it' ? 'it-CH' : locale === 'en' ? 'en-CH' : 'fr-CH'
+    const dateFnsLocale = locale === 'de' ? de : locale === 'it' ? it : locale === 'en' ? enUS : fr
+    const formatAmount = (amount: number) =>
+        amount.toLocaleString(localeTag, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
     const formatMonthLabel = (year: number, monthIndex: number) => {
-        const date = new Date(year, monthIndex, 1)
-        return new Intl.DateTimeFormat(dateLocale, { month: 'long', year: 'numeric' }).format(date)
+        const label = format(new Date(year, monthIndex, 1), 'MMMM yyyy', { locale: dateFnsLocale })
+        return label.charAt(0).toUpperCase() + label.slice(1)
     }
+
+    const formatMonthShort = (monthIndex: number) =>
+        format(new Date(2026, monthIndex, 1), 'MMM', { locale: dateFnsLocale })
 
     const getMonthValue = (year: number, monthIndex: number) => {
         const monthValue = String(monthIndex + 1).padStart(2, '0')
@@ -369,9 +365,7 @@ export default function BillingPage() {
         handleDownloadPdf(internalDoc.id, internalDoc.recipient_name)
     }
 
-    const monthShortLabels = Array.from({ length: 12 }, (_, index) =>
-        new Intl.DateTimeFormat(dateLocale, { month: 'short' }).format(new Date(2026, index, 1))
-    )
+    const monthShortLabels = Array.from({ length: 12 }, (_, index) => formatMonthShort(index))
 
     const recipientTypeLabels: Record<BillingDocument['recipient_type'], string> = {
         COMMUNE: t('admin.billing.recipientType.city'),
@@ -387,7 +381,7 @@ export default function BillingPage() {
                     <h1 className="text-2xl font-bold tracking-tight">{t('admin.billing.title')}</h1>
                     <p className="text-muted-foreground">{t('admin.billing.subtitle')}</p>
                     <p className="text-xs text-emerald-700 mt-1">
-                        {t('admin.billing.period')}: {formatMonth(selectedMonth, dateLocale)}.
+                        {t('admin.billing.period')}: {formatMonthLabel(selectedYear, selectedMonthIndex)}.
                     </p>
                 </div>
 
@@ -533,7 +527,7 @@ export default function BillingPage() {
             {!loading && !hasAnyData ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:p-6">
                     <h2 className="text-sm font-semibold text-slate-900">
-                        {t('admin.billing.noDataTitle')} {formatMonth(selectedMonth, dateLocale)}
+                        {t('admin.billing.noDataTitle')} {formatMonthLabel(selectedYear, selectedMonthIndex)}
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
                         {t('admin.billing.noDataBody')}
@@ -545,7 +539,7 @@ export default function BillingPage() {
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <div className="text-sm font-medium text-muted-foreground">{t('admin.billing.kpi.totalTtc')}</div>
                     <div className="text-2xl font-bold">
-                        CHF {totalBilledTtc.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        CHF {formatAmount(totalBilledTtc)}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">{t('admin.billing.kpi.externalInvoices')}</div>
                 </div>
@@ -554,14 +548,14 @@ export default function BillingPage() {
                         TVA {(vatRateValue * 100).toFixed(1)}%
                     </div>
                     <div className="text-2xl font-bold">
-                        CHF {totalBilledVat.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        CHF {formatAmount(totalBilledVat)}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">{t('admin.billing.kpi.vatLoad')}</div>
                 </div>
                 <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
                     <div className="text-sm font-medium text-muted-foreground">{t('admin.billing.kpi.totalHt')}</div>
                     <div className="text-2xl font-bold">
-                        CHF {totalBilledHt.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        CHF {formatAmount(totalBilledHt)}
                     </div>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-6">
@@ -599,7 +593,7 @@ export default function BillingPage() {
                     <span>{t('admin.billing.external.payers')}: {filteredExternalDocuments.length}</span>
                     <span>{t('admin.billing.external.deliveries')}: {filteredExternalDeliveries}</span>
                     <span>
-                        {t('admin.billing.external.amountTtc')}: CHF {filteredExternalAmount.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                        {t('admin.billing.external.amountTtc')}: CHF {formatAmount(filteredExternalAmount)}
                     </span>
                 </div>
                 <div className="table-scroll">
@@ -632,7 +626,7 @@ export default function BillingPage() {
                                     <TableCell className="font-medium">{row.recipient_name}</TableCell>
                                     <TableCell className="text-right">{row.deliveries}</TableCell>
                                     <TableCell className="text-right">
-                                        CHF {Number(row.amount_ttc).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                                        CHF {formatAmount(Number(row.amount_ttc))}
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant="outline">{row.status || t('admin.billing.inProgress')}</Badge>
@@ -696,7 +690,7 @@ export default function BillingPage() {
                                     <TableCell className="font-medium">{row.recipient_name}</TableCell>
                                     <TableCell className="text-right">{row.deliveries}</TableCell>
                                     <TableCell className="text-right">
-                                        CHF {Number(row.amount_ttc).toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                                        CHF {formatAmount(Number(row.amount_ttc))}
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant="outline">{row.status || t('admin.billing.inProgress')}</Badge>
@@ -787,14 +781,14 @@ export default function BillingPage() {
                                 const payeurLabel = doc?.recipient_name ?? recipientTypeLabels[row.recipient_type] ?? row.recipient_type
                                 return (
                                     <TableRow key={row.id}>
-                                        <TableCell className="whitespace-nowrap">{new Date(row.delivery_date).toLocaleDateString(dateLocale)}</TableCell>
+                                        <TableCell className="whitespace-nowrap">{new Date(row.delivery_date).toLocaleDateString(localeTag)}</TableCell>
                                         <TableCell className="max-w-[260px] truncate" title={payeurLabel}>{payeurLabel}</TableCell>
                                         <TableCell className="max-w-[220px] truncate" title={row.shop_name || ''}>{row.shop_name || '-'}</TableCell>
                                         <TableCell className="max-w-[180px] truncate" title={row.client_name || ''}>{row.client_name || '-'}</TableCell>
                                         <TableCell className="max-w-[260px] truncate" title={row.commune_name || ''}>{row.commune_name || '-'}</TableCell>
                                         <TableCell className="text-right whitespace-nowrap tabular-nums">{row.bags ?? '-'}</TableCell>
                                         <TableCell className="text-right whitespace-nowrap tabular-nums font-semibold pr-4">
-                                            CHF {amountDue.toLocaleString('fr-CH', { minimumFractionDigits: 2 })}
+                                            CHF {formatAmount(amountDue)}
                                         </TableCell>
                                     </TableRow>
                                 )

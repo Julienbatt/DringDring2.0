@@ -129,7 +129,7 @@ export default function SuperAdminUsersPage() {
                 <Table className="min-w-[900px]">
                     <TableHeader className="bg-gray-50">
                         <TableRow>
-                            <TableHead>Email</TableHead>
+                            <TableHead>{t('common.email')}</TableHead>
                             <TableHead>{t('super.users.table.role')}</TableHead>
                             <TableHead className="hidden lg:table-cell">{t('super.users.table.context')}</TableHead>
                             <TableHead className="hidden lg:table-cell">{t('super.users.table.lastLogin')}</TableHead>
@@ -144,7 +144,7 @@ export default function SuperAdminUsersPage() {
                                 <TableCell className="font-medium">{u.email}</TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className="capitalize bg-gray-50">
-                                        {roleLabel(u.role)}
+                                        {t(`role.${u.role}`) !== `role.${u.role}` ? t(`role.${u.role}`) : roleLabel(u.role)}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell font-mono text-xs text-gray-500">
@@ -195,7 +195,7 @@ export default function SuperAdminUsersPage() {
                                 <Input
                                     value={contextId}
                                     onChange={e => setContextId(e.target.value)}
-                                    placeholder="UUID..."
+                                    placeholder={t('super.users.dialog.entityPlaceholder')}
                                 />
                                 <p className="text-xs text-gray-500">
                                     {t('super.users.dialog.entityHelp')}

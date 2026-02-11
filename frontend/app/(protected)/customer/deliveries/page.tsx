@@ -5,8 +5,9 @@ import { apiGet } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { useEcoStats } from '@/app/(protected)/hooks/useEcoStats'
 import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { de, enUS, fr, it } from 'date-fns/locale'
 import { Package, Clock, ShoppingBag, CheckCircle2, AlertTriangle, MapPin } from 'lucide-react'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type CustomerDelivery = {
     delivery_id: string
@@ -20,9 +21,11 @@ type CustomerDelivery = {
 
 export default function CustomerDeliveriesPage() {
     const { session } = useAuth()
+    const { t, locale } = useLanguage()
     const [deliveries, setDeliveries] = useState<CustomerDelivery[]>([])
     const [loading, setLoading] = useState(true)
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'delivered'>('all')
+    const dateFnsLocale = locale === 'de' ? de : locale === 'it' ? it : locale === 'en' ? enUS : fr
     const currentMonth = format(new Date(), 'yyyy-MM')
     const { data: ecoStats, loading: ecoLoading } = useEcoStats(currentMonth)
     const monthlyDeliveries = useMemo(() => {
@@ -62,30 +65,30 @@ export default function CustomerDeliveriesPage() {
     const grouped = useMemo(() => {
         const groups: Record<string, CustomerDelivery[]> = {}
         filteredDeliveries.forEach((delivery) => {
-            const label = format(new Date(delivery.delivery_date), 'MMMM yyyy', { locale: fr })
+            const label = format(new Date(delivery.delivery_date), 'MMMM yyyy', { locale: dateFnsLocale })
             if (!groups[label]) groups[label] = []
             groups[label].push(delivery)
         })
         return groups
-    }, [filteredDeliveries])
+    }, [filteredDeliveries, dateFnsLocale])
 
     const statusConfig = (status: string | null) => {
         switch (status) {
             case 'delivered':
-                return { label: 'Livree', tone: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: CheckCircle2 }
+                return { label: t('customer.deliveries.status.delivered'), tone: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: CheckCircle2 }
             case 'picked_up':
-                return { label: 'En route', tone: 'text-sky-700 bg-sky-50 border-sky-200', icon: MapPin }
+                return { label: t('customer.deliveries.status.pickedUp'), tone: 'text-sky-700 bg-sky-50 border-sky-200', icon: MapPin }
             case 'issue':
-                return { label: 'Incident', tone: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle }
+                return { label: t('customer.deliveries.status.issue'), tone: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle }
             case 'cancelled':
-                return { label: 'Annulee', tone: 'text-slate-500 bg-slate-100 border-slate-200', icon: AlertTriangle }
+                return { label: t('customer.deliveries.status.cancelled'), tone: 'text-slate-500 bg-slate-100 border-slate-200', icon: AlertTriangle }
             default:
-                return { label: 'Planifiee', tone: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock }
+                return { label: t('customer.deliveries.status.scheduled'), tone: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock }
         }
     }
 
     if (loading) {
-        return <div className="p-8 text-center text-slate-500 animate-pulse">Chargement de vos livraisons...</div>
+        return <div className="p-8 text-center text-slate-500 animate-pulse">{t('customer.deliveries.loading')}</div>
     }
 
     return (
@@ -94,46 +97,46 @@ export default function CustomerDeliveriesPage() {
                 <header className="space-y-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                         <div>
-                            <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">Historique des livraisons</h1>
+                            <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{t('customer.deliveries.title')}</h1>
                             <p className="text-sm text-slate-600 md:text-base">
-                                Suivez l&apos;etat de vos commandes en cours et passees.
+                                {t('customer.deliveries.subtitle')}
                             </p>
                         </div>
                         <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
                             <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                            {totals.active} en cours
+                            {totals.active} {t('customer.deliveries.activeLower')}
                         </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-4">
                         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Livraisons (mois)</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.deliveries.monthDeliveries')}</p>
                             <p className="text-2xl font-semibold text-slate-900">
                                 {ecoLoading || !ecoStats ? monthlyDeliveries.length : ecoStats.deliveries}
                             </p>
                         </div>
                         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">En cours</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.deliveries.active')}</p>
                             <p className="text-2xl font-semibold text-sky-700">{totals.active}</p>
                         </div>
                         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Livrees</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.deliveries.delivered')}</p>
                             <p className="text-2xl font-semibold text-emerald-700">{totals.delivered}</p>
                         </div>
                         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">CO2 economise (kg)</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('customer.deliveries.co2Saved')}</p>
                             <p className="text-2xl font-semibold text-emerald-700">
                                 {ecoLoading || !ecoStats ? '-' : ecoStats.co2_saved_kg.toFixed(1)}
                             </p>
                             <p className="text-xs text-slate-400">
-                                {ecoLoading || !ecoStats ? '' : `${ecoStats.distance_km.toFixed(1)} km a velo`}
+                                {ecoLoading || !ecoStats ? '' : t('customer.deliveries.kmByBike', { km: ecoStats.distance_km.toFixed(1) })}
                             </p>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {[
-                            { value: 'all', label: 'Tout' },
-                            { value: 'active', label: 'En cours' },
-                            { value: 'delivered', label: 'Livrees' },
+                            { value: 'all', label: t('customer.deliveries.filter.all') },
+                            { value: 'active', label: t('customer.deliveries.filter.active') },
+                            { value: 'delivered', label: t('customer.deliveries.filter.delivered') },
                         ].map((item) => (
                             <button
                                 key={item.value}
@@ -153,8 +156,8 @@ export default function CustomerDeliveriesPage() {
                 {filteredDeliveries.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
                         <Package className="mx-auto mb-3 h-12 w-12 text-slate-300" />
-                        <h3 className="text-lg font-semibold text-slate-900">Aucune livraison</h3>
-                        <p className="text-sm text-slate-500">Aucune livraison ne correspond a ce filtre.</p>
+                        <h3 className="text-lg font-semibold text-slate-900">{t('customer.deliveries.emptyTitle')}</h3>
+                        <p className="text-sm text-slate-500">{t('customer.deliveries.emptyDesc')}</p>
                     </div>
                 ) : (
                     <div className="space-y-10">
@@ -176,13 +179,13 @@ export default function CustomerDeliveriesPage() {
                                                     <div className="space-y-2">
                                                         <div className="flex items-center gap-2 text-sm text-slate-500">
                                                             <Clock className="h-4 w-4" />
-                                                            {format(new Date(delivery.delivery_date), 'EEEE d MMMM', { locale: fr })}
+                                                            {format(new Date(delivery.delivery_date), 'EEEE d MMMM', { locale: dateFnsLocale })}
                                                         </div>
                                                         <div className="text-lg font-semibold text-slate-900">{delivery.shop_name}</div>
                                                         <div className="flex flex-wrap gap-4 text-xs text-slate-500">
                                                             <span className="flex items-center gap-1">
                                                                 <ShoppingBag className="h-4 w-4" />
-                                                                {delivery.bags} sac{delivery.bags > 1 ? 's' : ''}
+                                                                {delivery.bags} {delivery.bags > 1 ? t('customer.deliveries.bagPlural') : t('customer.deliveries.bagSingular')}
                                                             </span>
                                                             <span className="flex items-center gap-1">
                                                                 <Clock className="h-4 w-4" />
@@ -197,7 +200,7 @@ export default function CustomerDeliveriesPage() {
                                                         {StatusIcon ? (
                                                             <StatusIcon className="h-6 w-6 text-slate-500" />
                                                         ) : null}
-                                                        <span className="text-xs text-slate-500">Maj: {updatedLabel}</span>
+                                                        <span className="text-xs text-slate-500">{t('customer.deliveries.updatedAt', { time: updatedLabel })}</span>
                                                     </div>
                                                 </div>
                                             </div>

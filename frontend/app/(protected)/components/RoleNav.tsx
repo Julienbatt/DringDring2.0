@@ -52,7 +52,7 @@ export default function RoleNav() {
       <div className="flex w-full items-center justify-between px-6 py-3 text-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <BrandLogo width={120} height={36} className="h-7 w-auto" />
+            <BrandLogo width={120} height={36} className="h-7 w-auto" alt={t('common.brandName')} />
             {adminContextRegion && (
               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">
                 {adminContextRegion.name}
@@ -76,10 +76,10 @@ export default function RoleNav() {
               }}
               className="text-xs hover:text-red-600 underline"
             >
-              Sortir de la vue
+              {t('common.exitView')}
             </button>
           )}
-          <span>{roleLabel(role)}</span>
+          <span>{t(`role.${role}`) !== `role.${role}` ? t(`role.${role}`) : roleLabel(role)}</span>
         </div>
       </div>
     </div>

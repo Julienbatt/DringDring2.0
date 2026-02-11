@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export default function LegacyDringDringBridge() {
+  const { t } = useLanguage()
   useEffect(() => {
     const url = new URL(window.location.href)
     const search = url.search || ''
@@ -21,7 +23,7 @@ export default function LegacyDringDringBridge() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <div className="rounded-lg border bg-white px-6 py-5 text-sm text-slate-600 shadow-sm">
-        Redirection en cours...
+        {t('common.redirecting')}
       </div>
     </div>
   )

@@ -7,6 +7,7 @@ import { apiGet, apiDelete } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import {
     Table,
     TableBody,
@@ -29,6 +30,7 @@ interface TariffGrid {
 
 export default function TariffsPage() {
     const { user, adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [tariffs, setTariffs] = useState<TariffGrid[]>([])
     const [loading, setLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -45,12 +47,12 @@ export default function TariffsPage() {
             const data = await apiGet<TariffGrid[]>(`/tariffs${queryParams}`, session.access_token)
             setTariffs(data)
         } catch (error) {
-            console.error('Failed to load tariffs', error)
-            toast.error("Erreur lors du chargement des tarifs")
+            console.error(t('admin.tariffs.loadError'), error)
+            toast.error(t('admin.tariffs.loadError'))
         } finally {
             setLoading(false)
         }
-    }, [adminContextRegion])
+    }, [adminContextRegion, t])
 
     useEffect(() => {
         loadData()
@@ -67,7 +69,7 @@ export default function TariffsPage() {
     }
 
     const handleDelete = async (t: TariffGrid) => {
-        const confirmed = window.confirm(`Supprimer la grille "${t.name}" ?`)
+        const confirmed = window.confirm(t('admin.tariffs.deleteConfirm', { name: t.name }))
         if (!confirmed) return
 
         try {
@@ -76,14 +78,14 @@ export default function TariffsPage() {
             if (!session) return
 
             await apiDelete(`/tariffs/${t.id}`, session.access_token)
-            toast.success('Tarif supprime')
+            toast.success(t('admin.tariffs.deleteSuccess'))
             loadData()
         } catch (error: unknown) {
-            console.error('Failed to delete tariff', error)
+            console.error(t('admin.tariffs.deleteError'), error)
             const message =
                 error && typeof error === 'object' && 'message' in error
                     ? String(error.message)
-                    : 'Suppression impossible'
+                    : t('admin.tariffs.deleteError')
             toast.error(message)
         }
     }
@@ -98,20 +100,22 @@ export default function TariffsPage() {
         if (t.rule_type === 'bags_price' || t.rule_type === 'bags') {
             const priceRaw = pricing.price_per_2_bags ?? pricing.price_per_bag ?? pricing.amount_per_bag
             const price = priceRaw === undefined || priceRaw === null ? null : Number(priceRaw)
-            return Number.isFinite(price) && price !== null ? `CHF ${price} / 2 sacs` : 'N/A'
+            return Number.isFinite(price) && price !== null
+                ? t('admin.tariffs.rule.bagsPrice', { price })
+                : t('admin.tariffs.na')
         }
         if (t.rule_type === 'order_amount') {
             const thresholds = Array.isArray(pricing.thresholds) ? pricing.thresholds : []
             const count = thresholds.length
             if (count > 0) {
-                return `${count} palier(s) defini(s)`
+                return t('admin.tariffs.rule.thresholdsCount', { count })
             }
             if (pricing.percent_of_order !== undefined) {
-                return `${pricing.percent_of_order}% du panier`
+                return t('admin.tariffs.rule.percentOfOrder', { percent: pricing.percent_of_order })
             }
-            return 'N/A'
+            return t('admin.tariffs.na')
         }
-        return 'N/A'
+        return t('admin.tariffs.na')
     }
 
     const formatShare = (share: Record<string, unknown> | null) => {
@@ -120,23 +124,23 @@ export default function TariffsPage() {
         const shop = Number(share.shop ?? 0)
         const city = Number(share.city ?? 0)
         const admin = Number(share.admin_region ?? share.velocite ?? 0)
-        if (client === 100) return 'Client 100%'
-        if (shop === 100) return 'Commerce 100%'
-        return `Cli ${client}% / Commerce ${shop}% / Commune ${city}% / Admin ${admin}%`
+        if (client === 100) return t('admin.tariffs.share.client100')
+        if (shop === 100) return t('admin.tariffs.share.shop100')
+        return t('admin.tariffs.share.full', { client, shop, city, admin })
     }
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">Tarification</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900">{t('admin.tariffs.title')}</h1>
                     <p className="text-gray-500 mt-1">
-                        Gérez les grilles tarifaires applicables aux commerces.
+                        {t('admin.tariffs.subtitle')}
                     </p>
                 </div>
                 <Button onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700">
                     <Plus className="mr-2 h-4 w-4" />
-                    Nouveau Tarif
+                    {t('admin.tariffs.new')}
                 </Button>
             </div>
 
@@ -144,18 +148,18 @@ export default function TariffsPage() {
                 <Table className="min-w-[800px]">
                     <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="w-[300px]">Nom de la Grille</TableHead>
-                            <TableHead>Type de Calcul</TableHead>
-                            <TableHead>Détail Règle</TableHead>
-                            <TableHead>Répartition</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="w-[300px]">{t('admin.tariffs.gridName')}</TableHead>
+                            <TableHead>{t('admin.tariffs.calcType')}</TableHead>
+                            <TableHead>{t('admin.tariffs.ruleDetail')}</TableHead>
+                            <TableHead>{t('admin.tariffs.shareLabel')}</TableHead>
+                            <TableHead className="text-right">{t('admin.tariffs.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow><TableCell colSpan={5} className="h-32 text-center animate-pulse text-gray-400">Chargement...</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-32 text-center animate-pulse text-gray-400">{t('common.loading')}</TableCell></TableRow>
                         ) : tariffs.length === 0 ? (
-                            <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground">Aucun tarif configuré. Créez-en un pour commencer.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground">{t('admin.tariffs.empty')}</TableCell></TableRow>
                         ) : (
                             tariffs.map(t => (
                                 <TableRow key={t.id} className="hover:bg-gray-50/50 transition-colors">
@@ -168,7 +172,7 @@ export default function TariffsPage() {
                                                 <ShoppingBag className="w-4 h-4 text-emerald-500" /> :
                                                 <CreditCard className="w-4 h-4 text-green-500" />
                                             }
-                                            <span className="capitalize">{t.rule_type === 'bags_price' ? 'Prix/Sac' : 'Montant Panier'}</span>
+                                            <span className="capitalize">{t.rule_type === 'bags_price' ? t('admin.tariffs.type.bags') : t('admin.tariffs.type.orderAmount')}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-mono text-sm text-gray-600">
@@ -185,7 +189,7 @@ export default function TariffsPage() {
                                             size="sm"
                                             onClick={() => handleEdit(t)}
                                         >
-                                            Modifier
+                                            {t('common.edit')}
                                         </Button>
                                         <Button
                                             variant="ghost"

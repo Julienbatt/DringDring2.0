@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type Client = {
   id: string
@@ -23,12 +24,14 @@ export default function ClientAutocomplete({
   clients,
   value,
   onChange,
-  placeholder = 'Rechercher un client',
+  placeholder,
   disabled = false,
 }: Props) {
+  const { t } = useLanguage()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const resolvedPlaceholder = placeholder ?? t('common.searchClientPlaceholder')
 
   const selectedClient = clients.find((client) => client.id === value)
   const inputValue =
@@ -57,7 +60,7 @@ export default function ClientAutocomplete({
       <input
         type="text"
         className="w-full rounded border px-2 py-1 disabled:bg-slate-100 disabled:text-slate-500"
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         value={inputValue}
         onChange={(event) => {
           if (disabled) return

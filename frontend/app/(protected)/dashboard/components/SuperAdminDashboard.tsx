@@ -64,7 +64,7 @@ export default function SuperAdminDashboard() {
           <div className="flex flex-col gap-6 p-6 md:max-w-3xl md:p-10">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
-                <BrandLogo width={180} height={54} className="h-10 w-auto md:h-12" />
+                <BrandLogo width={180} height={54} className="h-10 w-auto md:h-12" alt={t('common.brandName')} />
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">{t('super.dashboard.overline')}</p>

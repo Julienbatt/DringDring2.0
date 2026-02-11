@@ -61,7 +61,7 @@ export default function LoginPage() {
                         <Lock className="w-6 h-6" />
                     </div>
                     <div className="flex justify-center">
-                        <BrandLogo width={180} height={54} className="h-12 w-auto" priority />
+                        <BrandLogo width={180} height={54} className="h-12 w-auto" priority alt={t('common.brandName')} />
                     </div>
                     <p className="text-slate-500">{t('login.portal')}</p>
                 </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
                     <div className="relative h-40 bg-slate-100">
                         <Image
                             src="/brand/poster2.png"
-                            alt="DringDring"
+                            alt={t('common.brandName')}
                             fill
                             className="object-cover"
                             priority

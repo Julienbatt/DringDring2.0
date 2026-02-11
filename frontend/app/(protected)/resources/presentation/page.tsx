@@ -22,6 +22,7 @@ type RoleCopy = {
 
 type TranslationPack = {
   tagLabel: string
+  logoAlt: string
   pageTitle: string
   guaranteeTitle: string
   adminKitTitle: string
@@ -47,6 +48,7 @@ type TranslationPack = {
 const TRANSLATIONS: Record<Locale, TranslationPack> = {
   fr: {
     tagLabel: 'Pourquoi DringDring',
+    logoAlt: 'Logo DringDring',
     pageTitle: 'Votre service local, utile et mesurable',
     guaranteeTitle: 'Ce que DringDring garantit',
     adminKitTitle: 'Kit de demarchage (admin region)',
@@ -171,6 +173,7 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
   },
   de: {
     tagLabel: 'Warum DringDring',
+    logoAlt: 'DringDring Logo',
     pageTitle: 'Ihr lokaler Service mit messbarer Wirkung',
     guaranteeTitle: 'Was DringDring garantiert',
     adminKitTitle: 'Akquise-Kit (Regional Admin)',
@@ -277,6 +280,7 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
   },
   it: {
     tagLabel: 'Perche DringDring',
+    logoAlt: 'Logo DringDring',
     pageTitle: 'Un servizio locale utile e misurabile',
     guaranteeTitle: 'Cosa garantisce DringDring',
     adminKitTitle: 'Kit commerciale (admin regionale)',
@@ -362,6 +366,7 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
   },
   en: {
     tagLabel: 'Why DringDring',
+    logoAlt: 'DringDring logo',
     pageTitle: 'A local service with measurable impact',
     guaranteeTitle: 'What DringDring guarantees',
     adminKitTitle: 'Growth kit (regional admin)',
@@ -572,7 +577,7 @@ export default function PresentationResourcesPage() {
           </div>
           <Image
             src="/brand/logo-Dring-Dring2.png"
-            alt="Logo DringDring"
+            alt={t.logoAlt}
             width={180}
             height={56}
             className="h-12 w-auto object-contain"

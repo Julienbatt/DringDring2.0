@@ -11,6 +11,7 @@ import { apiPost, apiPut } from '@/lib/api'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 interface TariffDialogProps {
     open: boolean
@@ -61,6 +62,7 @@ type TariffEditData = {
 
 export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: TariffDialogProps) {
     const { user, adminContextRegion } = useAuth()
+    const { t } = useLanguage()
     const [name, setName] = useState('')
     const [ruleType, setRuleType] = useState('bags_price')
     const [bagPrice, setBagPrice] = useState('5.00')
@@ -150,11 +152,11 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
         const { data: { session } } = await supabase.auth.getSession()
 
         if (!session?.access_token) {
-            toast.error('Session expiree')
+            toast.error(t('admin.tariffs.dialog.sessionExpired'))
             return
         }
         if (user?.role === 'super_admin' && !adminContextRegion?.id) {
-            toast.error('Selectionnez une entreprise regionale')
+            toast.error(t('admin.tariffs.dialog.selectRegion'))
             return
         }
 
@@ -221,17 +223,17 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
 
             if (tariffToEdit) {
                 await apiPut(`/tariffs/${tariffToEdit.id}`, payload, session.access_token)
-                toast.success('Tarif mis a jour')
+                toast.success(t('admin.tariffs.dialog.updated'))
             } else {
                 await apiPost('/tariffs', payload, session.access_token)
-                toast.success('Tarif cree')
+                toast.success(t('admin.tariffs.dialog.created'))
             }
 
             onSuccess()
             onOpenChange(false)
         } catch (error) {
             console.error(error)
-            toast.error("Erreur lors de l'enregistrement")
+            toast.error(t('admin.tariffs.dialog.saveError'))
         } finally {
             setLoading(false)
         }
@@ -241,29 +243,29 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{tariffToEdit ? 'Modifier le Tarif' : 'Nouveau Tarif'}</DialogTitle>
+                    <DialogTitle>{tariffToEdit ? t('admin.tariffs.dialog.editTitle') : t('admin.tariffs.dialog.newTitle')}</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6 py-4">
                     <div className="space-y-2">
-                        <Label>Nom de la Grille</Label>
+                        <Label>{t('admin.tariffs.dialog.gridName')}</Label>
                         <Input
                             value={name}
                             onChange={e => setName(e.target.value)}
-                            placeholder="Ex: Standard 2024"
+                            placeholder={t('admin.tariffs.dialog.gridNamePlaceholder')}
                             required
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Type de Règle</Label>
+                        <Label>{t('admin.tariffs.dialog.ruleType')}</Label>
                         <Select value={ruleType} onValueChange={setRuleType}>
                             <SelectTrigger>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="bags_price">Prix par Sac (Standard)</SelectItem>
-                                <SelectItem value="order_amount">Montant du Panier (Paliers)</SelectItem>
+                                <SelectItem value="bags_price">{t('admin.tariffs.dialog.ruleTypeBags')}</SelectItem>
+                                <SelectItem value="order_amount">{t('admin.tariffs.dialog.ruleTypeOrder')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -272,13 +274,13 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                     <div className="space-y-4 border p-4 rounded-md bg-gray-50/50">
                         <h3 className="font-medium flex items-center gap-2">
                             <Info className="w-4 h-4 text-emerald-500" />
-                            Configuration du Prix
+                            {t('admin.tariffs.dialog.pricingConfig')}
                         </h3>
 
                         {ruleType === 'bags_price' ? (
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Prix pour 2 sacs (CHF)</Label>
+                                    <Label>{t('admin.tariffs.dialog.price2Bags')}</Label>
                                     <Input
                                         type="number" step="0.05"
                                         value={bagPrice}
@@ -287,30 +289,30 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Prix CMS pour 2 sacs (CHF)</Label>
+                                    <Label>{t('admin.tariffs.dialog.cmsPrice2Bags')}</Label>
                                     <Input
                                         type="number" step="0.05"
                                         value={cmsPrice}
                                         onChange={e => setCmsPrice(e.target.value)}
-                                        placeholder="Optionnel"
+                                        placeholder={t('admin.tariffs.dialog.optional')}
                                     />
-                                    <p className="text-xs text-muted-foreground">Remplace le rabais si renseigné</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.tariffs.dialog.cmsPriceHint')}</p>
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <Label>Paliers de prix</Label>
+                                    <Label>{t('admin.tariffs.dialog.thresholds')}</Label>
                                     <Button type="button" variant="outline" size="sm" onClick={addThreshold}>
                                         <Plus className="w-4 h-4 mr-2" />
-                                        Ajouter un palier
+                                        {t('admin.tariffs.dialog.addThreshold')}
                                     </Button>
                                 </div>
                                 <div className="space-y-2">
                                     {thresholds.map((t, i) => (
                                         <div key={i} className="flex gap-2 items-end">
                                             <div className="w-24">
-                                                <Label className="text-xs">Min (CHF)</Label>
+                                                <Label className="text-xs">{t('admin.tariffs.dialog.min')}</Label>
                                                 <Input
                                                     type="number"
                                                     value={t.min}
@@ -319,16 +321,16 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                                 />
                                             </div>
                                             <div className="w-24">
-                                                <Label className="text-xs">Max (CHF)</Label>
+                                                <Label className="text-xs">{t('admin.tariffs.dialog.max')}</Label>
                                                 <Input
                                                     type="number"
                                                     value={t.max}
                                                     onChange={e => updateThreshold(i, 'max', e.target.value)}
-                                                    placeholder="Inf"
+                                                    placeholder={t('admin.tariffs.dialog.infinite')}
                                                 />
                                             </div>
                                             <div className="w-24">
-                                                <Label className="text-xs">Prix (CHF)</Label>
+                                                <Label className="text-xs">{t('admin.tariffs.dialog.price')}</Label>
                                                 <Input
                                                     type="number"
                                                     value={t.price}
@@ -354,7 +356,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                     <div className="space-y-4 border p-4 rounded-md bg-gray-50/50">
                         <h3 className="font-medium flex items-center gap-2">
                             <CreditCard className="w-4 h-4 text-green-500" />
-                            Répartition du Paiement
+                            {t('admin.tariffs.dialog.shareConfig')}
                         </h3>
 
                         <div className="space-y-4">
@@ -363,16 +365,16 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="client">Client paye 100%</SelectItem>
-                                    <SelectItem value="shop">Commerce paye 100%</SelectItem>
-                                    <SelectItem value="equal_3">Partagé équitablement (Client/Commerce/Commune)</SelectItem>
-                                    <SelectItem value="shared">Partagé (Client / Commerce)</SelectItem>
+                                    <SelectItem value="client">{t('admin.tariffs.dialog.payerClient')}</SelectItem>
+                                    <SelectItem value="shop">{t('admin.tariffs.dialog.payerShop')}</SelectItem>
+                                    <SelectItem value="equal_3">{t('admin.tariffs.dialog.payerEqual')}</SelectItem>
+                                    <SelectItem value="shared">{t('admin.tariffs.dialog.payerShared')}</SelectItem>
                                 </SelectContent>
                             </Select>
 
                             {payerType === 'shared' && (
                                 <div className="space-y-2 pl-4 border-l-2 border-emerald-200">
-                                    <Label>Part du Client (%)</Label>
+                                    <Label>{t('admin.tariffs.dialog.clientShare')}</Label>
                                     <div className="flex items-center gap-4">
                                         <Input
                                             type="number" min="0" max="100"
@@ -381,14 +383,14 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                             className="w-24"
                                         />
                                         <span className="text-sm text-gray-500">
-                                            Le commerce paiera {100 - parseFloat(clientSharePercent || '0')}%
+                                            {t('admin.tariffs.dialog.shopPays', { percent: 100 - parseFloat(clientSharePercent || '0') })}
                                         </span>
                                     </div>
                                 </div>
                             )}
                             {ruleType === 'bags_price' && (
                                 <div className="space-y-2 pl-4 border-l-2 border-amber-200">
-                                    <Label>Répartition CMS</Label>
+                                    <Label>{t('admin.tariffs.dialog.cmsShare')}</Label>
                                     <Select
                                         value={cmsShareMode}
                                         onValueChange={(v) =>
@@ -396,11 +398,11 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                         }
                                     >
                                         <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="same">Identique au standard</SelectItem>
-                                            <SelectItem value="city_shop_50">50% Commune / 50% Commerce (client = 0)</SelectItem>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                            <SelectItem value="same">{t('admin.tariffs.dialog.cmsShareSame')}</SelectItem>
+                                            <SelectItem value="city_shop_50">{t('admin.tariffs.dialog.cmsShareCityShop')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -410,10 +412,10 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                            Annuler
+                            {t('common.cancel')}
                         </Button>
                         <Button type="submit" disabled={loading}>
-                            {loading ? 'Enregistrement...' : 'Enregistrer'}
+                            {loading ? t('admin.tariffs.dialog.saving') : t('admin.tariffs.dialog.save')}
                         </Button>
                     </DialogFooter>
                 </form>

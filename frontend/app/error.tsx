@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export default function Error({
     error,
@@ -9,6 +10,7 @@ export default function Error({
     error: Error & { digest?: string }
     reset: () => void
 }) {
+    const { t } = useLanguage()
     useEffect(() => {
         console.error(error)
     }, [error])
@@ -24,9 +26,9 @@ export default function Error({
                     </div>
                 </div>
 
-                <h2 className="mb-2 text-xl font-bold text-gray-900">Une erreur est survenue</h2>
+                <h2 className="mb-2 text-xl font-bold text-gray-900">{t('error.page.title')}</h2>
                 <p className="mb-6 text-sm text-gray-500">
-                    Nous sommes désolés, mais nous n&apos;avons pas pu charger cette page correctement.
+                    {t('error.page.body')}
                 </p>
 
                 <div className="space-y-3">
@@ -34,13 +36,13 @@ export default function Error({
                         onClick={() => reset()}
                         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
                     >
-                        Réessayer
+                        {t('error.page.retry')}
                     </button>
                     <a
                         href="/dashboard"
                         className="block w-full rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
                     >
-                        Retour au Dashboard
+                        {t('error.page.backToDashboard')}
                     </a>
                 </div>
             </div>

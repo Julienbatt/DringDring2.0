@@ -209,7 +209,7 @@ export default function ClientsPage() {
                                             CMS
                                         </Badge>
                                     ) : (
-                                        <span className="text-xs text-gray-400">Standard</span>
+                                        <span className="text-xs text-gray-400">{t('common.standard')}</span>
                                     )}
                                 </div>
 
@@ -313,7 +313,7 @@ export default function ClientsPage() {
                                             <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                                                 CMS
                                             </Badge> :
-                                            <span className="text-xs text-gray-400">Standard</span>
+                                            <span className="text-xs text-gray-400">{t('common.standard')}</span>
                                         }
                                     </TableCell>
                                     <TableCell className="text-right">

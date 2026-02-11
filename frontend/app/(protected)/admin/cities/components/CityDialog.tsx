@@ -118,7 +118,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
         }
 
         loadCantons()
-    }, [open, session?.access_token])
+    }, [open, session?.access_token, t])
 
     useEffect(() => {
         const loadCommunes = async () => {

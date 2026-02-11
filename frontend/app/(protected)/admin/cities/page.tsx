@@ -49,7 +49,7 @@ export default function AdminCitiesPage() {
         } finally {
             setLoading(false)
         }
-    }, [adminContextRegion])
+    }, [adminContextRegion, t])
 
     useEffect(() => {
         loadData()

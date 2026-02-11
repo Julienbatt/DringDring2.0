@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils'
 
 type MonthInputProps = Omit<React.ComponentProps<'input'>, 'type'> & {
   wrapperClassName?: string
+  pickerAriaLabel?: string
 }
 
-function MonthInput({ className, wrapperClassName, ...props }: MonthInputProps) {
+function MonthInput({ className, wrapperClassName, pickerAriaLabel, ...props }: MonthInputProps) {
   const inputRef = React.useRef<HTMLInputElement | null>(null)
 
   const openPicker = () => {
@@ -40,7 +41,7 @@ function MonthInput({ className, wrapperClassName, ...props }: MonthInputProps) 
         tabIndex={-1}
         onClick={openPicker}
         className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100"
-        aria-label="Ouvrir le calendrier"
+        aria-label={pickerAriaLabel}
       >
         <Calendar className="h-4 w-4" />
       </button>
@@ -49,4 +50,3 @@ function MonthInput({ className, wrapperClassName, ...props }: MonthInputProps) 
 }
 
 export { MonthInput }
-

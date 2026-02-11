@@ -41,7 +41,7 @@ export default function AdminHqsPage() {
     } finally {
       setLoading(false)
     }
-  }, [session])
+  }, [session, t])
 
   useEffect(() => {
     loadData()

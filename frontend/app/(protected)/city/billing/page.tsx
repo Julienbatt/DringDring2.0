@@ -239,7 +239,7 @@ export default function CityBillingPage() {
               type="button"
               onClick={() => setSelectedMonth((prev) => shiftMonth(prev, -1))}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
-              aria-label="Mois precedent"
+              aria-label={t('billing.city.monthPrev')}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -248,13 +248,14 @@ export default function CityBillingPage() {
               onChange={(e) => setSelectedMonth(e.target.value)}
               wrapperClassName="mx-1 min-w-[140px]"
               className="h-8 rounded-full border-0 bg-transparent px-3 py-0 text-center text-sm font-medium text-slate-700 shadow-none focus-visible:ring-0"
-              aria-label="Choisir un mois"
+              aria-label={t('billing.city.monthSelect')}
+              pickerAriaLabel={t('common.openCalendar')}
             />
             <button
               type="button"
               onClick={() => setSelectedMonth((prev) => shiftMonth(prev, 1))}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
-              aria-label="Mois suivant"
+              aria-label={t('billing.city.monthNext')}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -311,7 +312,7 @@ export default function CityBillingPage() {
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
           <div className="text-sm font-medium text-muted-foreground">{t('billing.city.priorityAudience')}</div>
-          <div className="text-2xl font-bold">CMS</div>
+          <div className="text-2xl font-bold">{t('billing.city.cmsShort')}</div>
           <div className="text-xs text-muted-foreground">
             {t('billing.city.priorityAudienceDesc')}
           </div>

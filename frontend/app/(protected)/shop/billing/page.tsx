@@ -214,7 +214,7 @@ export default function ShopBillingPage() {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setPickerYear((prev) => prev - 1)}
-                  aria-label="Annee precedente"
+                  aria-label={t('shop.billing.prevYear')}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -224,7 +224,7 @@ export default function ShopBillingPage() {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => setPickerYear((prev) => prev + 1)}
-                  aria-label="Annee suivante"
+                  aria-label={t('shop.billing.nextYear')}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -364,12 +364,12 @@ export default function ShopBillingPage() {
                     <tr key={index} className="odd:bg-white even:bg-gray-50">
                       <td className="border px-3 py-2">
                         <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                          Commerce
+                          {t('shop.billing.periods.shopLabel')}
                         </span>
                       </td>
                       <td className="border px-3 py-2">
                         <div className="font-medium text-slate-900">
-                          {row.shop_name || 'Commerce'}
+                          {row.shop_name || t('shop.billing.periods.shopFallback')}
                         </div>
                         <div className="text-xs text-slate-500">{formatMonth(row.period_month, localeTag)}</div>
                       </td>

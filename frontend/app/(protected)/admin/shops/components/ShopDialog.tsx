@@ -315,7 +315,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
                 type="email"
                 value={formData.email || ''}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="contact@shop.ch"
+                placeholder={t('admin.shops.dialog.emailPlaceholder')}
               />
             </div>
             <div className="space-y-2">
@@ -325,7 +325,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
                 type="tel"
                 value={formData.phone || ''}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+41 79..."
+                placeholder={t('admin.shops.dialog.phonePlaceholder')}
               />
             </div>
           </div>

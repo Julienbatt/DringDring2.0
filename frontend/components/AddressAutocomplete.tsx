@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 
 // Simple debounce implementation if lodash not available/wanted heavy dep
@@ -93,6 +94,7 @@ const swissToWgs84 = (easting: number, northing: number) => {
 }
 
 export default function AddressAutocomplete({ onSelect, disabled }: Props) {
+    const { t } = useLanguage()
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<SwisstopoResult[]>([])
     const [isOpen, setIsOpen] = useState(false)
@@ -215,7 +217,7 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
                 <input
                     type="text"
                     className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"
-                    placeholder="Rechercher une adresse (ex: Rue du Rho...)"
+                    placeholder={t('common.addressSearchPlaceholder')}
                     value={query}
                     onChange={e => {
                         setQuery(e.target.value)

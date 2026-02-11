@@ -155,7 +155,7 @@ export default function Sidebar() {
             {/* Header */}
                 <div className="flex h-16 items-center justify-between border-b border-slate-200 bg-slate-100 px-4">
                     <div className="flex items-center gap-2">
-                        <BrandLogo width={216} height={68} className="h-12 w-auto max-w-[208px]" priority />
+                        <BrandLogo width={216} height={68} className="h-12 w-auto max-w-[208px]" priority alt={t('common.brandName')} />
                     </div>
                     <button
                         type="button"
@@ -179,7 +179,7 @@ export default function Sidebar() {
                             }}
                             className="text-emerald-900 hover:text-red-600 underline"
                         >
-                            Sortir
+                            {t('common.exitContext')}
                         </button>
                     )}
                 </div>
@@ -229,7 +229,9 @@ export default function Sidebar() {
                     </div>
                     <div className="block flex-1 overflow-hidden">
                         <p className="text-sm font-medium truncate">{user?.email}</p>
-                        <p className="text-xs text-slate-500">{roleLabel(role)}</p>
+                        <p className="text-xs text-slate-500">
+                            {t(`role.${role}`) !== `role.${role}` ? t(`role.${role}`) : roleLabel(role)}
+                        </p>
                     </div>
                 </div>
                 <div className="mb-3">

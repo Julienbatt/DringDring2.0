@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { apiGet } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
 
@@ -43,6 +44,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const { t } = useLanguage()
     const [user, setUser] = useState<UserIdentity | null>(null)
     const [adminContextRegion, setAdminContextRegion] = useState<AdminRegionContext>(null)
     const [loading, setLoading] = useState(true)
@@ -70,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
             if (sessionError || !session) {
-                throw new Error("Pas de session active")
+                throw new Error(t('auth.error.noSession'))
             }
             setSessionData(session)
 
@@ -100,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Only redirect if we are strictly protecting (which we are in this provider)
             // But be careful of infinite loops if this provider is used in /login (it shouldn't be).
             // This provider is for (protected) routes.
-            setError(getErrorMessage(err, 'Erreur authentification'))
+            setError(getErrorMessage(err, t('auth.error.loadUser')))
             setUser(null)
             // Redirect to login handled by proper effect or guard component? 
             // Let's do it here for simplicity of "State of the Art" - fail fast.
@@ -108,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setLoading(false)
         }
-    }, [router, supabase])
+    }, [router, supabase, t])
 
     useEffect(() => {
         loadUser()

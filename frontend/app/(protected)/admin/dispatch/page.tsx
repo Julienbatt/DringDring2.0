@@ -82,6 +82,7 @@ export default function DispatchPage() {
     const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
     const [monthPickerOpen, setMonthPickerOpen] = useState(false)
     const [pickerYear, setPickerYear] = useState(() => Number(getCurrentMonth().split('-')[0]))
+    const localeTag = locale === 'de' ? 'de-CH' : locale === 'it' ? 'it-CH' : locale === 'en' ? 'en-CH' : 'fr-CH'
     const dateLocale = useMemo(() => {
         if (locale === 'de') return de
         if (locale === 'it') return it
@@ -183,7 +184,7 @@ export default function DispatchPage() {
                 setLoading(false)
             }
         }
-    }, [adminContextRegion, clearHighlight, selectedMonth, session?.access_token])
+    }, [adminContextRegion, clearHighlight, selectedMonth, session?.access_token, t])
 
     // Allow admin_region or super_admin (with optional context drill-down).
     useEffect(() => {
@@ -327,17 +328,33 @@ export default function DispatchPage() {
     const getWhatsAppLink = (delivery: DispatchDelivery, courier: Courier | undefined) => {
         if (!courier || !courier.phone_number) return '#'
         // Format message - ULTRA CONCISE for RUSH
-        const msg =
-            `#${delivery.short_code || '---'}\n` +
-            `Sacs: ${delivery.bags || '?'}\n` +
-            `${delivery.shop_name} -> ${delivery.client_name || 'Client'}\n` +
-            `${delivery.client_address}, ${delivery.client_city}\n` +
-            (delivery.client_floor || delivery.client_door_code
-                ? `Etage: ${delivery.client_floor || '-'} ${delivery.client_door_code ? `Code: ${delivery.client_door_code}` : ''}\n`
-                : '') +
-            `Tel: ${delivery.client_phone || 'Pas de tel'}\n` +
-            `Horaire: ${delivery.time_window}\n` +
-            (delivery.notes ? `Notes: ${delivery.notes}` : '')
+        const floorLine =
+            delivery.client_floor || delivery.client_door_code
+                ? `${t('admin.dispatch.whatsapp.floorLabel')}: ${delivery.client_floor || '-'}${
+                    delivery.client_door_code
+                        ? ` ${t('admin.dispatch.whatsapp.codeLabel')}: ${delivery.client_door_code}`
+                        : ''
+                }`
+                : ''
+        const phoneValue = delivery.client_phone || t('admin.dispatch.whatsapp.noPhone')
+        const msg = [
+            `#${delivery.short_code || '---'}`,
+            t('admin.dispatch.whatsapp.bagsLine', { count: delivery.bags || '?' }),
+            t('admin.dispatch.whatsapp.routeLine', {
+                shop: delivery.shop_name || t('admin.dispatch.whatsapp.shopFallback'),
+                client: delivery.client_name || t('admin.dispatch.whatsapp.clientFallback'),
+            }),
+            t('admin.dispatch.whatsapp.addressLine', {
+                address: delivery.client_address,
+                city: delivery.client_city,
+            }),
+            floorLine,
+            t('admin.dispatch.whatsapp.phoneLine', { phone: phoneValue }),
+            t('admin.dispatch.whatsapp.timeWindowLine', { time: delivery.time_window }),
+            delivery.notes ? t('admin.dispatch.whatsapp.notesLine', { notes: delivery.notes }) : '',
+        ]
+            .filter(Boolean)
+            .join('\n')
 
         const cleanNumber = courier.phone_number.replace(/\D/g, '')
         return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`
@@ -346,8 +363,8 @@ export default function DispatchPage() {
     const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), [])
     const [selectedYear, selectedMonthIndex] = selectedMonth.split('-').map(Number)
     const formatMonthLabel = (year: number, monthIndex: number) => {
-        const label = format(new Date(year, monthIndex, 1), 'MMMM yyyy', { locale: dateLocale })
-        if (!dateLocale) return label
+        const formatter = new Intl.DateTimeFormat(localeTag, { month: 'long', year: 'numeric' })
+        const label = formatter.format(new Date(year, monthIndex, 1))
         return `${label.charAt(0).toUpperCase()}${label.slice(1)}`
     }
     const getMonthValue = (year: number, monthIndex: number) =>
@@ -501,19 +518,19 @@ export default function DispatchPage() {
                     onClick={() => setActiveTab('todo')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'todo' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    {t('admin.dispatch.tab.todo', { count: pendingDeliveries.length })}
+                    {t('admin.dispatch.tab.todoWithCount', { count: pendingDeliveries.length })}
                     </button>
                     <button
                     onClick={() => setActiveTab('assigned')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'assigned' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    {t('admin.dispatch.tab.assigned', { count: assignedDeliveries.length })}
+                    {t('admin.dispatch.tab.assignedWithCount', { count: assignedDeliveries.length })}
                     </button>
                     <button
                     onClick={() => setActiveTab('done')}
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'done' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                    {t('admin.dispatch.tab.done', { count: completedDeliveries.length })}
+                    {t('admin.dispatch.tab.doneWithCount', { count: completedDeliveries.length })}
                     </button>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-gray-600">
