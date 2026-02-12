@@ -1,20 +1,30 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-function requireEnv(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY'): string {
-  const value = process.env[name]
-  if (!value) {
-    if (typeof window !== 'undefined') {
-      // Avoid hard crash in browser if env is missing; auth calls will fail gracefully.
-      console.error(`Missing required env: ${name}`)
-    }
-    return name === 'NEXT_PUBLIC_SUPABASE_URL' ? 'https://example.supabase.co' : 'dev-anon-key'
-  }
-  return value
+function firstNonEmpty(...values: Array<string | undefined>): string | undefined {
+  return values.find((v) => typeof v === 'string' && v.trim().length > 0)?.trim()
+}
+
+function resolveSupabaseUrl(): string {
+  return (
+    firstNonEmpty(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.PROJECT_URL_STAGING
+    ) || 'https://example.supabase.co'
+  )
+}
+
+function resolveSupabaseAnonKey(): string {
+  return (
+    firstNonEmpty(
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY_STAGING,
+      process.env.EXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY_STAGING
+    ) || 'dev-anon-key'
+  )
 }
 
 export function createClient() {
-  return createBrowserClient(
-    requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
-    requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  )
+  return createBrowserClient(resolveSupabaseUrl(), resolveSupabaseAnonKey())
 }
