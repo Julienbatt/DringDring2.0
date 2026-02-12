@@ -408,7 +408,7 @@ def create_shop(
     user_email = shop.email.strip() if shop.email else None
     if user_email and settings.SUPABASE_SERVICE_KEY and settings.SUPABASE_URL:
         try:
-            url = f"{settings.SUPABASE_URL}/auth/v1/admin/users"
+            url = f"{settings.SUPABASE_URL}/auth/v1/invite"
             headers = {
                 "apikey": settings.SUPABASE_SERVICE_KEY,
                 "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
@@ -416,9 +416,7 @@ def create_shop(
             }
             payload = {
                 "email": user_email,
-                "password": settings.DEFAULT_USER_PASSWORD,
-                "email_confirm": True,
-                "app_metadata": {
+                "data": {
                     "role": "shop",
                     "shop_id": shop_id,
                     "city_id": shop.city_id,
@@ -426,6 +424,8 @@ def create_shop(
                     "hq_id": shop.hq_id,
                 },
             }
+            if settings.FRONTEND_URL:
+                payload["redirect_to"] = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
             response = httpx.post(url, headers=headers, json=payload, timeout=10)
             if response.status_code < 400:
                 user_created = True

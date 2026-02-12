@@ -81,9 +81,7 @@ def list_auth_users(client: httpx.Client) -> Set[str]:
 def create_user(client: httpx.Client, shop: ShopRow) -> Optional[str]:
     payload = {
         "email": shop.email,
-        "password": settings.DEFAULT_USER_PASSWORD,
-        "email_confirm": True,
-        "app_metadata": {
+        "data": {
             "role": "shop",
             "shop_id": shop.id,
             "city_id": shop.city_id,
@@ -91,7 +89,9 @@ def create_user(client: httpx.Client, shop: ShopRow) -> Optional[str]:
             "hq_id": shop.hq_id,
         },
     }
-    resp = client.post("/auth/v1/admin/users", json=payload)
+    if settings.FRONTEND_URL:
+        payload["redirect_to"] = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
+    resp = client.post("/auth/v1/invite", json=payload)
     if resp.status_code < 400:
         return None
     return resp.text
