@@ -31,6 +31,15 @@ jobs:
           SUPABASE_SERVICE_KEY: ci-test-service-key
         run: pytest -q backend/tests
 
+      - name: Run backend script tests
+        env:
+          PYTHONPATH: backend
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          SUPABASE_JWT_SECRET: ci-test-secret
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_SERVICE_KEY: ci-test-service-key
+        run: pytest -q backend/scripts
+
   frontend-quality:
     runs-on: ubuntu-latest
     defaults:
