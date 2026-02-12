@@ -50,7 +50,7 @@ export default function CourierDashboard() {
                             <p className="text-xs sm:text-sm text-gray-500">{t('courier.dashboard.subtitle')} · {selectedDateLabel}</p>
                         </div>
                         <button
-                            onClick={refresh}
+                            onClick={() => { void refresh() }}
                             className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 sm:hidden"
                         >
                             {t('courier.dashboard.refresh')}
@@ -65,7 +65,7 @@ export default function CourierDashboard() {
                             className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                         />
                         <button
-                            onClick={refresh}
+                            onClick={() => { void refresh() }}
                             className="hidden sm:inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100"
                         >
                             {t('courier.dashboard.refresh')}

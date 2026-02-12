@@ -291,9 +291,10 @@ export default function CityReport() {
       ? subventionBase / cityStats.unique_clients
       : 0
 
-  const cityName =
+  const cityName = String(
     rows[0]?.city_name ?? rows[0]?.city_id ?? user?.city_id ?? tx.partnerCity
-  const cityId = rows[0]?.city_id ?? user?.city_id ?? ''
+  )
+  const cityId = String(rows[0]?.city_id ?? user?.city_id ?? '')
   const detailRows = shopData ?? []
 
   const handleExport = async () => {

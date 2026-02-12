@@ -63,13 +63,13 @@ export default function TariffsPage() {
         setIsDialogOpen(true)
     }
 
-    const handleEdit = (t: TariffGrid) => {
-        setSelectedTariff(t)
+    const handleEdit = (tariff: TariffGrid) => {
+        setSelectedTariff(tariff)
         setIsDialogOpen(true)
     }
 
-    const handleDelete = async (t: TariffGrid) => {
-        const confirmed = window.confirm(t('admin.tariffs.deleteConfirm', { name: t.name }))
+    const handleDelete = async (tariff: TariffGrid) => {
+        const confirmed = window.confirm(t('admin.tariffs.deleteConfirm', { name: tariff.name }))
         if (!confirmed) return
 
         try {
@@ -77,7 +77,7 @@ export default function TariffsPage() {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
 
-            await apiDelete(`/tariffs/${t.id}`, session.access_token)
+            await apiDelete(`/tariffs/${tariff.id}`, session.access_token)
             toast.success(t('admin.tariffs.deleteSuccess'))
             loadData()
         } catch (error: unknown) {
@@ -90,28 +90,28 @@ export default function TariffsPage() {
         }
     }
 
-    const formatRule = (t: TariffGrid) => {
-        const rule = t.rule ?? {}
+    const formatRule = (tariff: TariffGrid) => {
+        const rule = tariff.rule ?? {}
         const pricingValue = rule.pricing
         const pricing =
             pricingValue && typeof pricingValue === 'object'
                 ? (pricingValue as Record<string, unknown>)
                 : rule
-        if (t.rule_type === 'bags_price' || t.rule_type === 'bags') {
+        if (tariff.rule_type === 'bags_price' || tariff.rule_type === 'bags') {
             const priceRaw = pricing.price_per_2_bags ?? pricing.price_per_bag ?? pricing.amount_per_bag
             const price = priceRaw === undefined || priceRaw === null ? null : Number(priceRaw)
             return Number.isFinite(price) && price !== null
                 ? t('admin.tariffs.rule.bagsPrice', { price })
                 : t('admin.tariffs.na')
         }
-        if (t.rule_type === 'order_amount') {
+        if (tariff.rule_type === 'order_amount') {
             const thresholds = Array.isArray(pricing.thresholds) ? pricing.thresholds : []
             const count = thresholds.length
             if (count > 0) {
                 return t('admin.tariffs.rule.thresholdsCount', { count })
             }
             if (pricing.percent_of_order !== undefined) {
-                return t('admin.tariffs.rule.percentOfOrder', { percent: pricing.percent_of_order })
+                return t('admin.tariffs.rule.percentOfOrder', { percent: Number(pricing.percent_of_order ?? 0) })
             }
             return t('admin.tariffs.na')
         }
@@ -161,33 +161,33 @@ export default function TariffsPage() {
                         ) : tariffs.length === 0 ? (
                             <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground">{t('admin.tariffs.empty')}</TableCell></TableRow>
                         ) : (
-                            tariffs.map(t => (
-                                <TableRow key={t.id} className="hover:bg-gray-50/50 transition-colors">
+                            tariffs.map((tariff) => (
+                                <TableRow key={tariff.id} className="hover:bg-gray-50/50 transition-colors">
                                     <TableCell className="font-medium text-gray-900">
-                                        {t.name}
+                                        {tariff.name}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            {t.rule_type === 'bags_price' ?
+                                            {tariff.rule_type === 'bags_price' ?
                                                 <ShoppingBag className="w-4 h-4 text-emerald-500" /> :
                                                 <CreditCard className="w-4 h-4 text-green-500" />
                                             }
-                                            <span className="capitalize">{t.rule_type === 'bags_price' ? t('admin.tariffs.type.bags') : t('admin.tariffs.type.orderAmount')}</span>
+                                            <span className="capitalize">{tariff.rule_type === 'bags_price' ? t('admin.tariffs.type.bags') : t('admin.tariffs.type.orderAmount')}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-mono text-sm text-gray-600">
-                                        {formatRule(t)}
+                                        {formatRule(tariff)}
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className="font-normal text-gray-600 bg-gray-50">
-                                            {formatShare(t.share)}
+                                            {formatShare(tariff.share)}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => handleEdit(t)}
+                                            onClick={() => handleEdit(tariff)}
                                         >
                                             {t('common.edit')}
                                         </Button>
@@ -195,7 +195,7 @@ export default function TariffsPage() {
                                             variant="ghost"
                                             size="sm"
                                             className="text-red-600 hover:text-red-700"
-                                            onClick={() => handleDelete(t)}
+                                            onClick={() => handleDelete(tariff)}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>

@@ -57,6 +57,17 @@ type RegionOption = {
   name: string
 }
 
+type HqDetailRow = Record<string, unknown> & {
+  shop_id?: string | null
+  shop_name?: string | null
+  city_name?: string | null
+  total_deliveries?: number | null
+  total_subvention_due?: number | null
+  total_volume_chf?: number | null
+  is_frozen?: boolean | null
+  admin_region_id?: string | null
+}
+
 const DETAIL_COLUMNS = [
   'shop_name',
   'city_name',
@@ -426,9 +437,9 @@ export default function HqReport() {
   const co2SavedKg = ecoStats?.co2_saved_kg ?? 0
 
   const hqName = resolvedRows[0]?.hq_name ?? resolvedRows[0]?.hq_id ?? tx.group
-  const detailRows = effectiveSelectedRegionId
+  const detailRows: HqDetailRow[] = (effectiveSelectedRegionId
     ? (shopData ?? []).filter((row) => String(row.admin_region_id) === effectiveSelectedRegionId)
-    : shopData ?? []
+    : shopData ?? []) as HqDetailRow[]
   const topShops = [...detailRows]
     .sort((a, b) => Number(b.total_deliveries ?? 0) - Number(a.total_deliveries ?? 0))
     .slice(0, 3)
@@ -822,7 +833,7 @@ export default function HqReport() {
                   const deliveries = Number(shop.total_deliveries ?? 0)
                   const ratio = totalDeliveries > 0 ? (deliveries / totalDeliveries) * 100 : 0
                   return (
-                    <div key={shop.shop_id} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                    <div key={String(shop.shop_id ?? `${index}`)} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">
@@ -958,7 +969,7 @@ export default function HqReport() {
                               <button
                                 className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:text-slate-400"
                                 disabled={!shopId || !isAvailable}
-                                onClick={() => handlePdf(String(shopId), row.shop_name)}
+                                onClick={() => handlePdf(String(shopId), String(row.shop_name ?? ''))}
                                 title={isAvailable ? tx.downloadPdf : tx.noPdfDoc}
                               >
                                 {tx.downloadPdf}

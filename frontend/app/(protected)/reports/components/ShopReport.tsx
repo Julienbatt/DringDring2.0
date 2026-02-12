@@ -146,7 +146,7 @@ type FormState = {
   order_amount: string | number
   basket_value: string | number
   notes: string
-  [key: string]: string | number
+  [key: string]: string | number | boolean
 }
 
 type DeliveryTableRow = {
@@ -1577,7 +1577,9 @@ export default function ShopReport() {
                     <td className="border px-3 py-2 whitespace-nowrap">
                       {(() => {
                         const status = String(row.status || '')
-                        const canEdit = canEditDelivery(status, row.status_updated_at, row.delivery_date) && !isFrozen
+                        const statusUpdatedAt = row.status_updated_at ? String(row.status_updated_at) : null
+                        const deliveryDateValue = row.delivery_date ? String(row.delivery_date) : null
+                        const canEdit = canEditDelivery(status, statusUpdatedAt, deliveryDateValue) && !isFrozen
                         return (
                           <div className="flex items-center gap-2">
                             <button

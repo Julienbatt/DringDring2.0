@@ -44,6 +44,11 @@ type TariffPricing = {
 
 type TariffRule = {
     pricing?: TariffPricing
+    price_per_2_bags?: number
+    price_per_bag?: number
+    amount_per_bag?: number
+    cms_price_per_2_bags?: number
+    thresholds?: TariffThreshold[]
     shares_cms?: {
         client: number
         shop: number
@@ -52,12 +57,12 @@ type TariffRule = {
     }
 }
 
-type TariffEditData = {
+export type TariffEditData = {
     id: string
     name: string
     rule_type: string
-    rule?: TariffRule
-    share?: TariffShare
+    rule?: TariffRule | Record<string, unknown> | null
+    share?: TariffShare | Record<string, unknown> | null
 }
 
 export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: TariffDialogProps) {
@@ -86,34 +91,37 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
 
             // Map Config
             if (normalizedRuleType === 'bags_price') {
-                const pricing = tariffToEdit.rule?.pricing ?? tariffToEdit.rule ?? {}
+                const rule = (tariffToEdit.rule ?? {}) as TariffRule
+                const pricing = (rule.pricing ?? rule) as TariffPricing
                 const priceValue = pricing.price_per_2_bags ?? pricing.price_per_bag ?? pricing.amount_per_bag ?? '5.00'
                 setBagPrice(String(priceValue))
                 setCmsPrice(pricing.cms_price_per_2_bags ? String(pricing.cms_price_per_2_bags) : '')
-                if (tariffToEdit.rule?.shares_cms?.shop === 50 && tariffToEdit.rule?.shares_cms?.city === 50) {
+                if (rule.shares_cms?.shop === 50 && rule.shares_cms?.city === 50) {
                     setCmsShareMode('city_shop_50')
                 } else {
                     setCmsShareMode('same')
                 }
             } else {
                 // Map thresholds
-                const pricing = tariffToEdit.rule?.pricing ?? tariffToEdit.rule ?? {}
-                const th = pricing.thresholds || []
-                setThresholds(th.map((t: TariffThreshold) => ({
-                    min: String(t.min),
-                    max: t.max ? String(t.max) : '',
-                    price: String(t.price)
+                const rule = (tariffToEdit.rule ?? {}) as TariffRule
+                const pricing = (rule.pricing ?? rule) as TariffPricing
+                const th = Array.isArray(pricing.thresholds) ? pricing.thresholds : []
+                setThresholds(th.map((threshold: TariffThreshold) => ({
+                    min: String(threshold.min),
+                    max: threshold.max ? String(threshold.max) : '',
+                    price: String(threshold.price)
                 })))
             }
 
             // Map Shares
+            const share = (tariffToEdit.share ?? {}) as TariffShare
             if (tariffToEdit.share) {
-                if (tariffToEdit.share.client === 100) setPayerType('client')
-                else if (tariffToEdit.share.shop === 100) setPayerType('shop')
-                else if (Math.abs(tariffToEdit.share.shop - 33.33) < 1) setPayerType('equal_3')
+                if (Number(share.client ?? 0) === 100) setPayerType('client')
+                else if (Number(share.shop ?? 0) === 100) setPayerType('shop')
+                else if (Math.abs(Number(share.shop ?? 0) - 33.33) < 1) setPayerType('equal_3')
                 else {
                     setPayerType('shared')
-                    setClientSharePercent(String(tariffToEdit.share.client || '50'))
+                    setClientSharePercent(String(share.client ?? '50'))
                 }
             }
 
@@ -171,16 +179,17 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                     }
                 }
                 if (cmsPrice) {
+                    if (!rulePayload.pricing) rulePayload.pricing = {}
                     rulePayload.pricing.cms_price_per_2_bags = parseFloat(cmsPrice)
                 }
             } else {
                 // order_amount - threshold_list
                 rulePayload = {
                     pricing: {
-                        thresholds: thresholds.map(t => ({
-                            min: parseFloat(t.min || '0'),
-                            max: t.max ? parseFloat(t.max) : null,
-                            price: parseFloat(t.price || '0')
+                        thresholds: thresholds.map((threshold) => ({
+                            min: parseFloat(threshold.min || '0'),
+                            max: threshold.max ? parseFloat(threshold.max) : null,
+                            price: parseFloat(threshold.price || '0')
                         }))
                     }
                 }
@@ -309,13 +318,13 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                     </Button>
                                 </div>
                                 <div className="space-y-2">
-                                    {thresholds.map((t, i) => (
+                                    {thresholds.map((threshold, i) => (
                                         <div key={i} className="flex gap-2 items-end">
                                             <div className="w-24">
                                                 <Label className="text-xs">{t('admin.tariffs.dialog.min')}</Label>
                                                 <Input
                                                     type="number"
-                                                    value={t.min}
+                                                    value={threshold.min}
                                                     onChange={e => updateThreshold(i, 'min', e.target.value)}
                                                     placeholder="0"
                                                 />
@@ -324,7 +333,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                                 <Label className="text-xs">{t('admin.tariffs.dialog.max')}</Label>
                                                 <Input
                                                     type="number"
-                                                    value={t.max}
+                                                    value={threshold.max}
                                                     onChange={e => updateThreshold(i, 'max', e.target.value)}
                                                     placeholder={t('admin.tariffs.dialog.infinite')}
                                                 />
@@ -333,7 +342,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
                                                 <Label className="text-xs">{t('admin.tariffs.dialog.price')}</Label>
                                                 <Input
                                                     type="number"
-                                                    value={t.price}
+                                                    value={threshold.price}
                                                     onChange={e => updateThreshold(i, 'price', e.target.value)}
                                                     placeholder="0.00"
                                                 />

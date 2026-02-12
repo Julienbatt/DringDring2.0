@@ -61,10 +61,6 @@ export default function RegionsPage() {
     const [newEmail, setNewEmail] = useState('')
     const [selectedCanton, setSelectedCanton] = useState<string>('')
 
-    useEffect(() => {
-        loadData()
-    }, [loadData])
-
     const loadData = useCallback(async () => {
         try {
             const supabase = createClient()
@@ -85,6 +81,10 @@ export default function RegionsPage() {
             setLoading(false)
         }
     }, [t])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     const handleCreate = async () => {
         if (!newName) {

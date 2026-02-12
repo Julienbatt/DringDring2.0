@@ -315,9 +315,9 @@ export default function ShopBillingPage() {
                     <td className="border px-3 py-2 whitespace-nowrap">
                       {String(row.delivery_date || '').slice(0, 10)}
                     </td>
-                    <td className="border px-3 py-2 whitespace-nowrap">{row.client_name || '-'}</td>
-                    <td className="border px-3 py-2 whitespace-nowrap">{row.address || '-'}</td>
-                    <td className="border px-3 py-2 text-right">{row.bags ?? '-'}</td>
+                    <td className="border px-3 py-2 whitespace-nowrap">{String(row.client_name ?? '-')}</td>
+                    <td className="border px-3 py-2 whitespace-nowrap">{String(row.address ?? '-')}</td>
+                    <td className="border px-3 py-2 text-right">{String(row.bags ?? '-')}</td>
                     <td className="border px-3 py-2 text-right">
                       {formatCHF(Number(row.share_admin_region) || 0, localeTag)}
                     </td>
