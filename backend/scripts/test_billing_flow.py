@@ -18,24 +18,25 @@ from app.main import app
 from app.core.config import settings
 from app.core.security import get_current_user_claims
 
-# Setup DB connection
-try:
-    conn = psycopg.connect(settings.DATABASE_URL, autocommit=True)
-except Exception as e:
-    print(f"Failed to connect to DB: {e}")
-    sys.exit(1)
+conn = None
+
+
+def get_conn():
+    global conn
+    if conn is None:
+        conn = psycopg.connect(settings.DATABASE_URL, autocommit=True)
+    return conn
 
 def get_user_id(email):
-    with conn.cursor() as cur:
+    with get_conn().cursor() as cur:
         cur.execute("SELECT id FROM auth.users WHERE email = %s", (email,))
         row = cur.fetchone()
         if not row:
-            print(f"User not found: {email}. Did you run seed.py?")
-            sys.exit(1)
+            raise RuntimeError(f"User not found: {email}. Did you run seed.py?")
         return str(row[0])
 
 def get_client_id(city="Sion"):
-    with conn.cursor() as cur:
+    with get_conn().cursor() as cur:
         # Find a client in Sion (active shop city)
         cur.execute("SELECT id FROM client WHERE city_name = %s LIMIT 1", (city,))
         row = cur.fetchone()
@@ -61,7 +62,7 @@ def prepare_context():
     current_month_str = today.strftime("%Y-%m")
     delivery_date = today.strftime("%Y-%m-%d")
 
-    with conn.cursor() as cur:
+    with get_conn().cursor() as cur:
         cur.execute("SELECT shop_id FROM profiles WHERE id = %s", (shop_user_id,))
         row = cur.fetchone()
         if not row or row[0] is None:
@@ -135,7 +136,7 @@ async def run_test():
             print("Delivery created successfully")
 
             print(f"\nStep 2: Login as HQ ({HQ_EMAIL}) and review billing")
-            with conn.cursor() as cur:
+            with get_conn().cursor() as cur:
                 cur.execute("SELECT hq_id FROM profiles WHERE id = %s", (hq_user_id,))
                 hq_row = cur.fetchone()
                 if not hq_row or hq_row[0] is None:
@@ -217,4 +218,5 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()

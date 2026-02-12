@@ -36,11 +36,9 @@ SUPABASE_KEY = (
     or frontend_env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 )
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("Missing SUPABASE_URL or SUPABASE_ANON_KEY.")
-    sys.exit(1)
-
 def run_login(email, password):
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("Missing SUPABASE_URL or SUPABASE_ANON_KEY.")
     url = f"{SUPABASE_URL}/auth/v1/token?grant_type=password"
     headers = {
         "apikey": SUPABASE_KEY,
@@ -77,7 +75,11 @@ def run_login(email, password):
         sys.stdout.flush()
 
 if __name__ == "__main__":
-    if len(sys.argv) > 2:
-        run_login(sys.argv[1], sys.argv[2])
-    else:
-        run_login("superadmin@dringdring.ch", "password")
+    try:
+        if len(sys.argv) > 2:
+            run_login(sys.argv[1], sys.argv[2])
+        else:
+            run_login("superadmin@dringdring.ch", "password")
+    except Exception as exc:
+        print(str(exc))
+        sys.exit(1)
