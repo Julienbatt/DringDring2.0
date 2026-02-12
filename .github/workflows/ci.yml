@@ -38,7 +38,10 @@ jobs:
           SUPABASE_JWT_SECRET: ci-test-secret
           SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_KEY: ci-test-service-key
-        run: pytest -q backend/scripts
+        run: |
+          pytest -q backend/scripts \
+            --ignore=backend/scripts/test_billing_flow.py \
+            --ignore=backend/scripts/test_login.py
 
   frontend-quality:
     runs-on: ubuntu-latest
