@@ -315,11 +315,7 @@ export default function HqReport() {
     handleMonthChange(getMonthValue(date.getFullYear(), date.getMonth()))
   }
 
-  const summaryRows: HqBillingRow[] = Array.isArray(data)
-    ? (data as HqBillingRow[])
-    : data && typeof data === 'object' && 'rows' in data
-      ? ((data as { rows?: HqBillingRow[] }).rows ?? [])
-      : []
+  const summaryRows: HqBillingRow[] = data?.rows ?? []
 
   const filteredRows: HqBillingRow[] =
     user?.hq_id && Array.isArray(summaryRows)
@@ -363,11 +359,7 @@ export default function HqReport() {
   })
 
   const resolvedRows: HqBillingRow[] = filteredRows
-  const summaryMonth = Array.isArray(data)
-    ? selectedMonth
-    : data && typeof data === 'object' && 'month' in data
-      ? String((data as { month?: string }).month ?? selectedMonth)
-      : selectedMonth
+  const summaryMonth = data?.month ?? selectedMonth
 
   const effectiveSelectedRegionId =
     selectedRegionId ?? (regionOptions.length === 1 ? regionOptions[0].id : null)

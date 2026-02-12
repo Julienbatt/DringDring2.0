@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type CustomerStats = {
   month: string
@@ -18,6 +19,7 @@ type CustomerStats = {
 
 export function useCustomerStats(month?: string) {
   const { session } = useAuth()
+  const { t } = useLanguage()
   const [data, setData] = useState<CustomerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -37,14 +39,14 @@ export function useCustomerStats(month?: string) {
         const response = await apiGet<CustomerStats>(path, session.access_token)
         setData(response)
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Erreur de chargement')
+        setError(err instanceof Error ? err.message : t('common.error.loadData'))
       } finally {
         setLoading(false)
       }
     }
 
     load()
-  }, [session, month])
+  }, [session, month, t])
 
   return { data, loading, error }
 }

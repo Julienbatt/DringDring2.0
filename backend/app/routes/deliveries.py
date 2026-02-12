@@ -3,6 +3,7 @@ from decimal import Decimal
 import csv
 import hashlib
 import io
+import logging
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -27,6 +28,7 @@ from app.schemas.me import MeResponse
 from app.storage.supabase_storage import upload_pdf_bytes
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
+logger = logging.getLogger(__name__)
 
 EDITABLE_STATUSES = {"created", "assigned"}
 DELIVERY_EDIT_GRACE_HOURS = 48
@@ -248,9 +250,9 @@ def create_delivery(
                             cms_subsidy=cms_subsidy,
                         )
 
-    except Exception as e:
-        print(f"SQL Error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as exc:
+        logger.exception("create_delivery failed")
+        raise HTTPException(status_code=500, detail="Unable to create delivery") from exc
 
     return {"delivery_id": str(delivery_id), "short_code": short_code}
 
@@ -422,7 +424,8 @@ def create_delivery_for_shop(
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("create_delivery_for_shop failed")
+        raise HTTPException(status_code=500, detail="Unable to create delivery") from exc
 
     return {"delivery_id": str(delivery_id)}
 
@@ -958,7 +961,8 @@ def update_delivery_status(
     except Exception as exc:
         if isinstance(exc, HTTPException):
             raise
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("update_courier_status failed for delivery_id=%s", delivery_id)
+        raise HTTPException(status_code=500, detail="Unable to update delivery status") from exc
 
     return {"delivery_id": delivery_id, "status": status, "previous_status": current_status}
 
@@ -1027,7 +1031,8 @@ def list_courier_deliveries(
     except Exception as exc:
         if isinstance(exc, HTTPException):
             raise
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("list_courier_deliveries failed for date=%s", target_date)
+        raise HTTPException(status_code=500, detail="Unable to load deliveries") from exc
 
 
 @router.get("/customer")

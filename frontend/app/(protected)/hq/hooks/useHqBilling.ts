@@ -3,11 +3,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export type HqBillingRow = Record<string, unknown>
+export type HqBillingResponse = {
+  month: string
+  rows: HqBillingRow[]
+}
 
 export function useHqBilling(month?: string) {
-  const [data, setData] = useState<HqBillingRow[] | null>(null)
+  const { t } = useLanguage()
+  const [data, setData] = useState<HqBillingResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,13 +27,13 @@ export function useHqBilling(month?: string) {
       const session = sessionData.session
 
       if (!session) {
-        setError('Session inexistante')
+        setError(t('common.error.missingSession'))
         setData(null)
         return
       }
 
       const query = month ? `?month=${encodeURIComponent(month)}` : ''
-      const result = await apiGet<HqBillingRow[]>(
+      const result = await apiGet<HqBillingResponse>(
         `/reports/hq-billing${query}`,
         session.access_token
       )
@@ -35,17 +41,17 @@ export function useHqBilling(month?: string) {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e ?? '')
       if (message.includes('403')) {
-        setError('Acces reserve HQ')
+        setError(t('common.error.forbidden'))
       } else if (message.includes('401')) {
-        setError('Session expiree')
+        setError(t('common.error.sessionExpired'))
       } else {
-        setError('Erreur de chargement')
+        setError(t('common.error.loadData'))
       }
       setData(null)
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, t])
 
   useEffect(() => {
     load()

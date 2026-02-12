@@ -2,6 +2,7 @@ import base64
 import json
 import time
 import urllib.request
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, HTTPException, status
@@ -12,6 +13,7 @@ from app.core.config import settings
 from app.schemas.me import MeResponse
 
 security = HTTPBearer()
+logger = logging.getLogger(__name__)
 _JWKS_CACHE: dict[str, Any] = {"expires_at": 0, "keys": []}
 _JWKS_TTL_SECONDS = 300
 
@@ -125,9 +127,10 @@ def get_current_user_claims(
     except HTTPException:
         raise
     except Exception as exc:
+        logger.exception("get_current_user_claims failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"get_current_user_claims error: {exc}",
+            detail="Authentication service unavailable",
         ) from exc
 
 
@@ -151,7 +154,8 @@ def get_current_user(
     except HTTPException:
         raise
     except Exception as exc:
+        logger.exception("get_current_user failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"get_current_user error: {exc}",
+            detail="Unable to resolve user identity",
         ) from exc

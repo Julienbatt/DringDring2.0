@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export type CourierDeliveryRow = {
     delivery_id: string
@@ -20,6 +21,7 @@ export type CourierDeliveryRow = {
 }
 
 export function useCourierDeliveries(date?: string) {
+    const { t } = useLanguage()
     const [data, setData] = useState<CourierDeliveryRow[] | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export function useCourierDeliveries(date?: string) {
             const session = sessionData.session
 
             if (!session) {
-                setError('Session inexistante')
+                setError(t('common.error.missingSession'))
                 setData(null)
                 return
             }
@@ -49,14 +51,14 @@ export function useCourierDeliveries(date?: string) {
             setData(result)
         } catch (e: unknown) {
             console.error(e)
-            setError('Erreur de chargement des livraisons')
+            setError(t('common.error.loadDeliveries'))
             setData(null)
         } finally {
             if (!silent) {
                 setLoading(false)
             }
         }
-    }, [date])
+    }, [date, t])
 
     useEffect(() => {
         load()

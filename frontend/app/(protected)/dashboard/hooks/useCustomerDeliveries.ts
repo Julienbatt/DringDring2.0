@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export type CustomerDeliveryRow = {
     delivery_id: string
@@ -15,6 +16,7 @@ export type CustomerDeliveryRow = {
 }
 
 export function useCustomerDeliveries() {
+    const { t } = useLanguage()
     const [data, setData] = useState<CustomerDeliveryRow[] | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -29,7 +31,7 @@ export function useCustomerDeliveries() {
             const session = sessionData.session
 
             if (!session) {
-                setError('Session inexistante')
+                setError(t('common.error.missingSession'))
                 setData(null)
                 return
             }
@@ -46,12 +48,12 @@ export function useCustomerDeliveries() {
             setData(result)
         } catch (e: unknown) {
             console.error(e)
-            setError('Erreur de chargement de vos commandes')
+            setError(t('common.error.loadOrders'))
             setData(null)
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [t])
 
     useEffect(() => {
         load()

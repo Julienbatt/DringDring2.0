@@ -10,7 +10,6 @@ import { useEcoStats } from '@/app/(protected)/hooks/useEcoStats'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 interface Delivery {
@@ -23,7 +22,7 @@ interface Courier {
 
 export default function AdminDashboardPage() {
   const { adminContextRegion } = useAuth()
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const [stats, setStats] = useState({
     todayTotal: 0,
     todayPending: 0,
@@ -82,7 +81,13 @@ export default function AdminDashboardPage() {
     fetchStats()
   }, [adminContextRegion])
 
-  const todayStr = format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })
+  const localeTag = locale === 'de' ? 'de-CH' : locale === 'it' ? 'it-CH' : locale === 'en' ? 'en-CH' : 'fr-CH'
+  const todayStr = new Intl.DateTimeFormat(localeTag, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date())
   const capitalizedToday = todayStr.charAt(0).toUpperCase() + todayStr.slice(1)
 
   return (

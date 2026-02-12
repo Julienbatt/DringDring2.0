@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import date, timedelta
 from pydantic import BaseModel
 from uuid import UUID
+import logging
 
 from app.core.guards import require_dispatch_user
 from app.core.security import get_current_user_claims
@@ -10,6 +11,7 @@ from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
 
 router = APIRouter(prefix="/dispatch", tags=["dispatch"])
+logger = logging.getLogger(__name__)
 
 class DispatchDeliveryRow(BaseModel):
     id: UUID
@@ -158,7 +160,8 @@ def list_dispatch_deliveries(
                     
                 return results
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("list_dispatch_deliveries failed")
+        raise HTTPException(status_code=500, detail="Unable to load dispatch deliveries") from exc
 
 
 @router.patch("/deliveries/{delivery_id}/complete")

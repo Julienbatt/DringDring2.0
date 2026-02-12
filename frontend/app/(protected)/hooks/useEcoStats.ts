@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type EcoStats = {
   distance_km: number
@@ -13,6 +14,7 @@ type EcoStats = {
 
 export function useEcoStats(month?: string, adminRegionId?: string) {
   const { session } = useAuth()
+  const { t } = useLanguage()
   const [data, setData] = useState<EcoStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,14 +35,14 @@ export function useEcoStats(month?: string, adminRegionId?: string) {
         const response = await apiGet<EcoStats>(path, session.access_token)
         setData(response)
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Erreur de chargement')
+        setError(err instanceof Error ? err.message : t('common.error.loadData'))
       } finally {
         setLoading(false)
       }
     }
 
     load()
-  }, [session, month, adminRegionId])
+  }, [session, month, adminRegionId, t])
 
   return { data, loading, error }
 }

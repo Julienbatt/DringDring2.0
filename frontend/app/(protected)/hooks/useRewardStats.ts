@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { apiGet } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 type RewardRow = {
   shop_id: string
@@ -38,6 +39,7 @@ type RewardStats = {
 
 export function useRewardStats(adminRegionId?: string) {
   const { session } = useAuth()
+  const { t } = useLanguage()
   const [data, setData] = useState<RewardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,14 +59,14 @@ export function useRewardStats(adminRegionId?: string) {
         const response = await apiGet<RewardStats>(path, session.access_token)
         setData(response)
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Erreur de chargement')
+        setError(err instanceof Error ? err.message : t('common.error.loadData'))
       } finally {
         setLoading(false)
       }
     }
 
     load()
-  }, [session, adminRegionId])
+  }, [session, adminRegionId, t])
 
   return { data, loading, error }
 }

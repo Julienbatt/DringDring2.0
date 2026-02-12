@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 import hashlib
+import logging
 import re
 
 from fastapi import HTTPException
@@ -9,6 +10,8 @@ from app.pdf.invoice_qr_bill import build_recipient_invoice_with_qr_bill
 from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.storage.supabase_storage import upload_pdf_bytes, download_file_bytes
 from app.core.billing_reference import generate_reference
+
+logger = logging.getLogger(__name__)
 
 
 def _split_address_parts(value: str | None) -> tuple[str | None, str | None]:
@@ -250,9 +253,10 @@ def freeze_shop_billing_period(
             data=pdf_bytes,
         )
     except RuntimeError as exc:
+        logger.exception("freeze_shop_billing_period PDF upload failed for shop_id=%s", shop_id)
         raise HTTPException(
             status_code=502,
-            detail=str(exc),
+            detail="PDF upload failed",
         ) from exc
 
     # 7. Insert Record

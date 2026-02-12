@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
+import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
 export type ShopDeliveryRow = Record<string, unknown>
 
 export function useShopDeliveries(month?: string) {
+  const { t } = useLanguage()
   const [data, setData] = useState<ShopDeliveryRow[] | null>(null)
   const [isFrozen, setIsFrozen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -22,7 +24,7 @@ export function useShopDeliveries(month?: string) {
       const session = sessionData.session
 
       if (!session) {
-        setError('Session inexistante')
+        setError(t('common.error.missingSession'))
         setData(null)
         return
       }
@@ -40,18 +42,18 @@ export function useShopDeliveries(month?: string) {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e ?? '')
       if (message.includes('403')) {
-        setError('Acces reserve shop')
+        setError(t('common.error.forbidden'))
       } else if (message.includes('401')) {
-        setError('Session expiree')
+        setError(t('common.error.sessionExpired'))
       } else {
-        setError('Erreur de chargement')
+        setError(t('common.error.loadDeliveries'))
       }
       setData(null)
       setIsFrozen(false)
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, t])
 
   useEffect(() => {
     load()

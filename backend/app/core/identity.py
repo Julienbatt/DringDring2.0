@@ -1,9 +1,12 @@
 import json
+import logging
 
 from fastapi import HTTPException
 
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
+
+logger = logging.getLogger(__name__)
 
 
 def resolve_identity(user_id: str, email: str, jwt_claims: str) -> MeResponse:
@@ -23,7 +26,8 @@ def resolve_identity(user_id: str, email: str, jwt_claims: str) -> MeResponse:
                 )
                 row = cur.fetchone()
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("resolve_identity profile lookup failed for user_id=%s", user_id)
+        raise HTTPException(status_code=500, detail="Unable to resolve identity") from exc
 
     claims = {}
     try:

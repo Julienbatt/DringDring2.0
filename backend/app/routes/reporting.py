@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 import re
 import zipfile
 from datetime import date, datetime
@@ -25,6 +26,8 @@ from app.pdf.invoice_report import build_recipient_invoice_pdf
 from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.schemas.me import MeResponse
 from app.storage.supabase_storage import download_file_bytes, download_pdf_bytes
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/reports", tags=["reporting"])
@@ -938,9 +941,10 @@ def get_hq_billing(
                     )
                     rows = _rows_to_dicts(cur)
         except Exception as exc:
+            logger.exception("get_hq_billing query failed for month=%s", month)
             raise HTTPException(
                 status_code=500,
-                detail=f"HQ billing query failed: {exc}",
+                detail="HQ billing query failed",
             ) from exc
 
         for row in rows:
@@ -956,9 +960,10 @@ def get_hq_billing(
     except HTTPException:
         raise
     except Exception as exc:
+        logger.exception("get_hq_billing failed for month=%s", month)
         raise HTTPException(
             status_code=500,
-            detail=f"HQ billing failed: {exc}",
+            detail="HQ billing failed",
         ) from exc
 
 

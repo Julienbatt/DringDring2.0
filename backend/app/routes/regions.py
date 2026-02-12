@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from pydantic import BaseModel
 import uuid
+import logging
 from typing import Optional
 
 from app.core.guards import require_super_admin_user, require_admin_user
@@ -10,6 +11,7 @@ from app.schemas.me import MeResponse
 from app.storage.supabase_storage import upload_file_bytes
 
 router = APIRouter(prefix="/regions", tags=["regions"])
+logger = logging.getLogger(__name__)
 
 class AdminRegionCreate(BaseModel):
     name: str
@@ -279,7 +281,8 @@ async def upload_admin_region_logo(
             content_type=content_type,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        logger.exception("upload_billing_logo failed for region_id=%s", target_region_id)
+        raise HTTPException(status_code=502, detail="Logo upload failed") from exc
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -466,7 +469,8 @@ async def upload_admin_region_internal_logo(
             content_type=content_type,
         )
     except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        logger.exception("upload_internal_billing_logo failed for region_id=%s", target_region_id)
+        raise HTTPException(status_code=502, detail="Logo upload failed") from exc
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
