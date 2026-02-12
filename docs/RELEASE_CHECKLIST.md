@@ -4,6 +4,7 @@
 - Verify `main` is green in CI (`backend-tests`, `frontend-quality`, `smoke-e2e`).
 - Confirm database migrations are reviewed and rollback strategy is documented.
 - Confirm environment variables are set for target environment.
+- If monitoring is enabled, confirm `SENTRY_DSN` is configured for backend.
 - Confirm no unexpected files are staged (`git status` clean for tracked files).
 
 ## Release

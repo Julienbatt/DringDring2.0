@@ -3,8 +3,10 @@ from contextlib import asynccontextmanager
 from time import perf_counter
 from uuid import uuid4
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 from app.routes import (
     health,
@@ -30,6 +32,13 @@ from app.core.config import settings as app_settings, get_cors_origins
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if app_settings.SENTRY_DSN:
+        sentry_sdk.init(
+            dsn=app_settings.SENTRY_DSN,
+            traces_sample_rate=app_settings.SENTRY_TRACES_SAMPLE_RATE,
+            integrations=[FastApiIntegration()],
+        )
+        logger.info("Sentry enabled")
     if not app_settings.FRONTEND_URL:
         logger.warning(
             "FRONTEND_URL is not set. Supabase invites may default to Site URL (often localhost on staging if misconfigured)."

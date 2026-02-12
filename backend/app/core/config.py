@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     OSRM_BASE_URL: str = "https://router.project-osrm.org"
     OSRM_TIMEOUT_SECONDS: int = 8
     DEFAULT_USER_PASSWORD: str = "password"
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
 
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
