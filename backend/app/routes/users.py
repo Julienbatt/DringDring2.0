@@ -67,7 +67,7 @@ def list_users(
         return results
         
     except Exception as e:
-        logger.error(f"Failed to fetch users: {e}")
+        logger.exception("Failed to fetch users")
         raise HTTPException(status_code=500, detail="Unable to fetch users")
 
 @router.put("/{user_id}")
@@ -141,5 +141,5 @@ def update_user_role(
                     )
         return {"message": "User updated", "user": response.json()}
     except Exception as e:
-        logger.error(f"Failed to update user: {e}")
+        logger.exception("Failed to update user")
         raise HTTPException(status_code=500, detail="Unable to update user")
