@@ -5,6 +5,7 @@
 - Confirm database migrations are reviewed and rollback strategy is documented.
 - Confirm environment variables are set for target environment.
 - If monitoring is enabled, confirm `SENTRY_DSN` is configured for backend.
+- If frontend monitoring is enabled, confirm `NEXT_PUBLIC_SENTRY_DSN` is configured.
 - Confirm no unexpected files are staged (`git status` clean for tracked files).
 
 ## Release

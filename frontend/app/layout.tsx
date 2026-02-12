@@ -3,6 +3,7 @@ import { Raleway, Fira_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import SentryBootstrap from "@/components/SentryBootstrap";
 
 const dringSans = Raleway({
   variable: "--font-dringsans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <LanguageProvider>
+          <SentryBootstrap />
           {children}
           <Toaster />
         </LanguageProvider>
