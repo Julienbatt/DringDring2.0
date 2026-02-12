@@ -1,5 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
+from time import perf_counter
+from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +50,36 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],
 )
+
+@app.middleware("http")
+async def add_request_context(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid4())
+    request.state.request_id = request_id
+    started = perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "request_failed request_id=%s method=%s path=%s",
+            request_id,
+            request.method,
+            request.url.path,
+        )
+        raise
+
+    duration_ms = round((perf_counter() - started) * 1000, 2)
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "request_complete request_id=%s method=%s path=%s status=%s duration_ms=%s",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+    return response
+
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
