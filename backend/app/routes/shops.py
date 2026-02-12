@@ -408,23 +408,35 @@ def create_shop(
     user_email = shop.email.strip() if shop.email else None
     if user_email and settings.SUPABASE_SERVICE_KEY and settings.SUPABASE_URL:
         try:
-            url = f"{settings.SUPABASE_URL}/auth/v1/invite"
+            use_password_flow = bool(settings.DEFAULT_USER_PASSWORD)
+            url = (
+                f"{settings.SUPABASE_URL}/auth/v1/admin/users"
+                if use_password_flow
+                else f"{settings.SUPABASE_URL}/auth/v1/invite"
+            )
             headers = {
                 "apikey": settings.SUPABASE_SERVICE_KEY,
                 "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
                 "Content-Type": "application/json",
             }
-            payload = {
-                "email": user_email,
-                "data": {
-                    "role": "shop",
-                    "shop_id": shop_id,
-                    "city_id": shop.city_id,
-                    "admin_region_id": str(admin_region_id) if admin_region_id else None,
-                    "hq_id": shop.hq_id,
-                },
+            metadata = {
+                "role": "shop",
+                "shop_id": shop_id,
+                "city_id": shop.city_id,
+                "admin_region_id": str(admin_region_id) if admin_region_id else None,
+                "hq_id": shop.hq_id,
             }
-            if settings.FRONTEND_URL:
+            payload = (
+                {
+                    "email": user_email,
+                    "password": settings.DEFAULT_USER_PASSWORD,
+                    "email_confirm": True,
+                    "app_metadata": metadata,
+                }
+                if use_password_flow
+                else {"email": user_email, "data": metadata}
+            )
+            if not use_password_flow and settings.FRONTEND_URL:
                 payload["redirect_to"] = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
             response = httpx.post(url, headers=headers, json=payload, timeout=10)
             if response.status_code < 400:

@@ -27,13 +27,14 @@ def _get_settings():
     backend_env = _load_env_file(Path(__file__).resolve().parent.parent / ".env")
     supabase_url = os.getenv("SUPABASE_URL") or backend_env.get("SUPABASE_URL")
     service_key = os.getenv("SUPABASE_SERVICE_KEY") or backend_env.get("SUPABASE_SERVICE_KEY")
+    default_password = os.getenv("DEFAULT_USER_PASSWORD") or backend_env.get("DEFAULT_USER_PASSWORD") or "password123"
     database_url = os.getenv("DATABASE_URL") or backend_env.get("DATABASE_URL")
     frontend_url = os.getenv("FRONTEND_URL") or backend_env.get("FRONTEND_URL")
-    return supabase_url, service_key, database_url, frontend_url
+    return supabase_url, service_key, database_url, frontend_url, default_password
 
 
 def sync_shop_users():
-    supabase_url, service_key, database_url, frontend_url = _get_settings()
+    supabase_url, service_key, database_url, frontend_url, default_password = _get_settings()
     if not supabase_url or not service_key or not database_url:
         print("Missing SUPABASE_URL / SUPABASE_SERVICE_KEY / DATABASE_URL in env.")
         sys.exit(1)
@@ -73,20 +74,29 @@ def sync_shop_users():
             skipped += 1
             continue
 
-        payload = {
-            "email": email,
-            "data": {
-                "role": "shop",
-                "shop_id": str(shop_id),
-                "city_id": str(city_id),
-                "admin_region_id": str(admin_region_id) if admin_region_id else None,
-                "hq_id": str(hq_id) if hq_id else None,
-            },
+        metadata = {
+            "role": "shop",
+            "shop_id": str(shop_id),
+            "city_id": str(city_id),
+            "admin_region_id": str(admin_region_id) if admin_region_id else None,
+            "hq_id": str(hq_id) if hq_id else None,
         }
-        if frontend_url:
+        use_password_flow = bool(default_password)
+        payload = (
+            {
+                "email": email,
+                "password": default_password,
+                "email_confirm": True,
+                "app_metadata": metadata,
+            }
+            if use_password_flow
+            else {"email": email, "data": metadata}
+        )
+        if not use_password_flow and frontend_url:
             payload["redirect_to"] = f"{frontend_url.rstrip('/')}/auth/callback"
         try:
-            res = httpx.post(f"{supabase_url}/auth/v1/invite", headers=headers, json=payload, timeout=15)
+            endpoint = "/auth/v1/admin/users" if use_password_flow else "/auth/v1/invite"
+            res = httpx.post(f"{supabase_url}{endpoint}", headers=headers, json=payload, timeout=15)
             if res.status_code < 400:
                 created += 1
             else:

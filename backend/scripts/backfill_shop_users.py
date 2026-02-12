@@ -79,19 +79,28 @@ def list_auth_users(client: httpx.Client) -> Set[str]:
 
 
 def create_user(client: httpx.Client, shop: ShopRow) -> Optional[str]:
-    payload = {
-        "email": shop.email,
-        "data": {
-            "role": "shop",
-            "shop_id": shop.id,
-            "city_id": shop.city_id,
-            "admin_region_id": shop.admin_region_id,
-            "hq_id": shop.hq_id,
-        },
+    metadata = {
+        "role": "shop",
+        "shop_id": shop.id,
+        "city_id": shop.city_id,
+        "admin_region_id": shop.admin_region_id,
+        "hq_id": shop.hq_id,
     }
-    if settings.FRONTEND_URL:
+    use_password_flow = bool(settings.DEFAULT_USER_PASSWORD)
+    payload = (
+        {
+            "email": shop.email,
+            "password": settings.DEFAULT_USER_PASSWORD,
+            "email_confirm": True,
+            "app_metadata": metadata,
+        }
+        if use_password_flow
+        else {"email": shop.email, "data": metadata}
+    )
+    if not use_password_flow and settings.FRONTEND_URL:
         payload["redirect_to"] = f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
-    resp = client.post("/auth/v1/invite", json=payload)
+    endpoint = "/auth/v1/admin/users" if use_password_flow else "/auth/v1/invite"
+    resp = client.post(endpoint, json=payload)
     if resp.status_code < 400:
         return None
     return resp.text
