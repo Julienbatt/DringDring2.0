@@ -67,12 +67,12 @@ export default function LoginPage() {
                 </div>
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className="relative h-40 bg-slate-100">
+                    <div className="relative h-32 bg-slate-100 sm:h-40">
                         <Image
                             src="/brand/poster2.png"
                             alt={t('common.brandName')}
                             fill
-                            className="object-cover"
+                            className="object-contain p-2 sm:object-cover sm:p-0"
                             priority
                         />
                     </div>
