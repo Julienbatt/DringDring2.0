@@ -51,91 +51,92 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
     logoAlt: 'Logo DringDring',
     pageTitle: 'Votre service local, utile et mesurable',
     guaranteeTitle: 'Ce que DringDring garantit',
-    adminKitTitle: 'Kit de demarchage (admin region)',
+    adminKitTitle: 'Kit de démarchage (admin région)',
     adminKitIntro:
-      'Outils marketing telechargeables pour convaincre de nouvelles communes, HQ et commerces.',
-    adminOnlyHint: 'Le kit PDF de demarchage est reserve au role admin region.',
-    downloadDossierLabel: 'Telecharger dossier marketing',
-    downloadKpiLabel: 'Telecharger scripts KPI',
-    generatingLabel: 'Generation...',
-    pdfOk: 'PDF genere',
-    pdfError: 'Generation PDF impossible',
+      'Outils marketing téléchargeables pour convaincre de nouvelles communes, HQ et commerces.',
+    adminOnlyHint: 'Le kit PDF de démarchage est réservé au rôle admin région.',
+    downloadDossierLabel: 'Télécharger dossier marketing',
+    downloadKpiLabel: 'Télécharger scripts KPI',
+    generatingLabel: 'Génération...',
+    pdfOk: 'PDF généré',
+    pdfError: 'Génération PDF impossible',
     roleCopy: {
       city: {
-        title: 'Votre commune rend service, avec dignite',
+        title: 'Votre commune rend service, avec dignité',
+        title: 'Votre commune rend service, avec dignité',
         intro:
           'Vous avez choisi DringDring pour soutenir les habitants qui en ont le plus besoin, sans complexifier le quotidien des services communaux.',
         points: [
-          'Un service concret pour les publics prioritaires (CMS, mobilite reduite, personnes agees).',
-          'Un pilotage simple: budget mobilise, volume de livraisons, impact local visible.',
-          'Une communication positive: solidarite locale + economie de proximite + impact environnemental.',
+          'Un service concret pour les publics prioritaires (CMS, mobilité réduite, personnes âgées).',
+          'Un pilotage simple: budget mobilisé, volume de livraisons, impact local visible.',
+          'Une communication positive: solidarité locale + économie de proximité + impact environnemental.',
         ],
         outro:
-          'Votre choix montre qu une commune peut etre a la fois proche de ses habitants et rigoureuse sur ses resultats.',
+          'Votre choix montre qu une commune peut être à la fois proche de ses habitants et rigoureuse sur ses résultats.',
       },
       shop: {
         title: 'Votre commerce reste proche de vos clients',
         intro:
-          'Vous avez choisi DringDring pour continuer a servir vos clients, meme lorsqu ils ne peuvent pas se deplacer.',
+          'Vous avez choisi DringDring pour continuer à servir vos clients, même lorsqu ils ne peuvent pas se déplacer.',
         points: [
-          'Des livraisons simples a creer, sans surcharge administrative.',
-          'Un lien client renforce: plus de recurrence et plus de confiance.',
+          'Des livraisons simples à créer, sans surcharge administrative.',
+          'Un lien client renforcé: plus de récurrence et plus de confiance.',
           'Un positionnement local fort: commerce utile, humain et moderne.',
         ],
         outro:
-          'Vous transformez la livraison en service de fidelite et en avantage concurrentiel local.',
+          'Vous transformez la livraison en service de fidélité et en avantage concurrentiel local.',
       },
       hq: {
         title: 'Votre groupe pilote performance et impact',
         intro:
-          'Vous avez choisi DringDring pour coordonner plusieurs points de vente avec une lecture claire des volumes, des couts et de l impact.',
+          'Vous avez choisi DringDring pour coordonner plusieurs points de vente avec une lecture claire des volumes, des coûts et de l impact.',
         points: [
-          'Une vue consolidee multi-sites pour decision rapide.',
+          'Une vue consolidée multi-sites pour décision rapide.',
           'Des KPI fiables pour direction, finance et RSE.',
-          'Un service qui aligne performance business et utilite territoriale.',
+          'Un service qui aligne performance business et utilité territoriale.',
         ],
         outro:
-          'Vous montrez qu un reseau peut etre performant, responsable et concretement utile sur le terrain.',
+          'Vous montrez qu un réseau peut être performant, responsable et concrètement utile sur le terrain.',
       },
       admin_region: {
         title: 'Vous orchestrez un service territorial utile',
         intro:
-          'En tant qu administration regionale, vous donnez de la coherence au service: communes, commerces, HQ et coursiers travaillent enfin sur la meme base.',
+          'En tant qu administration régionale, vous donnez de la cohérence au service: communes, commerces, HQ et coursiers travaillent enfin sur la même base.',
         points: [
-          'Pilotage unifie du dispatch, de la facturation et de la qualite de service.',
-          'Vision claire des performances sociales, operationnelles et budgetaires.',
-          'Capacite de demarchage plus forte avec un argumentaire structure et des preuves chiffrables.',
+          'Pilotage unifié du dispatch, de la facturation et de la qualité de service.',
+          'Vision claire des performances sociales, opérationnelles et budgétaires.',
+          'Capacité de démarchage plus forte avec un argumentaire structuré et des preuves chiffrables.',
         ],
         outro:
-          'Votre role est central: vous transformez une bonne idee en service public-operationnel durable.',
+          'Votre rôle est central: vous transformez une bonne idée en service public-opérationnel durable.',
       },
     },
     sharedGuarantees: [
-      'Un service lisible pour chaque role (commune, shop, HQ, administration regionale).',
-      'Des indicateurs actionnables, pas du reporting decoratif.',
-      'Une execution terrain qui renforce la confiance des habitants et des partenaires.',
+      'Un service lisible pour chaque rôle (commune, shop, HQ, administration régionale).',
+      'Des indicateurs actionnables, pas du reporting décoratif.',
+      'Une exécution terrain qui renforce la confiance des habitants et des partenaires.',
     ],
     dossierSections: [
       {
         title: 'Pourquoi DringDring',
         body: [
-          'DringDring relie communes, commerces, HQ et coursiers dans une operation unique.',
-          'Le service combine impact social, economie locale et reduction carbone.',
-          'Les resultats sont pilotables avec des KPI simples et partageables.',
+          'DringDring relie communes, commerces, HQ et coursiers dans une opération unique.',
+          'Le service combine impact social, économie locale et réduction carbone.',
+          'Les résultats sont pilotables avec des KPI simples et partageables.',
         ],
       },
       {
         title: 'Valeur pour une commune',
         body: [
-          'Soutenir les habitants fragiles avec une experience digne et fiable.',
-          'Disposer d une lecture budgetaire claire sur chaque periode.',
-          'Montrer des preuves d impact aupres des elus et des partenaires.',
+          'Soutenir les habitants fragiles avec une expérience digne et fiable.',
+          'Disposer d une lecture budgétaire claire sur chaque période.',
+          'Montrer des preuves d impact auprès des élus et des partenaires.',
         ],
       },
       {
         title: 'Valeur pour commerces et HQ',
         body: [
-          'Augmenter la recurrence client et maintenir les achats dans le local.',
+          'Augmenter la récurrence client et maintenir les achats dans le local.',
           'Consolider les chiffres en multi-sites pour pilotage direction.',
           'Disposer d exports exploitables pour finance et communication.',
         ],
@@ -145,29 +146,29 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
       {
         title: 'Script KPI Commune',
         body: [
-          'Livraisons, beneficiaires, commerces actifs, budget communal mobilise.',
-          'Part CMS, rythme operationnel, impact environnemental local.',
+          'Livraisons, bénéficiaires, commerces actifs, budget communal mobilisé.',
+          'Part CMS, rythme opérationnel, impact environnemental local.',
         ],
       },
       {
         title: 'Script KPI Shop',
         body: [
           'Livraisons, clients actifs, nouveaux clients, panier moyen.',
-          'Evolution mensuelle et contribution au service local.',
+          'Évolution mensuelle et contribution au service local.',
         ],
       },
       {
         title: 'Script KPI HQ',
         body: [
-          'Subvention HQ, volume traite, livraisons et cout par livraison.',
-          'Couverture territoriale et impact social/environnemental consolide.',
+          'Subvention HQ, volume traité, livraisons et coût par livraison.',
+          'Couverture territoriale et impact social/environnemental consolidé.',
         ],
       },
     ],
     dossierPdfTitle: 'DringDring - Kit marketing service',
-    dossierPdfSubtitle: 'Version demarchage communes, HQ et commerces',
+    dossierPdfSubtitle: 'Version démarchage communes, HQ et commerces',
     dossierPdfFile: 'DringDring_Kit_Marketing_Service_FR.pdf',
-    kpiPdfTitle: 'DringDring - Scripts KPI de demarchage',
+    kpiPdfTitle: 'DringDring - Scripts KPI de démarchage',
     kpiPdfSubtitle: 'Formats de communication pour communes, HQ et commerces',
     kpiPdfFile: 'DringDring_Kit_Marketing_KPI_FR.pdf',
   },
