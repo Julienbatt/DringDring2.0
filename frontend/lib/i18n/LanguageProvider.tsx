@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useSyncExternalStore } from 'react'
 import {
   DEFAULT_LOCALE,
   detectLocaleFromNavigator,
@@ -10,6 +10,7 @@ import {
 } from './messages'
 
 const STORAGE_KEY = 'dringdring.locale'
+const LOCALE_EVENT = 'dringdring:locale-change'
 
 type LanguageContextType = {
   locale: Locale
@@ -19,24 +20,38 @@ type LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
+function readClientLocale(): Locale {
+  if (typeof window === 'undefined') return DEFAULT_LOCALE
+  const stored = window.localStorage.getItem(STORAGE_KEY)
+  if (stored && SUPPORTED_LOCALES.includes(stored as Locale)) {
+    return stored as Locale
+  }
+  return detectLocaleFromNavigator(window.navigator.language)
+}
+
+function subscribeLocale(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const handler = () => onStoreChange()
+  window.addEventListener('storage', handler)
+  window.addEventListener(LOCALE_EVENT, handler)
+  return () => {
+    window.removeEventListener('storage', handler)
+    window.removeEventListener(LOCALE_EVENT, handler)
+  }
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === 'undefined') return DEFAULT_LOCALE
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored && SUPPORTED_LOCALES.includes(stored as Locale)) {
-      return stored as Locale
-    }
-    return detectLocaleFromNavigator(window.navigator.language)
-  })
+  const locale = useSyncExternalStore(subscribeLocale, readClientLocale, () => DEFAULT_LOCALE)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    window.localStorage.setItem(STORAGE_KEY, locale)
     document.documentElement.lang = locale
   }, [locale])
 
   const setLocale = (next: Locale) => {
-    setLocaleState(next)
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(STORAGE_KEY, next)
+    window.dispatchEvent(new Event(LOCALE_EVENT))
   }
 
   const t = useMemo(() => {
