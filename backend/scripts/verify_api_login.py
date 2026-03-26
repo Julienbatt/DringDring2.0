@@ -58,8 +58,11 @@ def call_me(access_token):
 
 
 def main():
-    email = sys.argv[1] if len(sys.argv) > 1 else "superadmin@dringdring.ch"
-    password = sys.argv[2] if len(sys.argv) > 2 else "password"
+    if len(sys.argv) < 3:
+        print("Usage: python verify_api_login.py <email> <password>")
+        sys.exit(1)
+    email = sys.argv[1]
+    password = sys.argv[2]
     try:
         token_data = login(email, password)
     except urllib.error.HTTPError as exc:

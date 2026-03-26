@@ -80,7 +80,7 @@ def register_user(email, password):
         sys.stdout.flush()
 
 if __name__ == "__main__":
-    if len(sys.argv) > 2:
-        register_user(sys.argv[1], sys.argv[2])
-    else:
-        register_user("superadmin@dringdring.ch", "password123")
+    if len(sys.argv) < 3:
+        print("Usage: python register_user.py <email> <password>")
+        sys.exit(1)
+    register_user(sys.argv[1], sys.argv[2])

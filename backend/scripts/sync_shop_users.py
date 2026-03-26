@@ -27,7 +27,10 @@ def _get_settings():
     backend_env = _load_env_file(Path(__file__).resolve().parent.parent / ".env")
     supabase_url = os.getenv("SUPABASE_URL") or backend_env.get("SUPABASE_URL")
     service_key = os.getenv("SUPABASE_SERVICE_KEY") or backend_env.get("SUPABASE_SERVICE_KEY")
-    default_password = os.getenv("DEFAULT_USER_PASSWORD") or backend_env.get("DEFAULT_USER_PASSWORD") or "password123"
+    default_password = os.getenv("DEFAULT_USER_PASSWORD") or backend_env.get("DEFAULT_USER_PASSWORD")
+    if not default_password:
+        print("Missing DEFAULT_USER_PASSWORD in env.")
+        sys.exit(1)
     database_url = os.getenv("DATABASE_URL") or backend_env.get("DATABASE_URL")
     frontend_url = os.getenv("FRONTEND_URL") or backend_env.get("FRONTEND_URL")
     return supabase_url, service_key, database_url, frontend_url, default_password

@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     RETURN_TRIP_MULTIPLIER: float = 2.0
     OSRM_BASE_URL: str = "https://router.project-osrm.org"
     OSRM_TIMEOUT_SECONDS: int = 8
-    DEFAULT_USER_PASSWORD: Optional[str] = "password"
+    DEFAULT_USER_PASSWORD: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0
 

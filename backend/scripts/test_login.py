@@ -76,10 +76,10 @@ def run_login(email, password):
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) > 2:
-            run_login(sys.argv[1], sys.argv[2])
-        else:
-            run_login("superadmin@dringdring.ch", "password")
+        if len(sys.argv) < 3:
+            print("Usage: python test_login.py <email> <password>")
+            sys.exit(1)
+        run_login(sys.argv[1], sys.argv[2])
     except Exception as exc:
         print(str(exc))
         sys.exit(1)
