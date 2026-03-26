@@ -63,7 +63,6 @@ const TRANSLATIONS: Record<Locale, TranslationPack> = {
     roleCopy: {
       city: {
         title: 'Votre commune rend service, avec dignité',
-        title: 'Votre commune rend service, avec dignité',
         intro:
           'Vous avez choisi DringDring pour soutenir les habitants qui en ont le plus besoin, sans complexifier le quotidien des services communaux.',
         points: [

@@ -13,6 +13,11 @@ node_modules/
 .next/
 npm-debug.log*
 
+# Logs
+*.log
+*.err.log
+*.out.log
+
 # Env
 .env
 .env.local

@@ -1,8 +1,0 @@
-JWT iss: https://lrrgczgxhokslsrjswug.supabase.co/auth/v1
-JWT kid: 2ef9403f-9862-4069-bd89-0393409ebd29
-JWKS url: https://lrrgczgxhokslsrjswug.supabase.co/auth/v1/.well-known/jwks.json
-JWT iss: https://lrrgczgxhokslsrjswug.supabase.co/auth/v1
-JWT kid: 2ef9403f-9862-4069-bd89-0393409ebd29
-JWKS url: https://lrrgczgxhokslsrjswug.supabase.co/auth/v1/.well-known/jwks.json
-Resolved aws-1-eu-west-2.pooler.supabase.com -> IPv4: 13.41.127.111
-INFO:     127.0.0.1:54533 - "GET /api/v1/me HTTP/1.1" 200 OK
