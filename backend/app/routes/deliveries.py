@@ -133,8 +133,6 @@ def create_delivery(
                                 detail="City mismatch for shop",
                             )
 
-                    conn.commit()
-
                     if (shop_lat is None or shop_lng is None) and shop_address:
                         geocoded = geocode_swiss_address(shop_address)
                         if geocoded:
@@ -369,8 +367,6 @@ def create_delivery_for_shop(
                             status_code=400,
                             detail="No active tariff version for this date",
                         )
-
-                    conn.commit()
 
                     if (shop_lat is None or shop_lng is None) and shop_address:
                         geocoded = geocode_swiss_address(shop_address)

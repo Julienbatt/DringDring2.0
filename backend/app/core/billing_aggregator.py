@@ -207,6 +207,13 @@ def aggregate_billing_run(
     with get_db_connection(jwt_claims) as conn:
         with conn:
             with conn.cursor() as cur:
+                # Advisory lock prevents concurrent billing runs for the same region/month.
+                # The lock is automatically released at end of transaction.
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s || '/' || %s))",
+                    (admin_region_id, period_month),
+                )
+
                 cur.execute(
                     """
                     INSERT INTO billing_run (
