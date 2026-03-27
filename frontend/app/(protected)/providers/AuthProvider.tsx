@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { apiGet } from '@/lib/api'
+import { captureError } from '@/lib/errorReporting'
 import type { Session } from '@supabase/supabase-js'
 
 // Define the shape of the User (MeResponse)
@@ -98,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
         } catch (err: unknown) {
-            console.error("Auth Load Error:", err)
+            captureError(err, 'auth-load')
             // Only redirect if we are strictly protecting (which we are in this provider)
             // But be careful of infinite loops if this provider is used in /login (it shouldn't be).
             // This provider is for (protected) routes.
