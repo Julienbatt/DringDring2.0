@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Lock, LogIn, ArrowRight } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import * as Sentry from '@sentry/browser'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -47,6 +48,7 @@ export default function LoginPage() {
             router.push('/dashboard')
         } catch (err: unknown) {
             console.error('Login Error:', err)
+            Sentry.captureException(err)
             toast.error(t('login.systemError'))
         } finally {
             setLoading(false)

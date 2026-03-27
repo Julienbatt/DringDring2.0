@@ -9,6 +9,7 @@ import { useShopPeriods } from '../../reports/hooks/useShopPeriods'
 import { Button } from '@/components/ui/button'
 import { useMe } from '../../hooks/useMe'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import * as Sentry from '@sentry/browser'
 
 type ShopDeliveryRow = Record<string, unknown>
 
@@ -84,6 +85,7 @@ export default function ShopBillingPage() {
       window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error(err)
+      Sentry.captureException(err)
     } finally {
       setDownloading(null)
     }
@@ -116,6 +118,7 @@ export default function ShopBillingPage() {
       window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error(err)
+      Sentry.captureException(err)
     } finally {
       setDownloading(null)
     }

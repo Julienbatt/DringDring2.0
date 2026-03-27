@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import * as Sentry from '@sentry/browser'
 
 interface TariffDialogProps {
     open: boolean
@@ -242,6 +243,7 @@ export function TariffDialog({ open, onOpenChange, tariffToEdit, onSuccess }: Ta
             onOpenChange(false)
         } catch (error) {
             console.error(error)
+            Sentry.captureException(error)
             toast.error(t('admin.tariffs.dialog.saveError'))
         } finally {
             setLoading(false)

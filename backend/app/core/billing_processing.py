@@ -1,8 +1,6 @@
 from datetime import date, datetime, timezone
 import hashlib
 import logging
-import re
-
 from fastapi import HTTPException
 
 from app.db.session import get_db_connection
@@ -10,23 +8,10 @@ from app.pdf.invoice_qr_bill import build_recipient_invoice_with_qr_bill
 from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.storage.supabase_storage import upload_pdf_bytes, download_file_bytes
 from app.core.billing_reference import generate_reference
+from app.core.utils import split_address_parts
 
 logger = logging.getLogger(__name__)
 
-
-def _split_address_parts(value: str | None) -> tuple[str | None, str | None]:
-    if not value:
-        return None, None
-    address = value.strip()
-    if not address:
-        return None, None
-    match = re.match(r"^(?P<num>\\d+[A-Za-z0-9\\-/]*)\\s+(?P<street>.+)$", address)
-    if match:
-        return match.group("street"), match.group("num")
-    match = re.match(r"^(?P<street>.+?)\\s+(?P<num>\\d+[A-Za-z0-9\\-/]*)$", address)
-    if match:
-        return match.group("street"), match.group("num")
-    return address, None
 
 def freeze_shop_billing_period(
     cur,
@@ -120,7 +105,7 @@ def freeze_shop_billing_period(
             logo_bytes = None
 
     if billing_street is None and admin_region_address:
-        billing_street, billing_house_num = _split_address_parts(admin_region_address)
+        billing_street, billing_house_num = split_address_parts(admin_region_address)
     has_billing_override = (
         billing_name
         and billing_iban

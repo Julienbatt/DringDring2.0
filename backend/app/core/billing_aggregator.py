@@ -6,6 +6,7 @@ import re
 
 from app.db.session import get_db_connection
 from app.core.billing_reference import generate_reference
+from app.core.utils import split_address_parts
 
 
 @dataclass
@@ -54,21 +55,6 @@ def _split_vat(amount_ttc: Decimal, vat_rate: Decimal) -> tuple[Decimal, Decimal
 _POSTAL_CITY_RE = re.compile(r"\\b(?P<postal>\\d{4})\\s+(?P<city>.+)$")
 
 
-def _split_address_parts(value: str | None) -> tuple[str | None, str | None]:
-    if not value:
-        return None, None
-    address = value.strip()
-    if not address:
-        return None, None
-    match = re.match(r"^(?P<num>\\d+[A-Za-z0-9/\\-]*)\\s+(?P<street>.+)$", address)
-    if match:
-        return match.group("street"), match.group("num")
-    match = re.match(r"^(?P<street>.+?)\\s+(?P<num>\\d+[A-Za-z0-9/\\-]*)$", address)
-    if match:
-        return match.group("street"), match.group("num")
-    return address, None
-
-
 def _split_address_full(value: str | None) -> tuple[str | None, str | None, str | None, str | None]:
     if not value:
         return None, None, None, None
@@ -82,7 +68,7 @@ def _split_address_full(value: str | None) -> tuple[str | None, str | None, str 
         postal_code = match.group("postal").strip()
         city = match.group("city").strip()
         address = address[:match.start()].strip().rstrip(",")
-    street, house_num = _split_address_parts(address)
+    street, house_num = split_address_parts(address)
     return street, house_num, postal_code, city
 
 
@@ -292,7 +278,7 @@ def aggregate_billing_run(
                     internal_billing_country = None
 
                 if billing_street is None and admin_region_address:
-                    billing_street, billing_house_num = _split_address_parts(admin_region_address)
+                    billing_street, billing_house_num = split_address_parts(admin_region_address)
 
                 cur.execute(
                     """
