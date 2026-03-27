@@ -9,7 +9,7 @@ import { useShopPeriods } from '../../reports/hooks/useShopPeriods'
 import { Button } from '@/components/ui/button'
 import { useMe } from '../../hooks/useMe'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
-import * as Sentry from '@sentry/browser'
+import { captureError } from '@/lib/errorReporting'
 
 type ShopDeliveryRow = Record<string, unknown>
 
@@ -84,8 +84,7 @@ export default function ShopBillingPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error(err)
-      Sentry.captureException(err)
+      captureError(err, 'ShopBillingPage.handleDownloadPdf')
     } finally {
       setDownloading(null)
     }
@@ -117,8 +116,7 @@ export default function ShopBillingPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error(err)
-      Sentry.captureException(err)
+      captureError(err, 'ShopBillingPage.handleDownloadCsv')
     } finally {
       setDownloading(null)
     }

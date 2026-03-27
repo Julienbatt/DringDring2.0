@@ -16,6 +16,7 @@ import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
@@ -93,7 +94,7 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
-      console.error(error)
+      captureError(error, 'HqDialog.handleSubmit')
       toast.error(getErrorMessage(error, t('admin.hq.dialog.saveError')))
     } finally {
       setLoading(false)
@@ -110,7 +111,7 @@ export function HqDialog({ open, onOpenChange, hqToEdit, onSuccess }: HqDialogPr
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
-      console.error(error)
+      captureError(error, 'HqDialog.handleDelete')
       toast.error(getErrorMessage(error, t('admin.hq.dialog.deleteError')))
     } finally {
       setLoading(false)

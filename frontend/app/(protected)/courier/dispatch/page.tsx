@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 type DispatchDelivery = {
   id: string
@@ -79,7 +80,7 @@ export default function CourierDispatchPage() {
       }))
       setCouriers(formattedCouriers)
     } catch (err) {
-      console.error(err)
+      captureError(err, 'CourierDispatchPage.fetchDeliveries')
       setError(t('dispatch.mobile.loadError'))
     } finally {
       setLoading(false)
@@ -113,7 +114,7 @@ export default function CourierDispatchPage() {
       )
       setActiveTab('assigned')
     } catch (err) {
-      console.error(err)
+      captureError(err, 'CourierDispatchPage.handleAssignSelf')
       alert(t('dispatch.mobile.assignError'))
     }
   }
@@ -128,7 +129,7 @@ export default function CourierDispatchPage() {
       setAssignTarget(null)
       return true
     } catch (err) {
-      console.error(err)
+      captureError(err, 'CourierDispatchPage.handleAssignCourier')
       alert(t('dispatch.mobile.assignError'))
       return false
     }

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { ClientDialog, ClientData } from './components/ClientDialog'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 type Client = {
     id: string
@@ -97,7 +98,7 @@ export default function ClientsPage() {
             const data = await apiGet<Client[]>(`/clients/admin${queryParams}`, session.access_token)
             setClients(data)
         } catch (error) {
-            console.error('Failed to load clients', error)
+            captureError(error, 'ClientsPage.loadClients')
             toast.error(t('admin.clients.errorLoad'))
         } finally {
             setLoading(false)

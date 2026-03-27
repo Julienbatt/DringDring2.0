@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
 from pydantic import BaseModel
 import uuid
@@ -66,16 +66,11 @@ class TariffResponse(BaseModel):
 @router.get("/admin", response_model=List[ShopResponse])
 def list_admin_shops(
     admin_region_id: Optional[str] = None, # Drill-down context
-    limit: int = 500,
-    offset: int = 0,
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    if limit < 1:
-        limit = 1
-    if offset < 0:
-        offset = 0
-    limit = min(limit, 2000)
     # Security: Enforce region for non-super admins
     target_region_id = admin_region_id
     if user.role != 'super_admin':
@@ -127,16 +122,11 @@ def list_admin_shops(
 
 @router.get("/hqs", response_model=List[HQResponse])
 def list_hqs(
-    limit: int = 500,
-    offset: int = 0,
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    if limit < 1:
-        limit = 1
-    if offset < 0:
-        offset = 0
-    limit = min(limit, 2000)
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             def has_column(table: str, column: str) -> bool:
@@ -252,16 +242,11 @@ def delete_hq(
 @router.get("/tariffs", response_model=List[TariffResponse])
 def list_tariffs(
     admin_region_id: Optional[str] = None,
-    limit: int = 500,
-    offset: int = 0,
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    if limit < 1:
-        limit = 1
-    if offset < 0:
-        offset = 0
-    limit = min(limit, 2000)
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             query = """
@@ -292,16 +277,11 @@ def list_tariffs(
 
 @router.get("/hq", response_model=List[ShopResponse])
 def list_hq_shops(
-    limit: int = 500,
-    offset: int = 0,
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
     user: MeResponse = Depends(require_hq_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    if limit < 1:
-        limit = 1
-    if offset < 0:
-        offset = 0
-    limit = min(limit, 2000)
     if not user.hq_id:
         raise HTTPException(status_code=400, detail="HQ id missing")
 

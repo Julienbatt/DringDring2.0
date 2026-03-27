@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from '@/components/ui/badge'
 import { CourierDialog, CourierData } from './components/CourierDialog'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 interface Courier {
     id: string
@@ -56,7 +57,7 @@ export default function AdminCouriersPage() {
 
             setCouriers(couriersData)
         } catch (error) {
-            console.error('Failed to load couriers', error)
+            captureError(error, 'AdminCouriersPage.loadData')
             toast.error(t('admin.couriers.errorLoad'))
         } finally {
             setLoading(false)

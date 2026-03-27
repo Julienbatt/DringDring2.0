@@ -7,6 +7,7 @@ import { apiGet } from '@/lib/api'
 import { useAuth } from '../../providers/AuthProvider'
 import { toast } from 'sonner'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 import {
   Table,
   TableBody,
@@ -40,7 +41,7 @@ export default function HQShopsPage() {
       const data = await apiGet<Shop[]>('/shops/hq', session.access_token)
       setShops(data)
     } catch (error) {
-      console.error('Failed to load HQ shops', error)
+      captureError(error, 'HQShopsPage.loadShops')
       toast.error(t('hq.shops.toast.loadError'))
     } finally {
       setLoading(false)

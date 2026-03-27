@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 interface Delivery {
   status: string
@@ -72,7 +73,7 @@ export default function AdminDashboardPage() {
           totalCouriers: couriers.length,
         })
       } catch (e) {
-        console.error('Dashboard stats error', e)
+        captureError(e, 'AdminDashboardPage.fetchStats')
       } finally {
         setLoading(false)
       }

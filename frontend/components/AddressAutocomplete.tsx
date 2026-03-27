@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 
 // Simple debounce implementation if lodash not available/wanted heavy dep
@@ -117,7 +118,7 @@ export default function AddressAutocomplete({ onSelect, disabled }: Props) {
                 setIsOpen(true)
             })
             .catch(err => {
-                console.error("Swisstopo error", err)
+                captureError(err, 'AddressAutocomplete')
             })
     }, [debouncedQuery, shouldSearch])
 

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { TariffDialog } from './components/TariffDialog'
-import * as Sentry from '@sentry/browser'
+import { captureError } from '@/lib/errorReporting'
 
 interface TariffGrid {
     id: string
@@ -48,8 +48,7 @@ export default function TariffsPage() {
             const data = await apiGet<TariffGrid[]>(`/tariffs${queryParams}`, session.access_token)
             setTariffs(data)
         } catch (error) {
-            console.error(t('admin.tariffs.loadError'), error)
-            Sentry.captureException(error)
+            captureError(error, 'TariffsPage.loadData')
             toast.error(t('admin.tariffs.loadError'))
         } finally {
             setLoading(false)
@@ -83,8 +82,7 @@ export default function TariffsPage() {
             toast.success(t('admin.tariffs.deleteSuccess'))
             loadData()
         } catch (error: unknown) {
-            console.error(t('admin.tariffs.deleteError'), error)
-            Sentry.captureException(error)
+            captureError(error, 'TariffsPage.handleDelete')
             const message =
                 error && typeof error === 'object' && 'message' in error
                     ? String(error.message)

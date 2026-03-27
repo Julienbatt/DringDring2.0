@@ -32,7 +32,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
-import * as Sentry from '@sentry/browser'
+import { captureError } from '@/lib/errorReporting'
 
 interface AdminRegion {
     id: string
@@ -76,8 +76,7 @@ export default function RegionsPage() {
             setRegions(regionsData)
             setCantons(cantonsData)
         } catch (error) {
-            console.error('Failed to load data', error)
-            Sentry.captureException(error)
+            captureError(error, 'RegionsPage.loadData')
             toast.error(t('super.regions.toast.loadError'))
         } finally {
             setLoading(false)
@@ -115,8 +114,7 @@ export default function RegionsPage() {
             setSelectedCanton('')
             loadData() // Refresh
         } catch (error) {
-            console.error('Failed to create region', error)
-            Sentry.captureException(error)
+            captureError(error, 'RegionsPage.handleCreate')
             toast.error(t('super.regions.toast.createError'))
         }
     }

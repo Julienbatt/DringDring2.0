@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import BrandLogo from '@/components/BrandLogo'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 
 type AdminRegion = {
@@ -39,7 +40,7 @@ export default function SuperAdminDashboard() {
         const data = await apiGet<AdminRegion[]>('/regions', session.access_token)
         setRegions(data)
       } catch (error) {
-        console.error(t('super.dashboard.loadError'), error)
+        captureError(error, 'SuperAdminDashboard.loadRegions')
       } finally {
         setLoading(false)
       }

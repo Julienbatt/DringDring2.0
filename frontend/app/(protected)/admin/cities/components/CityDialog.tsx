@@ -17,6 +17,7 @@ import { useAuth } from '../../../providers/AuthProvider'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toast } from 'sonner'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -111,7 +112,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                 const data = await apiGet<CantonOption[]>('/regions/cantons', session.access_token)
                 setCantons(data)
             } catch (error) {
-                console.error('Failed to load cantons', error)
+                captureError(error, 'CityDialog.loadCantons')
                 setCantons([])
                 toast.error(t('admin.cities.dialog.loadCantonsError'))
             }
@@ -129,7 +130,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
                 const parentCandidates = data.filter((item) => !item.parent_city_id)
                 setCommunes(parentCandidates)
             } catch (error) {
-                console.error('Failed to load communes', error)
+                captureError(error, 'CityDialog.loadCommunes')
                 setCommunes([])
             }
         }
@@ -177,7 +178,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
-            console.error(error)
+            captureError(error, 'CityDialog.handleSubmit')
             toast.error(getErrorMessage(error, t('admin.cities.dialog.saveError')))
         } finally {
             setLoading(false)
@@ -205,7 +206,7 @@ export function CityDialog({ open, onOpenChange, cityToEdit, onSuccess }: CityDi
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
-            console.error(error)
+            captureError(error, 'CityDialog.handleDelete')
             toast.error(getErrorMessage(error, t('admin.cities.dialog.deleteError')))
         } finally {
             setLoading(false)

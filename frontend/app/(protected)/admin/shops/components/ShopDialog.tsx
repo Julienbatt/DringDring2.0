@@ -19,6 +19,7 @@ import { apiDelete, apiGet, apiPost, apiPut } from '@/lib/api'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
@@ -110,7 +111,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
       ])
       setRefData({ cities, hqs, tariffs })
     } catch (error) {
-      console.error('Error loading references', error)
+      captureError(error, 'ShopDialog.fetchReferences')
       toast.error(t('admin.shops.dialog.loadRefsError'))
     }
   }, [session, adminContextRegion, t])
@@ -167,7 +168,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
-      console.error(error)
+      captureError(error, 'ShopDialog.handleSubmit')
       toast.error(getErrorMessage(error, t('admin.shops.dialog.unknownError')))
     } finally {
       setLoading(false)
@@ -184,7 +185,7 @@ export function ShopDialog({ open, onOpenChange, shopToEdit, onSuccess }: ShopDi
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
-      console.error(error)
+      captureError(error, 'ShopDialog.handleDelete')
       toast.error(getErrorMessage(error, t('admin.shops.dialog.deleteError')))
     } finally {
       setLoading(false)

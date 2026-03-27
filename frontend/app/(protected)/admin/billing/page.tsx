@@ -18,6 +18,7 @@ import { apiGet, apiPost, API_BASE_URL } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
+import { captureError } from '@/lib/errorReporting'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 
@@ -140,7 +141,7 @@ export default function BillingPage() {
                 setVatRate(typeof vatRes?.rate === 'number' ? vatRes.rate : null)
             }
         } catch (error) {
-            console.error('Failed to load billing data', error)
+            captureError(error, 'AdminBillingPage.loadAll')
             toast.error(t('admin.billing.toast.loadError'))
         } finally {
             if (requestId === loadAllRequestRef.current) {
@@ -172,7 +173,7 @@ export default function BillingPage() {
             loadAll()
             toast.success(t('admin.billing.toast.recalculated'))
         } catch (error) {
-            console.error('Refresh failed', error)
+            captureError(error, 'AdminBillingPage.handleRefresh')
             toast.error(t('admin.billing.toast.recalculateError'))
         } finally {
             setRefreshing(false)
@@ -206,7 +207,7 @@ export default function BillingPage() {
             a.click()
             a.remove()
         } catch (error) {
-            console.error('Export failed', error)
+            captureError(error, 'AdminBillingPage.handleExport')
             toast.error(t('admin.billing.toast.exportError'))
         }
     }
@@ -254,7 +255,7 @@ export default function BillingPage() {
             a.remove()
             window.URL.revokeObjectURL(url)
         } catch (error) {
-            console.error('ZIP download failed', error)
+            captureError(error, 'AdminBillingPage.downloadZip')
             toast.error(t('admin.billing.toast.zipError'))
         }
     }
@@ -292,7 +293,7 @@ export default function BillingPage() {
             a.remove()
             window.URL.revokeObjectURL(urlObject)
         } catch (error) {
-            console.error('PDF download failed', error)
+            captureError(error, 'AdminBillingPage.handleDownloadPdf')
             toast.error(t('admin.billing.toast.downloadError'))
         }
     }

@@ -19,6 +19,7 @@ import { useAuth } from '../../../providers/AuthProvider'
 import { toast } from 'sonner'
 import { Bike } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -136,7 +137,7 @@ export function CourierDialog({ open, onOpenChange, courierToEdit, onSuccess }: 
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
-            console.error(error)
+            captureError(error, 'CourierDialog.handleSubmit')
             toast.error(getErrorMessage(error, t('admin.couriers.dialog.unknownError')))
         } finally {
             setLoading(false)

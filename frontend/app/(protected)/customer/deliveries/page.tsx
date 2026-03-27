@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { de, enUS, fr, it } from 'date-fns/locale'
 import { Package, Clock, ShoppingBag, CheckCircle2, AlertTriangle, MapPin } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 type CustomerDelivery = {
     delivery_id: string
@@ -38,7 +39,7 @@ export default function CustomerDeliveriesPage() {
             const data = await apiGet<CustomerDelivery[]>('/deliveries/customer', session.access_token)
             setDeliveries(data)
         } catch (error) {
-            console.error('Failed to load deliveries', error)
+            captureError(error, 'CustomerDeliveriesPage.loadDeliveries')
         } finally {
             setLoading(false)
         }
