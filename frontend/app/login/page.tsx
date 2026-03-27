@@ -153,7 +153,7 @@ export default function LoginPage() {
                 </Card>
 
                 <p className="text-center text-xs text-slate-400">
-                    &copy; 2025 DringDring. Secure Logistics.
+                    &copy; {new Date().getFullYear()} DringDring. Secure Logistics.
                 </p>
             </div>
         </div>

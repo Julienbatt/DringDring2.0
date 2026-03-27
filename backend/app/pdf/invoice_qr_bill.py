@@ -83,7 +83,7 @@ def build_recipient_invoice_with_qr_bill(
         recipient_city: City (for QR bill debtor)
         period_month: Billing period (first day of month)
         rows: List of delivery rows (date, shop, client, city, bags, amount)
-        vat_rate: VAT rate (default: 0.081)
+        vat_rate: VAT rate (default from settings.DEFAULT_VAT_RATE)
         is_preview: Whether this is a preview (non-frozen period)
         payment_message: Custom payment message
         reference: Payment reference number

@@ -27,6 +27,7 @@ from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.schemas.me import MeResponse
 from app.storage.supabase_storage import download_file_bytes, download_pdf_bytes
 from app.core.utils import parse_month, split_address_parts
+from app.core.vat import get_vat_rate, DEFAULT_VAT_RATE
 
 logger = logging.getLogger(__name__)
 
@@ -309,7 +310,7 @@ def get_hq_billing_zip(
                             
                             zip_file.writestr(filename, pdf_bytes)
                         except Exception as e:
-                            print(f"Error zipping PDF for {shop_name}: {e}")
+                            logger.error("Error zipping PDF for %s: %s", shop_name, e)
                             # We might want to continue or fail. Let's add a placeholder error file
                             zip_file.writestr(f"ERROR_{shop_name}.txt", f"Could not retrieve PDF: {str(e)}")
 
@@ -348,7 +349,7 @@ def get_admin_billing_zip(
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             if preview:
-                vat_rate = _get_vat_rate(cur, month_date)
+                vat_rate = get_vat_rate(cur, month_date)
                 if target_region_id:
                     cur.execute(
                         """
@@ -484,7 +485,7 @@ def get_admin_billing_zip(
 
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                    vat_rate = _get_vat_rate(cur, month_date)
+                    vat_rate = get_vat_rate(cur, month_date)
                     for shop_id, shop_name, shop_city in shops:
                         try:
                             cur.execute(
@@ -584,7 +585,7 @@ def get_city_billing_zip(
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            vat_rate = _get_vat_rate(cur, month_date)
+            vat_rate = get_vat_rate(cur, month_date)
             if target_region_id:
                 cur.execute(
                     """
@@ -746,7 +747,7 @@ def get_client_billing_zip(
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            vat_rate = _get_vat_rate(cur, month_date)
+            vat_rate = get_vat_rate(cur, month_date)
             if target_region_id:
                 cur.execute(
                     """
@@ -1210,7 +1211,7 @@ def get_shop_monthly_pdf(
                 if not deliveries:
                     raise HTTPException(status_code=404, detail="No deliveries for this period")
 
-                vat_rate = _get_vat_rate(cur, period_month)
+                vat_rate = get_vat_rate(cur, period_month)
                 if is_independent:
                     reference_seed = f"SHOP_INDEP{shop_id}{period_month.strftime('%Y%m')}"
                     reference = generate_reference(billing["billing_iban"] or "", reference_seed)
@@ -1326,7 +1327,7 @@ def get_shop_monthly_pdf(
                 deliveries = cur.fetchall()
                 if not deliveries:
                     raise HTTPException(status_code=404, detail="No deliveries for this period")
-                vat_rate = _get_vat_rate(cur, period_month)
+                vat_rate = get_vat_rate(cur, period_month)
                 invoice_rows = [
                     (
                         delivery_date,
@@ -1407,7 +1408,7 @@ def get_shop_monthly_pdf(
                 except Exception as e:
                     # Fallback or Error?
                     # If it's frozen but file missing, that's critical data loss -> 500
-                    print(f"Error downloading WORM PDF: {e}")
+                    logger.error("Error downloading WORM PDF: %s", e)
                     raise HTTPException(status_code=500, detail="Stored PDF not found")
 
             # 5. Enforce WORM if not preview
@@ -1467,7 +1468,7 @@ def get_hq_monthly_pdf(
             filter_clause_parts.append("AND c.admin_region_id = %s")
             filter_params.append(region_target_id)
 
-    vat_rate = Decimal("0.081")
+    vat_rate = DEFAULT_VAT_RATE
     delivery_rows: list[tuple] = []
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -1537,7 +1538,7 @@ def get_hq_monthly_pdf(
                 (period_month, *filter_params),
             )
             rows = cur.fetchall()
-            vat_rate = _get_vat_rate(cur, period_month)
+            vat_rate = get_vat_rate(cur, period_month)
 
             cur.execute(
                 f"""
@@ -1665,7 +1666,7 @@ def get_city_monthly_pdf(
 
     period_month = parse_month(month)
 
-    vat_rate = Decimal("0.081")
+    vat_rate = DEFAULT_VAT_RATE
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             if not preview:
@@ -1720,7 +1721,7 @@ def get_city_monthly_pdf(
                 (city_id, period_month),
             )
             rows = cur.fetchall()
-            vat_rate = _get_vat_rate(cur, period_month)
+            vat_rate = get_vat_rate(cur, period_month)
 
     if not rows:
         raise HTTPException(status_code=404, detail="No deliveries for this period")
@@ -2061,26 +2062,6 @@ def export_hq_billing(
             )
 
 
-def _get_vat_rate(cur, period_month: date) -> Decimal:
-    cur.execute("SELECT to_regclass('public.app_settings')")
-    table = cur.fetchone()
-    if not table or table[0] is None:
-        return Decimal("0.081")
-    cur.execute(
-        """
-        SELECT value_numeric
-        FROM public.app_settings
-        WHERE key = 'vat_rate'
-          AND effective_from <= %s
-        ORDER BY effective_from DESC
-        LIMIT 1
-        """,
-        (period_month,),
-    )
-    row = cur.fetchone()
-    if not row or row[0] is None:
-        return Decimal("0.081")
-    return Decimal(str(row[0]))
 
 
 def _rows_to_dicts(cur):

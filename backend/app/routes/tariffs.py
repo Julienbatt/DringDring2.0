@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Json
 from typing import List, Optional, Any, Dict
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.guards import require_admin_user, require_tariff_reader
 from app.core.security import get_current_user_claims
@@ -142,7 +142,7 @@ def create_tariff(
 
     grid_id = str(uuid.uuid4())
     version_id = str(uuid.uuid4())
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -175,7 +175,7 @@ def create_tariff(
                 conn.commit()
             except Exception as e:
                 conn.rollback()
-                raise e
+                raise
                 
     return {"id": grid_id, "message": "Tariff created"}
 
@@ -211,7 +211,7 @@ def update_tariff(
             # 3. Close previous versions (set valid_to = now)
             # Logic: We assume the new version starts NOW, so previous ones end NOW.
             version_id = str(uuid.uuid4())
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             cur.execute(
                 """

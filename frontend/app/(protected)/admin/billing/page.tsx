@@ -312,7 +312,7 @@ export default function BillingPage() {
     }
 
     const formatMonthShort = (monthIndex: number) =>
-        format(new Date(2026, monthIndex, 1), 'MMM', { locale: dateFnsLocale })
+        format(new Date(selectedYear, monthIndex, 1), 'MMM', { locale: dateFnsLocale })
 
     const getMonthValue = (year: number, monthIndex: number) => {
         const monthValue = String(monthIndex + 1).padStart(2, '0')

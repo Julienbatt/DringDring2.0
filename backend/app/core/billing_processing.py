@@ -9,6 +9,7 @@ from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.storage.supabase_storage import upload_pdf_bytes, download_file_bytes
 from app.core.billing_reference import generate_reference
 from app.core.utils import split_address_parts
+from app.core.vat import get_vat_rate
 
 logger = logging.getLogger(__name__)
 
@@ -148,24 +149,7 @@ def freeze_shop_billing_period(
     # 5. Build PDF
     is_independent = hq_name is None or "indep" in hq_name.lower()
     if is_independent:
-        vat_rate = 0.081
-        cur.execute("SELECT to_regclass('public.app_settings')")
-        settings_table = cur.fetchone()
-        if settings_table and settings_table[0] is not None:
-            cur.execute(
-                """
-                SELECT value_numeric
-                FROM public.app_settings
-                WHERE key = 'vat_rate'
-                  AND effective_from <= %s
-                ORDER BY effective_from DESC
-                LIMIT 1
-                """,
-                (period_month,),
-            )
-            vat_row = cur.fetchone()
-            if vat_row and vat_row[0] is not None:
-                vat_rate = vat_row[0]
+        vat_rate = float(get_vat_rate(cur, period_month))
 
         invoice_rows = [
             (

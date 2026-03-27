@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from app.core.guards import require_admin_user, require_super_admin_user
 from app.core.security import get_current_user_claims
 from app.core.utils import parse_month
+from app.core.config import settings as app_settings
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
 
@@ -33,7 +34,7 @@ def get_vat_rate(
             cur.execute("SELECT to_regclass('public.app_settings')")
             table = cur.fetchone()
             if not table or table[0] is None:
-                return {"rate": 0.081, "effective_from": period_month.strftime("%Y-%m")}
+                return {"rate": app_settings.DEFAULT_VAT_RATE, "effective_from": period_month.strftime("%Y-%m")}
 
             cur.execute(
                 """
@@ -49,7 +50,7 @@ def get_vat_rate(
             row = cur.fetchone()
 
     if not row or row[0] is None:
-        return {"rate": 0.081, "effective_from": period_month.strftime("%Y-%m")}
+        return {"rate": app_settings.DEFAULT_VAT_RATE, "effective_from": period_month.strftime("%Y-%m")}
 
     return {
         "rate": float(row[0]),
