@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     DEFAULT_USER_PASSWORD: Optional[str] = None
     SENTRY_DSN: Optional[str] = None
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+    DEFAULT_VAT_RATE: float = 0.081
 
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",

@@ -7,6 +7,7 @@ import re
 from app.db.session import get_db_connection
 from app.core.billing_reference import generate_reference
 from app.core.utils import split_address_parts
+from app.core.vat import get_vat_rate
 
 
 @dataclass
@@ -17,26 +18,6 @@ class RecipientLine:
     meta: dict
 
 
-def _get_vat_rate(cur, period_month: date) -> Decimal:
-    cur.execute("SELECT to_regclass('public.app_settings')")
-    table = cur.fetchone()
-    if not table or table[0] is None:
-        return Decimal("0.081")
-    cur.execute(
-        """
-        SELECT value_numeric
-        FROM public.app_settings
-        WHERE key = 'vat_rate'
-          AND effective_from <= %s
-        ORDER BY effective_from DESC
-        LIMIT 1
-        """,
-        (period_month,),
-    )
-    row = cur.fetchone()
-    if not row or row[0] is None:
-        return Decimal("0.081")
-    return Decimal(str(row[0]))
 
 
 def _quantize(value: Decimal) -> Decimal:
@@ -328,7 +309,7 @@ def aggregate_billing_run(
                     recipient_snapshot_cache[key] = snapshot
                     return snapshot
 
-                vat_rate = _get_vat_rate(cur, period_month)
+                vat_rate = get_vat_rate(cur, period_month)
 
                 cur.execute(
                     """

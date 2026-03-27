@@ -2,6 +2,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO, StringIO
 import re
 
+from app.core.vat import DEFAULT_VAT_RATE
+
 from reportlab.graphics.barcode import qr
 from reportlab.graphics.shapes import Drawing, Rect
 from reportlab.lib import colors
@@ -353,7 +355,7 @@ def build_payment_flowables(
     creditor_country = _clean(settings.BILLING_CREDITOR_COUNTRY) or "CH"
     payment_message = message or settings.BILLING_PAYMENT_MESSAGE
 
-    vat_rate = Decimal(str(vat_rate)) if vat_rate is not None else Decimal("0.081")
+    vat_rate = Decimal(str(vat_rate)) if vat_rate is not None else DEFAULT_VAT_RATE
     vat_label = f"TVA {(vat_rate * Decimal('100')).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)}%"
 
     elements = [
