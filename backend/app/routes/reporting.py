@@ -26,6 +26,7 @@ from app.pdf.invoice_report import build_recipient_invoice_pdf
 from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.schemas.me import MeResponse
 from app.storage.supabase_storage import download_file_bytes, download_pdf_bytes
+from app.core.utils import parse_month, split_address_parts
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ def get_city_billing(
     """
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            month_date = _parse_month(month)
+            month_date = parse_month(month)
             cur.execute(
                 """
                 SELECT * FROM view_city_billing
@@ -70,7 +71,7 @@ def get_city_billing_shops(
     """
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            month_date = _parse_month(month)
+            month_date = parse_month(month)
             cur.execute(
                 """
                 SELECT * FROM view_city_billing_shops
@@ -134,7 +135,7 @@ def get_city_billing_deliveries(
             elif identity.role != "super_admin":
                 raise HTTPException(status_code=403, detail="City access required")
 
-            month_date = _parse_month(month)
+            month_date = parse_month(month)
             cur.execute(
                 """
                 SELECT
@@ -187,7 +188,7 @@ def get_hq_billing_zip(
     """
     Download a ZIP containing all frozen shop PDFs for the HQ for a specific month.
     """
-    month_date = _parse_month(month)
+    month_date = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -335,7 +336,7 @@ def get_admin_billing_zip(
     """
     Download a ZIP of all frozen shop PDFs for an admin region.
     """
-    month_date = _parse_month(month)
+    month_date = parse_month(month)
 
     if user.role != "super_admin":
         if not user.admin_region_id:
@@ -572,7 +573,7 @@ def get_city_billing_zip(
     """
     Download a ZIP of all city (commune) PDFs for an admin region.
     """
-    month_date = _parse_month(month)
+    month_date = parse_month(month)
 
     if user.role != "super_admin":
         if not user.admin_region_id:
@@ -734,7 +735,7 @@ def get_client_billing_zip(
     """
     Download a ZIP of client PDFs for an admin region.
     """
-    month_date = _parse_month(month)
+    month_date = parse_month(month)
 
     if user.role != "super_admin":
         if not user.admin_region_id:
@@ -845,7 +846,7 @@ def get_hq_billing(
     HQ official billing status by shop for a single month.
     """
     try:
-        month_date = _parse_month(month)
+        month_date = parse_month(month)
 
         filter_clause = ""
         filter_params: list[str] = []
@@ -977,7 +978,7 @@ def get_hq_billing_deliveries(
     """
     Returns detailed deliveries for HQ/admin billing.
     """
-    month_date = _parse_month(month)
+    month_date = parse_month(month)
     include_basket_value = user.role == "hq"
 
     filter_clause = ""
@@ -1061,7 +1062,7 @@ def get_hq_billing_shops(
     """
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            month_date = _parse_month(month)
+            month_date = parse_month(month)
             cur.execute(
                 """
                 SELECT
@@ -1121,7 +1122,7 @@ def get_shop_monthly_pdf(
     user: MeResponse = Depends(get_current_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
     
     # 1. Access Control
     identity = resolve_identity(user.user_id, user.email, jwt_claims)
@@ -1163,7 +1164,7 @@ def get_shop_monthly_pdf(
                 raise HTTPException(status_code=400, detail="Admin region missing for shop")
 
             billing = _get_admin_region_billing(cur, str(admin_region_id))
-            recipient_street, recipient_house_num = _split_address_parts(shop_address)
+            recipient_street, recipient_house_num = split_address_parts(shop_address)
 
             # 2. Check Exists & Frozen
             cur.execute(
@@ -1428,7 +1429,7 @@ def get_hq_monthly_pdf(
     admin_region_id: str | None = Query(default=None),
     allow_unfrozen: bool = Query(default=False),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     filter_clause_parts: list[str] = []
     filter_params: list[str] = []
@@ -1662,7 +1663,7 @@ def get_city_monthly_pdf(
             detail="City access required",
         )
 
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     vat_rate = Decimal("0.081")
     with get_db_connection(jwt_claims) as conn:
@@ -1749,7 +1750,7 @@ def get_city_monthly_pdf(
     reference_seed = f"COMMUNE{city_id}{period_month.strftime('%Y%m')}"
     reference = generate_reference(billing["billing_iban"] or "", reference_seed)
     city_postal_code, city_only_name = _extract_postal_city_from_address(city_address)
-    city_street, city_house_num = _split_address_parts(city_address)
+    city_street, city_house_num = split_address_parts(city_address)
 
     pdf_buffer = build_recipient_invoice_pdf(
         recipient_label="Commune partenaire",
@@ -1795,7 +1796,7 @@ def export_city_billing(
 ):
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            month_date = _parse_month(month)
+            month_date = parse_month(month)
             cur.execute(
                 """
                 SELECT * FROM view_city_billing_shops
@@ -1887,7 +1888,7 @@ def export_shop_deliveries_report(
     if not shop_id:
         raise HTTPException(status_code=400, detail="Shop id missing")
 
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -1982,7 +1983,7 @@ def export_hq_billing(
 ):
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
-            month_date = _parse_month(month)
+            month_date = parse_month(month)
 
             filter_clause = ""
             filter_params: list[str] = []
@@ -2175,19 +2176,6 @@ def _format_month(value):
     return ""
 
 
-def _split_address_parts(value: str | None) -> tuple[str | None, str | None]:
-    if not value:
-        return None, None
-    address = value.strip()
-    if not address:
-        return None, None
-    match = re.match(r"^(?P<num>\\d+[A-Za-z0-9/\\-]*)\\s+(?P<street>.+)$", address)
-    if match:
-        return match.group("street"), match.group("num")
-    match = re.match(r"^(?P<street>.+?)\\s+(?P<num>\\d+[A-Za-z0-9/\\-]*)$", address)
-    if match:
-        return match.group("street"), match.group("num")
-    return address, None
 
 
 def _extract_postal_city_from_address(value: str | None) -> tuple[str | None, str | None]:
@@ -2241,7 +2229,7 @@ def _get_admin_region_billing(cur, admin_region_id: str) -> dict:
     ) = row
 
     if billing_street is None and admin_region_address:
-        billing_street, billing_house_num = _split_address_parts(admin_region_address)
+        billing_street, billing_house_num = split_address_parts(admin_region_address)
 
     if not billing_name:
         billing_name = admin_region_name
@@ -2267,11 +2255,3 @@ def _get_admin_region_billing(cur, admin_region_id: str) -> dict:
     }
 
 
-def _parse_month(month):
-    if month is None:
-        today = date.today()
-        return today.replace(day=1)
-    try:
-        return datetime.strptime(month, "%Y-%m").date()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid month format") from exc

@@ -3,41 +3,15 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 import uuid
 import logging
-import re
-
-from app.core.guards import require_admin_user, require_dispatch_user, require_shop_user # Maybe just admin_region for now? user said "Admin Region"
+from app.core.guards import require_admin_user, require_dispatch_user, require_shop_user
 from app.core.security import get_current_user_claims
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
+from app.core.phone import normalize_phone, is_valid_swiss_phone
 
 router = APIRouter(prefix="/couriers", tags=["couriers"])
 logger = logging.getLogger(__name__)
 
-
-def _normalize_phone_number(value: str | None) -> str | None:
-    if not value:
-        return None
-    cleaned = re.sub(r"[^\d+]", "", value.strip())
-    if not cleaned:
-        return None
-    if cleaned.startswith("00"):
-        cleaned = f"+{cleaned[2:]}"
-    if cleaned.startswith("+"):
-        digits = re.sub(r"\D", "", cleaned)
-        return f"+{digits}"
-    digits = re.sub(r"\D", "", cleaned)
-    if digits.startswith("41"):
-        return f"+{digits}"
-    if digits.startswith("0") and len(digits) == 10:
-        return f"+41{digits[1:]}"
-    return None
-
-
-def _is_valid_ch_phone(value: str | None) -> bool:
-    if not value:
-        return False
-    digits = re.sub(r"\D", "", value)
-    return digits.startswith("41") and len(digits) == 11
 
 class CourierCreate(BaseModel):
     first_name: str
@@ -169,8 +143,8 @@ def create_courier(
             raise HTTPException(status_code=403, detail="Must be part of an admin region")
 
     courier_id = str(uuid.uuid4())
-    normalized_phone = _normalize_phone_number(courier.phone_number)
-    if not normalized_phone or not _is_valid_ch_phone(normalized_phone):
+    normalized_phone = normalize_phone(courier.phone_number)
+    if not normalized_phone or not is_valid_swiss_phone(normalized_phone):
         raise HTTPException(
             status_code=400,
             detail="Telephone requis au format +41XXXXXXXXX.",
@@ -348,9 +322,9 @@ def update_courier(
                 where_sql += " AND admin_region_id = %s"
                 where_params.append(user.admin_region_id)
 
-            normalized_phone = _normalize_phone_number(courier.phone_number)
+            normalized_phone = normalize_phone(courier.phone_number)
             if courier.phone_number:
-                if not normalized_phone or not _is_valid_ch_phone(normalized_phone):
+                if not normalized_phone or not is_valid_swiss_phone(normalized_phone):
                     if courier.phone_number != (existing_phone or ""):
                         raise HTTPException(
                             status_code=400,

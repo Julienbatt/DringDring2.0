@@ -26,6 +26,7 @@ from app.pdf.shop_monthly_report import build_shop_monthly_pdf
 from app.schemas.delivery import DeliveryCreate, ShopDeliveryCreate, ShopDeliveryUpdate, ShopDeliveryCancel
 from app.schemas.me import MeResponse
 from app.storage.supabase_storage import upload_pdf_bytes
+from app.core.utils import parse_month
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
 logger = logging.getLogger(__name__)
@@ -436,7 +437,7 @@ def freeze_billing_period(
 ):
     from app.core.billing_processing import freeze_shop_billing_period
     
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn:
@@ -589,7 +590,7 @@ def list_shop_deliveries(
     if not shop_id:
         raise HTTPException(status_code=400, detail="Shop id missing")
 
-    month_date = _parse_month(month)
+    month_date = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -645,7 +646,7 @@ def export_shop_deliveries(
     if not shop_id:
         raise HTTPException(status_code=400, detail="Shop id missing")
 
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -1066,14 +1067,6 @@ def list_customer_deliveries(
             return _rows_to_dicts(cur)
 
 
-def _parse_month(month):
-    if month is None:
-        today = date.today()
-        return today.replace(day=1)
-    try:
-        return datetime.strptime(month, "%Y-%m").date()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid month format") from exc
 
 
 def _get_latest_status(cur, delivery_id: str) -> tuple[str | None, datetime | None]:

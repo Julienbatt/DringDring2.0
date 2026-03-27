@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.security import get_current_user_claims, get_current_user
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
+from app.core.phone import normalize_phone, is_valid_swiss_phone
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 logger = logging.getLogger(__name__)
@@ -187,26 +188,6 @@ def ensure_unique_active_client_email_in_region(
         )
 
 
-def normalize_phone(phone: Optional[str]) -> Optional[str]:
-    if not phone:
-        return None
-    cleaned = "".join(ch for ch in phone if ch.isdigit() or ch == "+")
-    if cleaned.startswith("00"):
-        cleaned = f"+{cleaned[2:]}"
-    if cleaned.startswith("0"):
-        cleaned = f"+41{cleaned[1:]}"
-    if cleaned.startswith("41"):
-        cleaned = f"+{cleaned}"
-    return cleaned
-
-
-def is_valid_phone(phone: Optional[str]) -> bool:
-    if not phone:
-        return True
-    if not phone.startswith("+41"):
-        return False
-    digits = "".join(ch for ch in phone if ch.isdigit())
-    return len(digits) == 11
 
 
 def invite_customer_account(user_email: str, client_id: str):
@@ -274,7 +255,7 @@ def update_client(
                 city_name, target_admin_region_id = get_city_name_and_region(cur, client.city_id)
 
             normalized_phone = normalize_phone(client.phone)
-            if not is_valid_phone(normalized_phone):
+            if not is_valid_swiss_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
@@ -574,7 +555,7 @@ def create_my_client(
             city_id, city_name, admin_region_id = resolved
 
             normalized_phone = normalize_phone(payload.phone)
-            if not is_valid_phone(normalized_phone):
+            if not is_valid_swiss_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
@@ -677,7 +658,7 @@ def update_my_client(
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
             normalized_phone = normalize_phone(payload.phone)
-            if not is_valid_phone(normalized_phone):
+            if not is_valid_swiss_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
             resolved = resolve_city_for_client(cur, payload.postal_code, payload.city_name)
             if not resolved:
@@ -765,7 +746,7 @@ def create_client(
                 city_name, target_admin_region_id = get_city_name_and_region(cur, client.city_id)
 
             normalized_phone = normalize_phone(client.phone)
-            if not is_valid_phone(normalized_phone):
+            if not is_valid_swiss_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
@@ -865,7 +846,7 @@ def create_shop_client(
             city_name = validate_city_in_region(cur, client.city_id, admin_region_id)
 
             normalized_phone = normalize_phone(client.phone)
-            if not is_valid_phone(normalized_phone):
+            if not is_valid_swiss_phone(normalized_phone):
                 raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,

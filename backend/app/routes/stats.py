@@ -12,19 +12,11 @@ from app.core.guards import (
     require_hq_user,
 )
 from app.core.security import get_current_user, get_current_user_claims
+from app.core.utils import parse_month
 from app.db.session import get_db_connection
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
-
-def _parse_month(month: Optional[str]) -> date:
-    if not month:
-        today = date.today()
-        return today.replace(day=1)
-    try:
-        return datetime.strptime(month, "%Y-%m").date()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid month format") from exc
 
 
 def _previous_month_start(month_start: date) -> date:
@@ -81,7 +73,7 @@ def get_eco_stats(
     else:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    month_start = _parse_month(month)
+    month_start = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -133,7 +125,7 @@ def get_shop_stats(
     if not shop_id:
         raise HTTPException(status_code=403, detail="Shop access required")
 
-    month_start = _parse_month(month)
+    month_start = parse_month(month)
     prev_month_start = _previous_month_start(month_start)
 
     with get_db_connection(jwt_claims) as conn:
@@ -329,7 +321,7 @@ def get_city_stats(
     if not city_id:
         raise HTTPException(status_code=403, detail="City access required")
 
-    month_start = _parse_month(month)
+    month_start = parse_month(month)
     prev_month_start = _previous_month_start(month_start)
 
     with get_db_connection(jwt_claims) as conn:
@@ -462,7 +454,7 @@ def get_hq_stats(
     if not hq_id:
         raise HTTPException(status_code=403, detail="HQ access required")
 
-    month_start = _parse_month(month)
+    month_start = parse_month(month)
     prev_month_start = _previous_month_start(month_start)
 
     with get_db_connection(jwt_claims) as conn:
@@ -607,7 +599,7 @@ def get_customer_stats(
     if not client_id:
         raise HTTPException(status_code=403, detail="Client access required")
 
-    month_start = _parse_month(month)
+    month_start = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:

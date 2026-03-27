@@ -16,20 +16,11 @@ from app.core.billing_processing import freeze_shop_billing_period
 from app.core.billing_reference import generate_reference
 from app.core.billing_aggregator import aggregate_billing_run
 from app.core.config import settings
+from app.core.utils import parse_month, split_address_parts
 from app.pdf.invoice_qr_bill import build_recipient_invoice_with_qr_bill
 from app.storage.supabase_storage import download_file_bytes, upload_pdf_bytes
 
 router = APIRouter(prefix="/billing", tags=["billing"])
-
-def _parse_month(month):
-    if month is None:
-        today = date.today()
-        return today.replace(day=1)
-    try:
-        return datetime.strptime(month, "%Y-%m").date()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid month format") from exc
-
 
 def _resolve_admin_region_id(user: MeResponse, admin_region_id: str | None) -> str:
     if user.role == "admin_region":
@@ -43,19 +34,6 @@ def _resolve_admin_region_id(user: MeResponse, admin_region_id: str | None) -> s
     raise HTTPException(status_code=403, detail="Admin access required")
 
 
-def _split_address(address: str | None) -> tuple[str | None, str | None]:
-    if not address:
-        return None, None
-    value = address.strip()
-    if not value:
-        return None, None
-    match = re.match(r"^(?P<num>\d+[A-Za-z0-9/\-]*)\s+(?P<street>.+)$", value)
-    if match:
-        return match.group("street"), match.group("num")
-    match = re.match(r"^(?P<street>.+?)\s+(?P<num>\d+[A-Za-z0-9/\-]*)$", value)
-    if match:
-        return match.group("street"), match.group("num")
-    return value, None
 
 
 def _normalize_qr_city(value: str | None) -> str | None:
@@ -294,7 +272,7 @@ def _build_billing_document_pdf_bytes(document_id: str, preview: int, jwt_claims
                 fallback_city = row[0] if row else None
 
     if not is_internal and billing_street is None and admin_region_address:
-        billing_street, billing_house_num = _split_address(admin_region_address)
+        billing_street, billing_house_num = split_address_parts(admin_region_address)
 
     recipient_postal_code = recipient_postal_code_snapshot or fallback_postal_code
     recipient_city = recipient_city_snapshot or fallback_city
@@ -304,7 +282,7 @@ def _build_billing_document_pdf_bytes(document_id: str, preview: int, jwt_claims
     debtor_street = recipient_street_snapshot
     debtor_house_num = recipient_house_num_snapshot
     if not debtor_street or not debtor_house_num:
-        address_street, address_house_num = _split_address(address)
+        address_street, address_house_num = split_address_parts(address)
         debtor_street = debtor_street or address_street
         debtor_house_num = debtor_house_num or address_house_num
     if is_internal and billing_street and not debtor_street:
@@ -339,7 +317,7 @@ def _build_billing_document_pdf_bytes(document_id: str, preview: int, jwt_claims
             if not creditor_house_num and settings.BILLING_CREDITOR_HOUSE_NUM:
                 creditor_house_num = settings.BILLING_CREDITOR_HOUSE_NUM
         elif fallback_address:
-            creditor_street, creditor_house_num = _split_address(fallback_address)
+            creditor_street, creditor_house_num = split_address_parts(fallback_address)
 
     if not creditor_postal_code and settings.BILLING_CREDITOR_POSTAL_CODE:
         creditor_postal_code = settings.BILLING_CREDITOR_POSTAL_CODE
@@ -427,7 +405,7 @@ def freeze_region_billing(
     """
     Bulk freeze for all shops in the region for the given month.
     """
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
     
     results = []
     
@@ -511,7 +489,7 @@ def aggregate_region_billing(
     """
     Build payor-centric billing documents for the region and month.
     """
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     if user.role == "admin_region":
         if not user.admin_region_id:
@@ -547,7 +525,7 @@ def list_billing_documents(
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
     target_region_id = _resolve_admin_region_id(user, admin_region_id)
 
     filters = ["r.admin_region_id = %s", "d.period_month = %s"]
@@ -629,7 +607,7 @@ def list_billing_document_lines(
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
     target_region_id = _resolve_admin_region_id(user, admin_region_id)
 
     filters = ["r.admin_region_id = %s", "d.period_month = %s"]
@@ -698,7 +676,7 @@ def export_billing_documents(
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
     target_region_id = _resolve_admin_region_id(user, admin_region_id)
 
     filters = ["r.admin_region_id = %s", "d.period_month = %s"]
@@ -865,7 +843,7 @@ def download_billing_documents_zip(
     user: MeResponse = Depends(require_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
     target_region_id = _resolve_admin_region_id(user, admin_region_id)
 
     with get_db_connection(jwt_claims) as conn:

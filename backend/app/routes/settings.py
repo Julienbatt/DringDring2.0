@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.core.guards import require_admin_user, require_super_admin_user
 from app.core.security import get_current_user_claims
+from app.core.utils import parse_month
 from app.db.session import get_db_connection
 from app.schemas.me import MeResponse
 
@@ -18,15 +19,6 @@ class VatRatePayload(BaseModel):
     effective_from: str = Field(..., pattern=r"^\d{4}-\d{2}$")
 
 
-def _parse_month(value: str | None) -> date:
-    if value is None:
-        today = date.today()
-        return today.replace(day=1)
-    try:
-        return datetime.strptime(value, "%Y-%m").date()
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid month format") from exc
-
 
 @router.get("/vat-rate")
 def get_vat_rate(
@@ -34,7 +26,7 @@ def get_vat_rate(
     jwt_claims: str = Depends(get_current_user_claims),
     month: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}$"),
 ):
-    period_month = _parse_month(month)
+    period_month = parse_month(month)
 
     with get_db_connection(jwt_claims) as conn:
         with conn.cursor() as cur:
@@ -71,7 +63,7 @@ def set_vat_rate(
     user: MeResponse = Depends(require_super_admin_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
-    period_month = _parse_month(payload.effective_from)
+    period_month = parse_month(payload.effective_from)
     rate_value = Decimal(str(payload.rate))
 
     if rate_value <= 0 or rate_value >= 1:

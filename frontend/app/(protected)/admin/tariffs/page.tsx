@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { TariffDialog } from './components/TariffDialog'
+import * as Sentry from '@sentry/browser'
 
 interface TariffGrid {
     id: string
@@ -48,6 +49,7 @@ export default function TariffsPage() {
             setTariffs(data)
         } catch (error) {
             console.error(t('admin.tariffs.loadError'), error)
+            Sentry.captureException(error)
             toast.error(t('admin.tariffs.loadError'))
         } finally {
             setLoading(false)
@@ -82,6 +84,7 @@ export default function TariffsPage() {
             loadData()
         } catch (error: unknown) {
             console.error(t('admin.tariffs.deleteError'), error)
+            Sentry.captureException(error)
             const message =
                 error && typeof error === 'object' && 'message' in error
                     ? String(error.message)

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import * as Sentry from '@sentry/browser'
 
 export type CustomerDeliveryRow = {
     delivery_id: string
@@ -48,6 +49,7 @@ export function useCustomerDeliveries() {
             setData(result)
         } catch (e: unknown) {
             console.error(e)
+            Sentry.captureException(e)
             setError(t('common.error.loadOrders'))
             setData(null)
         } finally {
