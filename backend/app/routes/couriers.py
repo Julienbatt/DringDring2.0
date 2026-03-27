@@ -147,7 +147,7 @@ def create_courier(
     if not normalized_phone or not is_valid_swiss_phone(normalized_phone):
         raise HTTPException(
             status_code=400,
-            detail="Telephone requis au format +41XXXXXXXXX.",
+            detail="Phone number required in format +41XXXXXXXXX.",
         )
     
     with get_db_connection(jwt_claims) as conn:
@@ -267,7 +267,7 @@ def create_courier(
             except Exception as e:
                 conn.rollback()
                 if "unique constraint" in str(e).lower():
-                     raise HTTPException(status_code=400, detail="Ce numéro de coursier existe déjà.")
+                     raise HTTPException(status_code=400, detail="This courier number already exists.")
                 raise e
             
     return {"id": courier_id, "message": "Courier created successfully"}
@@ -328,7 +328,7 @@ def update_courier(
                     if courier.phone_number != (existing_phone or ""):
                         raise HTTPException(
                             status_code=400,
-                            detail="Telephone invalide. Format attendu: +41XXXXXXXXX.",
+                            detail="Invalid phone number. Expected format: +41XXXXXXXXX.",
                         )
             phone_value = normalized_phone if normalized_phone else (None if courier.phone_number == "" else existing_phone)
 

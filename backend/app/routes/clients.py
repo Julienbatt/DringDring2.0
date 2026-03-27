@@ -184,7 +184,7 @@ def ensure_unique_active_client_email_in_region(
     if existing:
         raise HTTPException(
             status_code=409,
-            detail="Un client actif avec cet email existe deja dans cette region",
+            detail="An active client with this email already exists in this region",
         )
 
 
@@ -256,7 +256,7 @@ def update_client(
 
             normalized_phone = normalize_phone(client.phone)
             if not is_valid_swiss_phone(normalized_phone):
-                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+                raise HTTPException(status_code=400, detail="Invalid phone number. Expected format: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
                 client.email,
@@ -324,7 +324,7 @@ def invite_existing_client_account(
                 raise HTTPException(status_code=403, detail="Client not in your region")
 
             if not client_email:
-                raise HTTPException(status_code=400, detail="Email client requis pour inviter un compte")
+                raise HTTPException(status_code=400, detail="Client email required to send an invitation")
 
             try:
                 invited, invite_error = invite_customer_account(client_email.strip(), client_id)
@@ -551,12 +551,12 @@ def create_my_client(
         with conn.cursor() as cur:
             resolved = resolve_city_for_client(cur, payload.postal_code, payload.city_name)
             if not resolved:
-                raise HTTPException(status_code=400, detail="Commune introuvable pour ce NPA/Ville")
+                raise HTTPException(status_code=400, detail="Municipality not found for this postal code/city")
             city_id, city_name, admin_region_id = resolved
 
             normalized_phone = normalize_phone(payload.phone)
             if not is_valid_swiss_phone(normalized_phone):
-                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+                raise HTTPException(status_code=400, detail="Invalid phone number. Expected format: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
                 payload.email,
@@ -659,10 +659,10 @@ def update_my_client(
         with conn.cursor() as cur:
             normalized_phone = normalize_phone(payload.phone)
             if not is_valid_swiss_phone(normalized_phone):
-                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+                raise HTTPException(status_code=400, detail="Invalid phone number. Expected format: +41...")
             resolved = resolve_city_for_client(cur, payload.postal_code, payload.city_name)
             if not resolved:
-                raise HTTPException(status_code=400, detail="Commune introuvable pour ce NPA/Ville")
+                raise HTTPException(status_code=400, detail="Municipality not found for this postal code/city")
             city_id, city_name, admin_region_id = resolved
             ensure_unique_active_client_email_in_region(
                 cur,
@@ -747,7 +747,7 @@ def create_client(
 
             normalized_phone = normalize_phone(client.phone)
             if not is_valid_swiss_phone(normalized_phone):
-                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+                raise HTTPException(status_code=400, detail="Invalid phone number. Expected format: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
                 client.email,
@@ -847,7 +847,7 @@ def create_shop_client(
 
             normalized_phone = normalize_phone(client.phone)
             if not is_valid_swiss_phone(normalized_phone):
-                raise HTTPException(status_code=400, detail="Numero de telephone invalide. Format attendu: +41...")
+                raise HTTPException(status_code=400, detail="Invalid phone number. Expected format: +41...")
             ensure_unique_active_client_email_in_region(
                 cur,
                 client.email,
