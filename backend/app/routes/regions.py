@@ -13,6 +13,8 @@ from app.storage.supabase_storage import upload_file_bytes
 router = APIRouter(prefix="/regions", tags=["regions"])
 logger = logging.getLogger(__name__)
 
+MAX_LOGO_SIZE = 5 * 1024 * 1024  # 5 MB
+
 class AdminRegionCreate(BaseModel):
     name: str
     canton_id: Optional[str] = None
@@ -268,6 +270,8 @@ async def upload_admin_region_logo(
         raise HTTPException(status_code=400, detail="Unsupported logo format (PNG/JPEG only)")
 
     data = await file.read()
+    if len(data) > MAX_LOGO_SIZE:
+        raise HTTPException(status_code=400, detail="Logo file exceeds 5 MB limit")
     if not data:
         raise HTTPException(status_code=400, detail="Empty upload")
 
@@ -456,6 +460,8 @@ async def upload_admin_region_internal_logo(
         raise HTTPException(status_code=400, detail="Unsupported logo format (PNG/JPEG only)")
 
     data = await file.read()
+    if len(data) > MAX_LOGO_SIZE:
+        raise HTTPException(status_code=400, detail="Logo file exceeds 5 MB limit")
     if not data:
         raise HTTPException(status_code=400, detail="Empty upload")
 

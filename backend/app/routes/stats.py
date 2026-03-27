@@ -17,6 +17,8 @@ from app.db.session import get_db_connection
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 
+_ALLOWED_FILTER_COLUMNS = {"admin_region_id", "hq_id", "city_id", "client_id", "shop_id", "canton_id"}
+
 
 
 def _previous_month_start(month_start: date) -> date:
@@ -84,7 +86,10 @@ def get_eco_stats(
             params = [month_start, month_start]
 
             if role_filter and role_filter[1]:
-                where.append(f"d.{role_filter[0]} = %s")
+                col = role_filter[0]
+                if col not in _ALLOWED_FILTER_COLUMNS:
+                    raise HTTPException(status_code=400, detail="Invalid filter")
+                where.append(f"d.{col} = %s")
                 params.append(role_filter[1])
 
             cur.execute(
