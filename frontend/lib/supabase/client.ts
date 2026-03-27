@@ -10,12 +10,9 @@ function resolveSupabaseUrl(): string {
     process.env.PROJECT_URL_STAGING
   )
   if (url) return url
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL — cannot start in production without a Supabase URL'
-    )
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    console.error('[supabase/client] Missing NEXT_PUBLIC_SUPABASE_URL in production')
   }
-  console.warn('[supabase/client] NEXT_PUBLIC_SUPABASE_URL not set, using placeholder for development')
   return 'https://example.supabase.co'
 }
 
@@ -28,12 +25,9 @@ function resolveSupabaseAnonKey(): string {
     process.env.EXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY_STAGING
   )
   if (key) return key
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_ANON_KEY — cannot start in production without a Supabase anon key'
-    )
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    console.error('[supabase/client] Missing NEXT_PUBLIC_SUPABASE_ANON_KEY in production')
   }
-  console.warn('[supabase/client] NEXT_PUBLIC_SUPABASE_ANON_KEY not set, using placeholder for development')
   return 'dev-anon-key'
 }
 
