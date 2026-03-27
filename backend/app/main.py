@@ -33,6 +33,7 @@ from app.routes import (
 )
 
 from app.core.config import settings as app_settings, get_cors_origins
+from app.core.rate_limit import RateLimiter
 
 
 @asynccontextmanager
@@ -56,6 +57,9 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="DringDring Backend", lifespan=lifespan)
 logger = logging.getLogger(__name__)
+
+# Shared rate limiter instance; import from app.main where needed.
+rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
 app.add_middleware(
     CORSMiddleware,
