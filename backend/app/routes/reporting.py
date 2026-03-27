@@ -310,7 +310,7 @@ def get_hq_billing_zip(
                             
                             zip_file.writestr(filename, pdf_bytes)
                         except Exception as e:
-                            print(f"Error zipping PDF for {shop_name}: {e}")
+                            logger.error("Error zipping PDF for %s: %s", shop_name, e)
                             # We might want to continue or fail. Let's add a placeholder error file
                             zip_file.writestr(f"ERROR_{shop_name}.txt", f"Could not retrieve PDF: {str(e)}")
 
@@ -1408,7 +1408,7 @@ def get_shop_monthly_pdf(
                 except Exception as e:
                     # Fallback or Error?
                     # If it's frozen but file missing, that's critical data loss -> 500
-                    print(f"Error downloading WORM PDF: {e}")
+                    logger.error("Error downloading WORM PDF: %s", e)
                     raise HTTPException(status_code=500, detail="Stored PDF not found")
 
             # 5. Enforce WORM if not preview
