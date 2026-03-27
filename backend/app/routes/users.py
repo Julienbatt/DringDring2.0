@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import httpx
@@ -22,20 +22,14 @@ class UserUpdate(BaseModel):
 
 @router.get("")
 def list_users(
-    page: int = 1,
-    per_page: int = 200,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=200, ge=1, le=1000),
     user: MeResponse = Depends(require_super_admin)
 ):
     """
     List users from Supabase Auth via Admin API.
     Only for Super Admin.
     """
-    if page < 1:
-        page = 1
-    if per_page < 1:
-        per_page = 1
-    per_page = min(per_page, 1000)
-
     url = f"{settings.SUPABASE_URL}/auth/v1/admin/users?page={page}&per_page={per_page}"
     headers = {
         "apikey": settings.SUPABASE_SERVICE_KEY,

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { ShopDialog, ShopData } from './components/ShopDialog'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 type Shop = {
     id: string
@@ -53,7 +54,7 @@ export default function ShopsPage() {
             const data = await apiGet<Shop[]>(`/shops/admin${queryParams}`, session.access_token)
             setShops(data)
         } catch (error) {
-            console.error('Failed to load shops', error)
+            captureError(error, 'AdminShopsPage.loadShops')
             toast.error(t('admin.shops.toast.loadError'))
         } finally {
             setLoading(false)

@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { CityDialog, CityData } from './components/CityDialog'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,7 @@ export default function AdminCitiesPage() {
 
             setCities(data)
         } catch (error) {
-            console.error('Failed to load cities', error)
+            captureError(error, 'AdminCitiesPage.loadData')
             toast.error(t('admin.cities.toast.loadError'))
         } finally {
             setLoading(false)

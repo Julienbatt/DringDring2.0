@@ -8,6 +8,7 @@ import { de, enUS, fr, it } from 'date-fns/locale'
 import Link from 'next/link'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 // Types
 type DispatchDelivery = {
@@ -177,7 +178,7 @@ export default function DispatchPage() {
             lastFetchAtRef.current = fetchStartedAt
             setCouriers(formattedCouriers)
         } catch (err: unknown) {
-            console.error(err)
+            captureError(err, 'AdminDispatchPage.fetchDeliveries')
             setError(t('admin.dispatch.errorLoad'))
         } finally {
             if (!silent) {

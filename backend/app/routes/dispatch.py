@@ -43,8 +43,8 @@ def list_dispatch_deliveries(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     admin_region_id: Optional[str] = None, # Drill-down for Super Admin
-    limit: int = 500,
-    offset: int = 0,
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
     user: MeResponse = Depends(require_dispatch_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
@@ -53,7 +53,7 @@ def list_dispatch_deliveries(
     Defaults to today + tomorrow if no dates provided.
     """
     target_region_id = user.admin_region_id
-    
+
     if user.role == "super_admin":
         if admin_region_id:
              target_region_id = admin_region_id
@@ -68,12 +68,6 @@ def list_dispatch_deliveries(
 
     if not target_region_id:
         raise HTTPException(status_code=400, detail="Admin region id missing")
-
-    if limit < 1:
-        limit = 1
-    if offset < 0:
-        offset = 0
-    limit = min(limit, 2000)
 
     if month:
         try:

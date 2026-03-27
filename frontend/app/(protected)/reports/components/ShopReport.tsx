@@ -14,6 +14,7 @@ import { useShopStats } from '@/app/(protected)/reports/hooks/useShopStats'
 import { useMe } from '../../hooks/useMe'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { normalizePhone, isValidSwissPhone, formatSwissPhone } from '@/lib/phone'
+import { captureError } from '@/lib/errorReporting'
 
 function getCurrentMonth() {
   const now = new Date()
@@ -403,7 +404,7 @@ export default function ShopReport() {
             const res = await apiGet<{ id: string; name: string }[]>('/cities/shop', data.session.access_token)
             setCities(res)
           }
-      } catch (e) { console.error(tx.citiesLoadError, e) }
+      } catch (e) { captureError(e, 'ShopReport.fetchCities') }
       }
       fetchCities()
     }
@@ -785,7 +786,7 @@ export default function ShopReport() {
         setTariffType(normalized === 'order_amount' ? 'order_amount' : 'bags')
         setConfigError(null)
       } catch (e) {
-        console.error(tx.configLoadError, e)
+        captureError(e, 'ShopReport.fetchConfig')
         setConfigError(tx.configUnavailable)
       } finally {
         setConfigLoading(false)

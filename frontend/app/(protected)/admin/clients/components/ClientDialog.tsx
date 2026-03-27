@@ -20,6 +20,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { toast } from 'sonner'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { normalizePhone, isValidSwissPhone, formatSwissPhone } from '@/lib/phone'
+import { captureError } from '@/lib/errorReporting'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -83,7 +84,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             const queryParams = adminContextRegion ? `?admin_region_id=${adminContextRegion.id}` : ''
             apiGet<{ id: string; name: string }[]>(`/cities${queryParams}`, session.access_token)
                 .then(setCities)
-                .catch(e => console.error("Error loading cities", e))
+                .catch(e => captureError(e, 'ClientDialog.loadCities'))
         }
     }, [open, session, adminContextRegion])
 
@@ -187,7 +188,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
-            console.error(error)
+            captureError(error, 'ClientDialog.handleSubmit')
             toast.error(getErrorMessage(error, t('admin.clients.dialog.unknownError')))
         } finally {
             setLoading(false)
@@ -215,7 +216,7 @@ export function ClientDialog({ open, onOpenChange, clientToEdit, onSuccess }: Cl
             onSuccess()
             onOpenChange(false)
         } catch (error: unknown) {
-            console.error(error)
+            captureError(error, 'ClientDialog.handleDelete')
             toast.error(getErrorMessage(error, t('admin.clients.dialog.deleteError')))
         } finally {
             setLoading(false)

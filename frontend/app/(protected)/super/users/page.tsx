@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { roleLabel } from '@/lib/roleLabel'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 type UserData = {
     id: string
@@ -64,7 +65,7 @@ export default function SuperAdminUsersPage() {
             const data = await apiGet<UserData[]>('/users', session.access_token)
             setUsers(data)
         } catch (error) {
-            console.error('Failed to load users', error)
+            captureError(error, 'SuperAdminUsersPage.loadUsers')
             toast.error(t('super.users.toast.loadError'))
         } finally {
             setLoading(false)

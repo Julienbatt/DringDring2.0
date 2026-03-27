@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { formatCurrencyCHF, formatDate, formatMonthYear } from '@/lib/i18n/format'
+import { captureError } from '@/lib/errorReporting'
 
 type CitySummaryRow = {
   city_id: string
@@ -106,7 +107,7 @@ export default function CityBillingPage() {
       )
       setShops(shopRows)
     } catch (error) {
-      console.error('Failed to load city billing', error)
+      captureError(error, 'CityBillingPage.loadData')
       toast.error(t('billing.city.loadError'))
     } finally {
       setLoading(false)
@@ -127,7 +128,7 @@ export default function CityBillingPage() {
       )
       setDeliveries(rows)
     } catch (error) {
-      console.error('Failed to load city deliveries', error)
+      captureError(error, 'CityBillingPage.loadDeliveries')
       toast.error(t('billing.city.loadDetailsError'))
     } finally {
       setDetailLoading(false)
@@ -158,7 +159,7 @@ export default function CityBillingPage() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('CSV export failed', error)
+      captureError(error, 'CityBillingPage.downloadCsv')
       toast.error(t('billing.city.exportError'))
     }
   }
@@ -189,7 +190,7 @@ export default function CityBillingPage() {
       a.remove()
       window.URL.revokeObjectURL(urlObject)
     } catch (error) {
-      console.error('PDF download failed', error)
+      captureError(error, 'CityBillingPage.downloadPdf')
       toast.error(t('billing.city.pdfError'))
     }
   }

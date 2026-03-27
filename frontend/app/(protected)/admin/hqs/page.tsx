@@ -17,6 +17,7 @@ import { useAuth } from '@/app/(protected)/providers/AuthProvider'
 import { toast } from 'sonner'
 import { HqDialog, HqData } from './components/HqDialog'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +37,7 @@ export default function AdminHqsPage() {
       const data = await apiGet<HqData[]>('/shops/hqs', session.access_token)
       setHqs(data)
     } catch (error) {
-      console.error('Failed to load HQ', error)
+      captureError(error, 'AdminHqsPage.loadData')
       toast.error(t('admin.hq.toast.loadError'))
     } finally {
       setLoading(false)

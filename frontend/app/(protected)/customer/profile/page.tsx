@@ -11,6 +11,7 @@ import { roleLabel } from '@/lib/roleLabel'
 import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { normalizePhone, isValidSwissPhone, formatSwissPhone } from '@/lib/phone'
+import { captureError } from '@/lib/errorReporting'
 
 function getErrorMessage(error: unknown, fallback: string) {
     return error instanceof Error ? error.message : fallback
@@ -65,7 +66,7 @@ export default function CustomerProfilePage() {
                 setClient(normalized)
                 setClientDraft(normalized)
             } catch (error) {
-                console.error('Failed to load client profile', error)
+                captureError(error, 'CustomerProfilePage.loadClient')
                 setClient(null)
             } finally {
                 setClientLoading(false)
