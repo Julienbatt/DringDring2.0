@@ -65,7 +65,7 @@ def list_cities(
             if not has_column("parent_city_id"):
                 raise HTTPException(
                     status_code=500,
-                    detail="parent_city_id column missing; run update_city_hierarchy_v32.sql",
+                    detail="Database schema is outdated — contact an administrator",
                 )
 
             address_select = "MAX(c.address) as address" if has_column("address") else "NULL::text as address"
@@ -183,7 +183,7 @@ def create_city(
             if not has_column("parent_city_id"):
                 raise HTTPException(
                     status_code=500,
-                    detail="parent_city_id column missing; run update_city_hierarchy_v32.sql",
+                    detail="Database schema is outdated — contact an administrator",
                 )
 
             # Check canton existence if provided
