@@ -365,7 +365,7 @@ def create_shop(
             cur.execute("SELECT admin_region_id FROM city WHERE id = %s", (shop.city_id,))
             row = cur.fetchone()
             if not row:
-                raise HTTPException(status_code=404, detail="Commune partenaire not found")
+                raise HTTPException(status_code=404, detail="Partner municipality not found")
             admin_region_id = row[0]
 
             # Verify region ownership
