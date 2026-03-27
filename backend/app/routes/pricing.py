@@ -49,7 +49,7 @@ def calculate_delivery(
             )
             row = cur.fetchone()
             if not row:
-                raise HTTPException(404, "Delivery or logistics not found")
+                raise HTTPException(status_code=404, detail="Delivery or logistics not found")
 
             delivery_date, shop_id, bags, is_cms, order_amount = row
 

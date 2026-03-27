@@ -331,8 +331,6 @@ def render_swiss_qr_bill(
     canvas.line(0, y_position + SCISSORS_LINE_Y, PAYMENT_SECTION_WIDTH, y_position + SCISSORS_LINE_Y)
     canvas.restoreState()
     
-    # TODO: Add scissors symbol (can be drawn with paths or use a symbol font)
-    
     # ========================================================================
     # RECEIPT SECTION (LEFT)
     # ========================================================================
