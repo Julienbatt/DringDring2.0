@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from uuid import UUID
 
+from app.core.guards import require_shop_user
 from app.core.security import get_current_user_claims
 from app.core.tariff_engine import compute_financials, compute_total_price, parse_rule
 from app.core.tariff_validation import validate_tariff_rule
 from app.db.session import get_db_connection
+from app.schemas.me import MeResponse
 
 router = APIRouter(prefix="/deliveries", tags=["pricing"])
 
@@ -12,6 +14,7 @@ router = APIRouter(prefix="/deliveries", tags=["pricing"])
 @router.post("/{delivery_id}/calculate", status_code=status.HTTP_201_CREATED)
 def calculate_delivery(
     delivery_id: UUID,
+    user: MeResponse = Depends(require_shop_user),
     jwt_claims: str = Depends(get_current_user_claims),
 ):
     with get_db_connection(jwt_claims) as conn:
