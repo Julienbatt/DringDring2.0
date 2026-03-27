@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
   pull_request:
 
 jobs:
@@ -67,9 +67,7 @@ jobs:
         run: npm run lint
 
       - name: Typecheck
-        run: npx tsc --noEmit --ignoreDeprecations 5.0 2>&1 | grep -v "^\.next/" || true
-        # Filter out .next/ generated file errors; fail on real source errors
-        # The build step below will catch any remaining issues
+        run: npm run typecheck
 
       - name: Build
         env:
