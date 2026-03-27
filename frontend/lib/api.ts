@@ -1,7 +1,18 @@
 import { createClient } from '@/lib/supabase/client'
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
-export const API_BASE_URL = (rawApiUrl || (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8016/api/v1' : ''))
+
+if (!rawApiUrl && process.env.NODE_ENV === 'production') {
+  throw new Error(
+    'Missing NEXT_PUBLIC_API_URL — cannot start in production without an API URL'
+  )
+}
+
+if (!rawApiUrl && process.env.NODE_ENV === 'development') {
+  console.warn('[api] NEXT_PUBLIC_API_URL not set, falling back to http://127.0.0.1:8016/api/v1')
+}
+
+export const API_BASE_URL = (rawApiUrl || 'http://127.0.0.1:8016/api/v1')
   .replace(/\/+$/, '')
 
 async function refreshAccessToken(): Promise<string | null> {

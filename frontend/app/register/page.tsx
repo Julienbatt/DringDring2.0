@@ -15,6 +15,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete'
 import { apiPost } from '@/lib/api'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { normalizePhone, isValidSwissPhone, formatSwissPhone } from '@/lib/phone'
+import { captureError } from '@/lib/errorReporting'
 
 export default function RegisterPage() {
     const [fullName, setFullName] = useState('')
@@ -124,7 +125,7 @@ export default function RegisterPage() {
             toast.success(t('register.success'))
             router.push('/dashboard')
         } catch (err: unknown) {
-            console.error('Registration Error:', err)
+            captureError(err, 'registration')
             toast.error(getErrorMessage(err))
         } finally {
             setLoading(false)

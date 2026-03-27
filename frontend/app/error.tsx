@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
+import { captureError } from '@/lib/errorReporting'
 
 export default function Error({
     error,
@@ -12,7 +13,7 @@ export default function Error({
 }) {
     const { t } = useLanguage()
     useEffect(() => {
-        console.error(error)
+        captureError(error, 'error-boundary')
     }, [error])
 
     return (

@@ -24,6 +24,7 @@ def _decode_jwt(token: str) -> Dict[str, Any]:
     try:
         header = jwt.get_unverified_header(token)
     except Exception:
+        logger.debug("Failed to parse JWT header, falling back to empty header")
         header = {}
 
     alg = header.get("alg")
@@ -37,8 +38,8 @@ def _decode_jwt(token: str) -> Dict[str, Any]:
                 audience="authenticated",
                 options={"verify_aud": True},
             )
-    except JWTError:
-        pass
+    except JWTError as exc:
+        logger.debug("HS256 decode with raw secret failed: %s", exc)
 
     try:
         if alg in (None, "HS256"):
@@ -50,8 +51,8 @@ def _decode_jwt(token: str) -> Dict[str, Any]:
                 audience="authenticated",
                 options={"verify_aud": True},
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("HS256 decode with base64-decoded secret failed: %s", exc)
 
     if alg and alg.startswith("ES"):
         key = _get_jwks_key(kid)
@@ -64,8 +65,8 @@ def _decode_jwt(token: str) -> Dict[str, Any]:
                     audience="authenticated",
                     options={"verify_aud": True},
                 )
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("JWKS decode with alg=%s failed: %s", alg, exc)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,7 +102,8 @@ def _get_jwks_key(kid: Optional[str]) -> Optional[dict[str, Any]]:
         return None
     try:
         keys = _get_jwks().get("keys", [])
-    except Exception:
+    except Exception as exc:
+        logger.debug("Failed to fetch JWKS: %s", exc)
         return None
     for key in keys:
         if key.get("kid") == kid:

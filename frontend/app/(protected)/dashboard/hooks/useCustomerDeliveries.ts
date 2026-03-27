@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { apiGet } from '@/lib/api'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import * as Sentry from '@sentry/browser'
+import { captureError } from '@/lib/errorReporting'
 
 export type CustomerDeliveryRow = {
     delivery_id: string
@@ -48,8 +49,7 @@ export function useCustomerDeliveries() {
             )
             setData(result)
         } catch (e: unknown) {
-            console.error(e)
-            Sentry.captureException(e)
+            captureError(e, 'customer-deliveries')
             setError(t('common.error.loadOrders'))
             setData(null)
         } finally {

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiPost } from '@/lib/api'
+import { captureError } from '@/lib/errorReporting'
 
 export function useCourierActions() {
     const [updating, setUpdating] = useState<string | null>(null)
@@ -22,7 +23,7 @@ export function useCourierActions() {
             )
             return true
         } catch (e) {
-            console.error(e)
+            captureError(e, 'courier-status-update')
             return false
         } finally {
             setUpdating(null)

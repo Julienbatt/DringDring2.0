@@ -14,6 +14,7 @@ import { Lock, LogIn, ArrowRight } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import * as Sentry from '@sentry/browser'
+import { captureError } from '@/lib/errorReporting'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -47,8 +48,7 @@ export default function LoginPage() {
             router.refresh()
             router.push('/dashboard')
         } catch (err: unknown) {
-            console.error('Login Error:', err)
-            Sentry.captureException(err)
+            captureError(err, 'login')
             toast.error(t('login.systemError'))
         } finally {
             setLoading(false)
