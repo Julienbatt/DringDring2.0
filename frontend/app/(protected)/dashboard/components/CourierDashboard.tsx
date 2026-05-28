@@ -211,6 +211,13 @@ export default function CourierDashboard() {
                                                         {delivery.client_address}<br />
                                                         {delivery.client_postal_code} {delivery.client_city}
                                                     </p>
+                                                    {(delivery.floor || delivery.door_code) && (
+                                                        <p className="mt-1 text-sm font-semibold text-gray-800">
+                                                            {delivery.floor && <span>{t('dispatch.mobile.floor')}: {delivery.floor}</span>}
+                                                            {delivery.floor && delivery.door_code && <span> · </span>}
+                                                            {delivery.door_code && <span>{t('dispatch.mobile.code')}: {delivery.door_code}</span>}
+                                                        </p>
+                                                    )}
                                                 </div>
                                                 <a
                                                     href={getMapLink(delivery.client_address, delivery.client_postal_code, delivery.client_city)}

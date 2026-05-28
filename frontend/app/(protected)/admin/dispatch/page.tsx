@@ -623,6 +623,13 @@ export default function DispatchPage() {
                                             <div className="font-medium text-gray-900">{delivery.client_name || t('admin.dispatch.clientFallback')}</div>
                                             <div>{delivery.client_address}</div>
                                             <div>{delivery.client_city}</div>
+                                            {(delivery.client_floor || delivery.client_door_code) && (
+                                                <div className="mt-0.5 text-xs font-medium text-gray-700">
+                                                    {delivery.client_floor && <span>{t('admin.dispatch.whatsapp.floorLabel')}: {delivery.client_floor}</span>}
+                                                    {delivery.client_floor && delivery.client_door_code && <span> · </span>}
+                                                    {delivery.client_door_code && <span>{t('admin.dispatch.whatsapp.codeLabel')}: {delivery.client_door_code}</span>}
+                                                </div>
+                                            )}
                                             <div className="mt-2 flex flex-col gap-1 text-xs text-gray-500 lg:hidden">
                                                 <StatusBadge status={statusForBadge} size="xs" />
                                                 {assignedCourier?.name && (

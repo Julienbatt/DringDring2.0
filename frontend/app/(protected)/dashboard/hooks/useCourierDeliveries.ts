@@ -17,6 +17,8 @@ export type CourierDeliveryRow = {
     client_city: string
     time_window: string
     bags: number
+    floor: string | null
+    door_code: string | null
     status: string
     status_updated_at: string | null
 }

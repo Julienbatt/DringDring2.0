@@ -502,6 +502,7 @@ export default function ShopReport() {
     data: shopStats,
     loading: statsLoading,
     error: statsError,
+    refresh: refreshStats,
   } = useShopStats(selectedMonth)
   const {
     data: periods,
@@ -724,7 +725,7 @@ export default function ShopReport() {
         door_code: '',
       }))
       setFormResetKey((prev) => prev + 1)
-      await refresh()
+      await Promise.all([refresh(), refreshStats()])
     } catch {
       setSubmitError(editingDeliveryId ? tx.createEditError : tx.createError)
     } finally {
@@ -782,7 +783,7 @@ export default function ShopReport() {
       if (editingDeliveryId === row.delivery_id) {
         handleCancelEdit()
       }
-      await refresh()
+      await Promise.all([refresh(), refreshStats()])
     } catch (e) {
       const message = e instanceof Error ? e.message : tx.cancelError
       setSubmitError(message)
