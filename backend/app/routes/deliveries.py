@@ -189,6 +189,8 @@ def create_delivery(
                         basket_value=payload.basket_value,
                         is_cms=payload.is_cms,
                         notes=None,
+                        floor=payload.floor,
+                        door_code=payload.door_code,
                         short_code=short_code,
                     )
 
@@ -610,6 +612,8 @@ def list_shop_deliveries(
                     l.basket_value,
                     l.is_cms,
                     l.notes,
+                    l.floor,
+                    l.door_code,
                     st.status,
                     st.updated_at AS status_updated_at,
                     f.total_price,
@@ -1006,11 +1010,15 @@ def list_courier_deliveries(
                         l.city_name AS client_city,
                         l.time_window,
                         l.bags,
+                        COALESCE(l.floor, cl.floor) AS floor,
+                        COALESCE(l.door_code, cl.door_code) AS door_code,
+                        l.notes AS notes,
                         st.status,
                         st.updated_at AS status_updated_at
                     FROM delivery d
                     JOIN shop s ON s.id = d.shop_id
                     JOIN delivery_logistics l ON l.delivery_id = d.id
+                    LEFT JOIN client cl ON cl.id = d.client_id
                     LEFT JOIN LATERAL (
                         SELECT status, updated_at
                         FROM delivery_status
@@ -1179,6 +1187,8 @@ def _apply_delivery_update(
             l.order_amount,
             l.basket_value,
             l.notes,
+            l.floor,
+            l.door_code,
             l.is_cms
         FROM delivery d
         JOIN delivery_logistics l ON l.delivery_id = d.id
@@ -1199,6 +1209,8 @@ def _apply_delivery_update(
         order_amount,
         basket_value,
         notes,
+        floor,
+        door_code,
         is_cms,
     ) = row
 
@@ -1233,6 +1245,8 @@ def _apply_delivery_update(
         payload.basket_value if payload.basket_value is not None else basket_value
     )
     new_notes = payload.notes if payload.notes is not None else notes
+    new_floor = payload.floor if payload.floor is not None else floor
+    new_door_code = payload.door_code if payload.door_code is not None else door_code
 
     cur.execute(
         """
@@ -1310,10 +1324,12 @@ def _apply_delivery_update(
             bags = %s,
             order_amount = %s,
             basket_value = %s,
-            notes = %s
+            notes = %s,
+            floor = %s,
+            door_code = %s
         WHERE delivery_id = %s
         """,
-        (new_time_window, new_bags, new_order_amount, new_basket_value, new_notes, delivery_id),
+        (new_time_window, new_bags, new_order_amount, new_basket_value, new_notes, new_floor, new_door_code, delivery_id),
     )
 
     cur.execute(
@@ -1498,6 +1514,8 @@ def _create_delivery_core(
         basket_value=payload.basket_value,
         is_cms=client["is_cms"],
         notes=payload.notes,
+        floor=payload.floor,
+        door_code=payload.door_code,
         short_code=short_code,
     )
 
@@ -1616,6 +1634,8 @@ def _insert_delivery_logistics(
     basket_value: Decimal | float | None,
     is_cms: bool,
     notes: str | None = None,
+    floor: str | None = None,
+    door_code: str | None = None,
     short_code: str | None = None,
 ):
     # Snapshot client details at delivery time.
@@ -1632,8 +1652,10 @@ def _insert_delivery_logistics(
                 order_amount,
                 basket_value,
                 is_cms,
+                floor,
+                door_code,
                 short_code
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 delivery_id,
@@ -1645,6 +1667,8 @@ def _insert_delivery_logistics(
                 order_amount,
                 basket_value,
                 is_cms,
+                floor,
+                door_code,
                 short_code,
             ),
         )
@@ -1664,8 +1688,10 @@ def _insert_delivery_logistics(
             basket_value,
             is_cms,
             notes,
+            floor,
+            door_code,
             short_code
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             delivery_id,
@@ -1679,6 +1705,8 @@ def _insert_delivery_logistics(
             basket_value,
             is_cms,
             notes,
+            floor,
+            door_code,
             short_code
         ),
     )

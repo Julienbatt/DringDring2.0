@@ -148,6 +148,8 @@ type FormState = {
   order_amount: string | number
   basket_value: string | number
   notes: string
+  floor: string
+  door_code: string
   [key: string]: string | number | boolean
 }
 
@@ -160,6 +162,8 @@ type DeliveryTableRow = {
   order_amount?: string | number | null
   basket_value?: string | number | null
   notes?: string | null
+  floor?: string | null
+  door_code?: string | null
 }
 
 export default function ShopReport() {
@@ -349,6 +353,8 @@ export default function ShopReport() {
     order_amount: '',
     basket_value: '',
     notes: '',
+    floor: '',
+    door_code: '',
   })
   const [deliveryDateDisplay, setDeliveryDateDisplay] = useState(() => formatSwissDate(getToday()))
   const [formResetKey, setFormResetKey] = useState(0)
@@ -676,6 +682,8 @@ export default function ShopReport() {
             ? (formState.order_amount ? Number(formState.order_amount) : null)
             : (formState.basket_value ? Number(formState.basket_value) : null),
           notes: formState.notes,
+          floor: formState.floor || null,
+          door_code: formState.door_code || null,
         }
         await apiPatch(`/deliveries/shop/${editingDeliveryId}`, payload, session.access_token)
         setEditingDeliveryId(null)
@@ -690,6 +698,8 @@ export default function ShopReport() {
             ? (formState.order_amount ? Number(formState.order_amount) : null)
             : (formState.basket_value ? Number(formState.basket_value) : null),
           notes: formState.notes,
+          floor: formState.floor || null,
+          door_code: formState.door_code || null,
         }
         const created = await apiPost<{ delivery_id: string; short_code?: string }>(
           '/deliveries/shop',
@@ -710,6 +720,8 @@ export default function ShopReport() {
         order_amount: '',
         basket_value: '',
         notes: '',
+        floor: '',
+        door_code: '',
       }))
       setFormResetKey((prev) => prev + 1)
       await refresh()
@@ -731,6 +743,8 @@ export default function ShopReport() {
       order_amount: '',
       basket_value: '',
       notes: '',
+      floor: '',
+      door_code: '',
     }))
     setFormResetKey((prev) => prev + 1)
   }
@@ -747,6 +761,8 @@ export default function ShopReport() {
       order_amount: row.order_amount ?? '',
       basket_value: row.basket_value ?? '',
       notes: row.notes ?? '',
+      floor: row.floor ?? '',
+      door_code: row.door_code ?? '',
     }))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -984,9 +1000,12 @@ export default function ShopReport() {
               clients={clients ?? []}
               value={formState.client_id}
               onChange={(clientId) => {
+                const client = (clients ?? []).find((c) => c.id === clientId)
                 setFormState((prev) => ({
                   ...prev,
                   client_id: clientId,
+                  floor: client?.floor ?? '',
+                  door_code: client?.door_code ?? '',
                 }))
               }}
               placeholder={clientsLoading ? tx.loadingPlaceholder : tx.searchClient}
@@ -1230,6 +1249,32 @@ export default function ShopReport() {
               </select>
             </label>
           )}
+
+          {/* New: floor */}
+          <label className="text-sm text-gray-600">
+            {tx.floor}
+            <input
+              className="mt-1 w-full rounded border px-2 py-1"
+              type="text"
+              name="floor"
+              value={formState.floor}
+              onChange={handleChange}
+              placeholder={tx.floorPlaceholder}
+            />
+          </label>
+
+          {/* New: door_code */}
+          <label className="text-sm text-gray-600">
+            {tx.doorCode}
+            <input
+              className="mt-1 w-full rounded border px-2 py-1"
+              type="text"
+              name="door_code"
+              value={formState.door_code}
+              onChange={handleChange}
+              placeholder={tx.doorCodePlaceholder}
+            />
+          </label>
 
           <label className="text-sm text-gray-600 md:col-span-2">
             {tx.notes}
