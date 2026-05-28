@@ -25,6 +25,8 @@ class DeliveryCreate(BaseModel):
     order_amount: Optional[float] = None
     basket_value: Optional[float] = None
     is_cms: bool = False
+    floor: Optional[str] = None
+    door_code: Optional[str] = None
 
 
 class ShopDeliveryCreate(BaseModel):
@@ -35,6 +37,8 @@ class ShopDeliveryCreate(BaseModel):
     order_amount: Optional[float] = None
     basket_value: Optional[float] = None
     notes: Optional[str] = None
+    floor: Optional[str] = None
+    door_code: Optional[str] = None
 
 
 class ShopDeliveryUpdate(BaseModel):
@@ -44,6 +48,8 @@ class ShopDeliveryUpdate(BaseModel):
     order_amount: Optional[float] = None
     basket_value: Optional[float] = None
     notes: Optional[str] = None
+    floor: Optional[str] = None
+    door_code: Optional[str] = None
 
 
 class ShopDeliveryCancel(BaseModel):

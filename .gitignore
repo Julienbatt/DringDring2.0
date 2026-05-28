@@ -21,3 +21,7 @@ npm-debug.log*
 # Env
 .env
 .env.local
+
+# GSD tooling (machine-specific hook paths; keep local)
+.claude/
+.planning/

@@ -169,8 +169,11 @@ export default function CourierDispatchPage() {
       `${t('dispatch.mobile.waNewDelivery')}: ${delivery.shop_name}`,
       `${t('dispatch.mobile.pickup')}: ${delivery.shop_address || '-'}`,
       `${t('dispatch.mobile.delivery')}: ${delivery.client_address}, ${delivery.client_city}`,
+      delivery.client_floor ? `${t('dispatch.mobile.floor')}: ${delivery.client_floor}` : null,
+      delivery.client_door_code ? `${t('dispatch.mobile.code')}: ${delivery.client_door_code}` : null,
       `${t('dispatch.mobile.schedule')}: ${delivery.time_window}`,
       `${t('dispatch.mobile.bags')}: ${delivery.bags ?? '-'}`,
+      delivery.notes ? `${t('dispatch.mobile.note')}: ${delivery.notes}` : null,
     ].filter(Boolean).join('\n')
     return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`
   }
