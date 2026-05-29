@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { api } from '@/lib/api'
-import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle } from 'lucide-react'
+import { Phone, MapPin, RefreshCw, CheckCircle2, Users, XCircle, Pencil } from 'lucide-react'
+import { toast } from 'sonner'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { captureError } from '@/lib/errorReporting'
@@ -58,6 +59,13 @@ export default function CourierDispatchPage() {
   const [activeTab, setActiveTab] = useState<'todo' | 'assigned' | 'done'>('todo')
   const [assignTarget, setAssignTarget] = useState<DispatchDelivery | null>(null)
   const [actionLoading, setActionLoading] = useState<Record<string, string>>({})
+  const [editTarget, setEditTarget] = useState<DispatchDelivery | null>(null)
+  const [editForm, setEditForm] = useState<{ floor: string; door_code: string; notes: string }>({
+    floor: '',
+    door_code: '',
+    notes: '',
+  })
+  const [editSaving, setEditSaving] = useState(false)
 
   const canDispatch = !!user?.can_dispatch
   const courierId = user?.courier_id || null
@@ -150,6 +158,94 @@ export default function CourierDispatchPage() {
         delete copy[key]
         return copy
       })
+    }
+  }
+
+  const openEdit = (delivery: DispatchDelivery) => {
+    setEditTarget(delivery)
+    setEditForm({
+      floor: delivery.client_floor ?? '',
+      door_code: delivery.client_door_code ?? '',
+      notes: delivery.notes ?? '',
+    })
+  }
+
+  const closeEdit = () => {
+    setEditTarget(null)
+    setEditSaving(false)
+  }
+
+  const mapCorrectionError = (err: unknown): string => {
+    // The api wrapper throws `new Error("API error <status>: <body>")`.
+    // The body is the FastAPI response JSON. Parse to localize.
+    if (!(err instanceof Error)) return t('correction.error.generic')
+    // Note: no /s flag (tsconfig target=ES2017). FastAPI details are single-line.
+    const match = err.message.match(/^API error (\d+):\s*([\s\S]*)$/)
+    if (!match) return t('correction.error.generic')
+    const status = Number(match[1])
+    let detail = ''
+    try {
+      const body = JSON.parse(match[2]) as { detail?: unknown }
+      detail = typeof body.detail === 'string' ? body.detail : ''
+    } catch {
+      detail = match[2]
+    }
+    if (status === 403) {
+      if (detail === 'Not assigned to this delivery') return t('correction.error.notAssigned')
+      if (detail.startsWith('Field not editable')) return t('correction.error.notEditable')
+    }
+    if (status === 409) {
+      if (detail === 'Delivery is locked') return t('correction.error.locked')
+      if (detail.startsWith('Billing period')) return t('correction.error.frozen')
+    }
+    return t('correction.error.generic')
+  }
+
+  const handleSaveCorrection = async () => {
+    if (!editTarget || !session?.access_token) return
+    // Diff the form against the original — submit only what actually changed.
+    const body: { floor?: string; door_code?: string; notes?: string } = {}
+    const normalize = (v: string) => (v.trim().length === 0 ? '' : v)
+    if (normalize(editForm.floor) !== (editTarget.client_floor ?? '')) {
+      body.floor = normalize(editForm.floor)
+    }
+    if (normalize(editForm.door_code) !== (editTarget.client_door_code ?? '')) {
+      body.door_code = normalize(editForm.door_code)
+    }
+    if (normalize(editForm.notes) !== (editTarget.notes ?? '')) {
+      body.notes = normalize(editForm.notes)
+    }
+    if (Object.keys(body).length === 0) {
+      closeEdit()
+      return
+    }
+    setEditSaving(true)
+    try {
+      // The PATCH response only echoes a partial summary (no floor/door/notes),
+      // so we update local state from the submitted body instead.
+      await api.patch(`/deliveries/courier/${editTarget.id}`, body, session.access_token)
+      const targetId = editTarget.id
+      setDeliveries((prev) =>
+        prev.map((d) =>
+          d.id === targetId
+            ? {
+                ...d,
+                client_floor: body.floor !== undefined ? body.floor : d.client_floor,
+                client_door_code: body.door_code !== undefined ? body.door_code : d.client_door_code,
+                notes: body.notes !== undefined ? body.notes : d.notes,
+              }
+            : d
+        )
+      )
+      toast.success(t('correction.courier.saved'))
+      closeEdit()
+    } catch (err) {
+      const message = mapCorrectionError(err)
+      setError(message)
+      toast.error(message)
+      captureError(err, 'courier.correction.save')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -320,6 +416,16 @@ export default function CourierDispatchPage() {
                     <MapPin className="h-4 w-4" />
                     {t('dispatch.mobile.route')}
                   </a>
+                  {delivery.status !== 'cancelled' && (
+                    <button
+                      type="button"
+                      onClick={() => openEdit(delivery)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 min-h-[44px]"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      {t('correction.courier.editButton')}
+                    </button>
+                  )}
                   {activeTab === 'todo' ? (
                     <div className="ml-auto flex items-center gap-2">
                       <button
@@ -403,6 +509,81 @@ export default function CourierDispatchPage() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {editTarget && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-white border shadow-xl">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-gray-900">{t('correction.courier.title')}</div>
+                <div className="text-xs text-gray-500">{editTarget.client_address}, {editTarget.client_city}</div>
+              </div>
+              <button
+                type="button"
+                className="text-sm text-gray-500 min-h-[44px] min-w-[44px]"
+                onClick={closeEdit}
+                aria-label={t('dispatch.mobile.close')}
+              >
+                {t('dispatch.mobile.close')}
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <label className="block text-sm">
+                <span className="block text-xs font-semibold text-gray-700 mb-1">
+                  {t('correction.field.floor')}
+                </span>
+                <input
+                  type="text"
+                  value={editForm.floor}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, floor: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[44px]"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="block text-xs font-semibold text-gray-700 mb-1">
+                  {t('correction.field.door_code')}
+                </span>
+                <input
+                  type="text"
+                  value={editForm.door_code}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, door_code: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[44px]"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="block text-xs font-semibold text-gray-700 mb-1">
+                  {t('correction.field.notes')}
+                </span>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  rows={3}
+                />
+              </label>
+            </div>
+            <div className="border-t p-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeEdit}
+                className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 min-h-[44px]"
+              >
+                {t('correction.courier.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCorrection}
+                disabled={editSaving}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 min-h-[44px]"
+              >
+                {editSaving ? t('common.loading') : t('correction.courier.save')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
