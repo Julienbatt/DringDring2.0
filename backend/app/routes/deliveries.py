@@ -3,6 +3,7 @@ from decimal import Decimal
 import csv
 import hashlib
 import io
+import json
 import logging
 from uuid import uuid4
 
@@ -15,15 +16,26 @@ from app.core.guards import (
     require_courier_user,
     require_customer_user,
     require_admin_user,
+    require_dispatch_user,
 )
 from app.core.config import settings
+from app.core.delivery_fields import (
+    ALLOWED_CLASSES_FOR_ACTOR,
+    assert_payload_within_classes,
+)
 from app.core.geo import compute_co2_saved_kg, compute_distance_km, geocode_swiss_address
 from app.core.security import get_current_user_claims
 from app.core.tariff_engine import compute_financials, compute_total_price, parse_rule
 from app.core.tariff_validation import validate_tariff_rule
 from app.db.session import get_db_connection
 from app.pdf.shop_monthly_report import build_shop_monthly_pdf
-from app.schemas.delivery import DeliveryCreate, ShopDeliveryCreate, ShopDeliveryUpdate, ShopDeliveryCancel
+from app.schemas.delivery import (
+    CourierDeliveryUpdate,
+    DeliveryCreate,
+    ShopDeliveryCancel,
+    ShopDeliveryCreate,
+    ShopDeliveryUpdate,
+)
 from app.schemas.me import MeResponse
 from app.storage.supabase_storage import upload_pdf_bytes
 from app.core.utils import parse_month
@@ -755,6 +767,8 @@ def update_shop_delivery(
                     delivery_id=delivery_id,
                     payload=payload,
                     shop_id=str(shop_id),
+                    actor=user,
+                    allowed_classes=ALLOWED_CLASSES_FOR_ACTOR(user),
                 )
 
 
@@ -796,6 +810,80 @@ def update_delivery_admin(
                     delivery_id=delivery_id,
                     payload=payload,
                     shop_id=shop_id,
+                    actor=user,
+                    allowed_classes=ALLOWED_CLASSES_FOR_ACTOR(user),
+                )
+
+
+@router.patch("/courier/{delivery_id}")
+def update_courier_delivery(
+    delivery_id: str,
+    payload: CourierDeliveryUpdate,
+    user: MeResponse = Depends(require_courier_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    """Logistics-only PATCH a courier may apply to their own assigned delivery.
+
+    DISP-04: the courier on the ground must be able to fix floor / door_code /
+    notes after pick-up — even during the 48h delivered grace window — without
+    being able to touch financial / scheduling / identity fields.
+
+    Three gates in order:
+      1. Pydantic `extra=forbid` on CourierDeliveryUpdate (HTTP 422).
+      2. `delivery.courier_id == my_courier_id` (HTTP 403 'Not assigned…').
+      3. `assert_payload_within_classes(payload, {'logistics'})` inside
+         `_apply_delivery_update` (HTTP 403 'Field not editable by courier').
+    """
+    with get_db_connection(jwt_claims) as conn:
+        with conn:
+            with conn.cursor() as cur:
+                # Identify the courier row for this user (reuses the canonical
+                # pattern at line ~990 in list_courier_deliveries).
+                cur.execute(
+                    """
+                    SELECT id
+                    FROM courier
+                    WHERE user_id = %s
+                       OR (email IS NOT NULL AND lower(email) = lower(%s))
+                    LIMIT 1
+                    """,
+                    (user.user_id, user.email),
+                )
+                courier_row = cur.fetchone()
+                if not courier_row:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Courier access required",
+                    )
+                my_courier_id = courier_row[0]
+
+                # Confirm assignment AND fetch the delivery's shop_id for
+                # _apply_delivery_update. The courier identity does NOT carry
+                # shop_id, so we derive it from the delivery itself.
+                cur.execute(
+                    "SELECT shop_id, courier_id FROM delivery WHERE id = %s",
+                    (delivery_id,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Delivery not found",
+                    )
+                delivery_shop_id, assigned_courier_id = row
+                if str(assigned_courier_id) != str(my_courier_id):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Not assigned to this delivery",
+                    )
+
+                return _apply_delivery_update(
+                    cur=cur,
+                    delivery_id=delivery_id,
+                    payload=payload,
+                    shop_id=str(delivery_shop_id),
+                    actor=user,
+                    allowed_classes=ALLOWED_CLASSES_FOR_ACTOR(user),
                 )
 
 
@@ -1040,6 +1128,63 @@ def list_courier_deliveries(
         raise HTTPException(status_code=500, detail="Unable to load deliveries") from exc
 
 
+@router.get("/{delivery_id}/corrections")
+def list_delivery_corrections(
+    delivery_id: str,
+    user: MeResponse = Depends(require_dispatch_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    """Return the audit trail for a delivery, dispatcher/admin only.
+
+    Region-scoped for non-super_admin: an admin_region or can_dispatch courier
+    whose admin_region_id ≠ delivery's region gets 403. The audit table itself
+    has RLS enforcing the same rule via the service_role + JWT claims, but the
+    application layer also checks so the API surface is predictable without
+    relying on RLS round-trips.
+    """
+    with get_db_connection(jwt_claims) as conn:
+        with conn.cursor() as cur:
+            # Resolve the delivery's region in one shot.
+            cur.execute(
+                """
+                SELECT c.admin_region_id
+                FROM delivery d
+                JOIN shop s ON s.id = d.shop_id
+                JOIN city c ON c.id = s.city_id
+                WHERE d.id = %s
+                """,
+                (delivery_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Delivery not found",
+                )
+            delivery_region_id = row[0]
+            if user.role != "super_admin":
+                if (
+                    not user.admin_region_id
+                    or str(delivery_region_id) != str(user.admin_region_id)
+                ):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Not in your region",
+                    )
+
+            cur.execute(
+                """
+                SELECT id, delivery_id, actor_user_id, actor_role, field,
+                       old_value, new_value, reason, created_at
+                FROM delivery_correction_audit
+                WHERE delivery_id = %s
+                ORDER BY created_at DESC
+                """,
+                (delivery_id,),
+            )
+            return _rows_to_dicts(cur)
+
+
 @router.get("/customer")
 def list_customer_deliveries(
     user: MeResponse = Depends(require_customer_user),
@@ -1173,9 +1318,20 @@ def _apply_delivery_update(
     *,
     cur,
     delivery_id: str,
-    payload: ShopDeliveryUpdate,
+    payload,  # ShopDeliveryUpdate or CourierDeliveryUpdate
     shop_id: str,
+    actor: MeResponse,
+    allowed_classes: set,
 ):
+    """Apply a delivery correction. Refactored in Phase 2 Wave 2 (DISP-03 / DISP-04)
+    to be actor-aware: every successful field change writes an append-only row
+    into `delivery_correction_audit`. Authorization happens BEFORE the freeze /
+    edit-window checks so courier-class violations get 403 even on locked rows.
+
+    `actor` is the verified JWT identity (NOT the request body).
+    `allowed_classes` is the result of ALLOWED_CLASSES_FOR_ACTOR(actor); the
+    helper is called at the route layer so call-sites stay explicit.
+    """
     cur.execute(
         """
         SELECT
@@ -1217,11 +1373,18 @@ def _apply_delivery_update(
     if str(delivery_shop_id) != str(shop_id):
         raise HTTPException(status_code=403, detail="Not in your shop")
 
+    # Field-class authorization runs FIRST — before the freeze / edit-window
+    # check. A courier who tries to mutate a financial field on a locked or
+    # frozen delivery gets 403 (not 409), which is the correct ordering:
+    # authorization always beats lifecycle.
+    payload_dict = payload.dict(exclude_unset=True)
+    assert_payload_within_classes(payload_dict, allowed_classes)
+
     status, status_updated_at = _get_latest_status(cur, delivery_id)
     can_edit_basic = _can_edit_delivery(status, status_updated_at, delivery_date)
 
     old_month = delivery_date.replace(day=1)
-    new_delivery_date = payload.delivery_date or delivery_date
+    new_delivery_date = payload.delivery_date if getattr(payload, "delivery_date", None) else delivery_date
     new_month = new_delivery_date.replace(day=1)
 
     old_frozen = _is_period_frozen(cur, shop_id, old_month)
@@ -1236,14 +1399,15 @@ def _apply_delivery_update(
     if status in EDITABLE_STATUSES and is_frozen:
         raise HTTPException(status_code=409, detail="Billing period is frozen")
 
-    new_time_window = payload.time_window if payload.time_window is not None else time_window
-    new_bags = payload.bags if payload.bags is not None else bags
-    new_order_amount = (
-        payload.order_amount if payload.order_amount is not None else order_amount
-    )
-    new_basket_value = (
-        payload.basket_value if payload.basket_value is not None else basket_value
-    )
+    # CourierDeliveryUpdate doesn't define financial / scheduling fields; use
+    # getattr so the helper accepts both ShopDeliveryUpdate and CourierDeliveryUpdate
+    # without changing observable behavior for the shop / admin paths.
+    new_time_window = getattr(payload, "time_window", None) if getattr(payload, "time_window", None) is not None else time_window
+    new_bags = getattr(payload, "bags", None) if getattr(payload, "bags", None) is not None else bags
+    _po = getattr(payload, "order_amount", None)
+    new_order_amount = _po if _po is not None else order_amount
+    _pb = getattr(payload, "basket_value", None)
+    new_basket_value = _pb if _pb is not None else basket_value
     new_notes = payload.notes if payload.notes is not None else notes
     new_floor = payload.floor if payload.floor is not None else floor
     new_door_code = payload.door_code if payload.door_code is not None else door_code
@@ -1366,6 +1530,47 @@ def _apply_delivery_update(
             city_share=s_city,
             admin_share=s_admin,
             cms_subsidy=cms_subsidy,
+        )
+
+    # ── Audit writes (DISP-03) ────────────────────────────────────────────
+    # One row in delivery_correction_audit per field the caller intended to
+    # mutate AND whose value actually changed. Runs on the same cursor (same
+    # transaction) as the UPDATEs — any later failure rolls back the audit
+    # row too. is_cms and client_id are intentionally excluded: is_cms is
+    # immutable through this path; client_id is currently never mutated
+    # (the route reads it but writes it back unchanged).
+    candidate_changes = [
+        ("delivery_date", delivery_date, new_delivery_date),
+        ("time_window", time_window, new_time_window),
+        ("bags", bags, new_bags),
+        ("order_amount", order_amount, new_order_amount),
+        ("basket_value", basket_value, new_basket_value),
+        ("notes", notes, new_notes),
+        ("floor", floor, new_floor),
+        ("door_code", door_code, new_door_code),
+    ]
+    audit_reason = getattr(payload, "reason", None)
+    for field_name, old_val, new_val in candidate_changes:
+        if field_name not in payload_dict:
+            # Caller never sent this field — skip even if defaults differ.
+            continue
+        if old_val == new_val:
+            continue
+        cur.execute(
+            """
+            INSERT INTO delivery_correction_audit
+                (delivery_id, actor_user_id, actor_role, field, old_value, new_value, reason)
+            VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s)
+            """,
+            (
+                delivery_id,
+                actor.user_id,
+                actor.role,
+                field_name,
+                json.dumps(old_val, default=str),
+                json.dumps(new_val, default=str),
+                audit_reason,
+            ),
         )
 
     return {
