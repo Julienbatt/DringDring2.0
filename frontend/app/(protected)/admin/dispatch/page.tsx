@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { de, enUS, fr, it } from 'date-fns/locale'
 import Link from 'next/link'
 import { StatusBadge } from '@/components/StatusBadge'
+import { CorrectionHistoryPanel } from '@/components/CorrectionHistoryPanel'
 import { useLanguage } from '@/lib/i18n/LanguageProvider'
 import { captureError } from '@/lib/errorReporting'
 
@@ -74,6 +75,7 @@ export default function DispatchPage() {
     })
     const deliveryEditGraceHours = 48
     const [showCancelled, setShowCancelled] = useState(false)
+    const [historyDelivery, setHistoryDelivery] = useState<DispatchDelivery | null>(null)
 
     // Tabs State
     const [activeTab, setActiveTab] = useState<'todo' | 'assigned' | 'done'>('todo')
@@ -697,6 +699,12 @@ export default function DispatchPage() {
                                                     {t('common.edit')}
                                                 </button>
                                             )}
+                                            <button
+                                                onClick={() => setHistoryDelivery(delivery)}
+                                                className="text-gray-600 hover:text-gray-800"
+                                            >
+                                                {t('correction.history.title')}
+                                            </button>
                                             {canCancel && (
                                                 <button
                                                     onClick={() => handleCancelDelivery(delivery)}
@@ -954,6 +962,12 @@ export default function DispatchPage() {
                     </div>
                 </div>
             )}
+
+            <CorrectionHistoryPanel
+                deliveryId={historyDelivery?.id ?? ''}
+                open={!!historyDelivery}
+                onClose={() => setHistoryDelivery(null)}
+            />
         </div >
     )
 }
