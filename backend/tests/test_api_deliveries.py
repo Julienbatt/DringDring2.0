@@ -842,11 +842,20 @@ class TestCourierPatchAndCorrections:
         assert response.status_code == 403
         assert response.json()["detail"] == "Not in your region"
 
-    def test_get_corrections_returns_403_for_shop_user(self, shop_client):
-        """Shop role is not in require_dispatch_user → 403."""
+    def test_get_corrections_returns_403_for_shop_user(self, shop_client, mocker):
+        """Shop role is not in require_dispatch_user → 403.
+
+        We patch the upstream identity resolver to return the shop's MeResponse
+        so require_dispatch_user fires its 403 instead of hitting the DB and
+        returning a connection error.
+        """
+        mocker.patch(
+            "app.core.guards.resolve_identity",
+            return_value=_shop_identity(),
+        )
         response = shop_client.get("/api/v1/deliveries/d-1/corrections")
-        # Either 401/403 depending on which guard fires; we accept both.
-        assert response.status_code in (401, 403)
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Dispatch access required"
 
     def test_get_corrections_returns_404_for_unknown_delivery(
         self, admin_client, mocker

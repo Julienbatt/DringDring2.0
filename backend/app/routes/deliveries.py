@@ -815,6 +815,78 @@ def update_delivery_admin(
                 )
 
 
+@router.patch("/courier/{delivery_id}")
+def update_courier_delivery(
+    delivery_id: str,
+    payload: CourierDeliveryUpdate,
+    user: MeResponse = Depends(require_courier_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    """Logistics-only PATCH a courier may apply to their own assigned delivery.
+
+    DISP-04: the courier on the ground must be able to fix floor / door_code /
+    notes after pick-up — even during the 48h delivered grace window — without
+    being able to touch financial / scheduling / identity fields.
+
+    Three gates in order:
+      1. Pydantic `extra=forbid` on CourierDeliveryUpdate (HTTP 422).
+      2. `delivery.courier_id == my_courier_id` (HTTP 403 'Not assigned…').
+      3. `assert_payload_within_classes(payload, {'logistics'})` inside
+         `_apply_delivery_update` (HTTP 403 'Field not editable by courier').
+    """
+    with get_db_connection(jwt_claims) as conn:
+        with conn:
+            with conn.cursor() as cur:
+                # Identify the courier row for this user (reuses the canonical
+                # pattern at line ~990 in list_courier_deliveries).
+                cur.execute(
+                    """
+                    SELECT id
+                    FROM courier
+                    WHERE user_id = %s
+                       OR (email IS NOT NULL AND lower(email) = lower(%s))
+                    LIMIT 1
+                    """,
+                    (user.user_id, user.email),
+                )
+                courier_row = cur.fetchone()
+                if not courier_row:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Courier access required",
+                    )
+                my_courier_id = courier_row[0]
+
+                # Confirm assignment AND fetch the delivery's shop_id for
+                # _apply_delivery_update. The courier identity does NOT carry
+                # shop_id, so we derive it from the delivery itself.
+                cur.execute(
+                    "SELECT shop_id, courier_id FROM delivery WHERE id = %s",
+                    (delivery_id,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Delivery not found",
+                    )
+                delivery_shop_id, assigned_courier_id = row
+                if str(assigned_courier_id) != str(my_courier_id):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Not assigned to this delivery",
+                    )
+
+                return _apply_delivery_update(
+                    cur=cur,
+                    delivery_id=delivery_id,
+                    payload=payload,
+                    shop_id=str(delivery_shop_id),
+                    actor=user,
+                    allowed_classes=ALLOWED_CLASSES_FOR_ACTOR(user),
+                )
+
+
 @router.post("/admin/{delivery_id}/cancel")
 def cancel_delivery_admin(
     delivery_id: str,
@@ -1054,6 +1126,63 @@ def list_courier_deliveries(
             raise
         logger.exception("list_courier_deliveries failed for date=%s", target_date)
         raise HTTPException(status_code=500, detail="Unable to load deliveries") from exc
+
+
+@router.get("/{delivery_id}/corrections")
+def list_delivery_corrections(
+    delivery_id: str,
+    user: MeResponse = Depends(require_dispatch_user),
+    jwt_claims: str = Depends(get_current_user_claims),
+):
+    """Return the audit trail for a delivery, dispatcher/admin only.
+
+    Region-scoped for non-super_admin: an admin_region or can_dispatch courier
+    whose admin_region_id ≠ delivery's region gets 403. The audit table itself
+    has RLS enforcing the same rule via the service_role + JWT claims, but the
+    application layer also checks so the API surface is predictable without
+    relying on RLS round-trips.
+    """
+    with get_db_connection(jwt_claims) as conn:
+        with conn.cursor() as cur:
+            # Resolve the delivery's region in one shot.
+            cur.execute(
+                """
+                SELECT c.admin_region_id
+                FROM delivery d
+                JOIN shop s ON s.id = d.shop_id
+                JOIN city c ON c.id = s.city_id
+                WHERE d.id = %s
+                """,
+                (delivery_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Delivery not found",
+                )
+            delivery_region_id = row[0]
+            if user.role != "super_admin":
+                if (
+                    not user.admin_region_id
+                    or str(delivery_region_id) != str(user.admin_region_id)
+                ):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Not in your region",
+                    )
+
+            cur.execute(
+                """
+                SELECT id, delivery_id, actor_user_id, actor_role, field,
+                       old_value, new_value, reason, created_at
+                FROM delivery_correction_audit
+                WHERE delivery_id = %s
+                ORDER BY created_at DESC
+                """,
+                (delivery_id,),
+            )
+            return _rows_to_dicts(cur)
 
 
 @router.get("/customer")
