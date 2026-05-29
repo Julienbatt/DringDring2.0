@@ -1,0 +1,44 @@
+name: DB Migrate
+
+# Applies Supabase migrations as part of the deploy pipeline.
+# - push to `staging` (when supabase/migrations changes) -> apply to STAGING (Zurich), no gate
+# - push to `main`    (when supabase/migrations changes) -> apply to PROD, requires manual
+#   approval via the `production` GitHub Environment (protected reviewer)
+# Render/Vercel app deploys are handled by their own Git auto-deploy; this workflow
+# only runs the database migrations so schema changes ship with the code.
+
+on:
+  push:
+    branches: [staging, main]
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which environment to migrate'
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: db-migrate-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    # main -> production (gated by required reviewer); everything else -> staging
+    environment: ${{ (github.ref_name == 'main' || inputs.target == 'production') && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply migrations (supabase db push)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          DB_URL: ${{ (github.ref_name == 'main' || inputs.target == 'production') && secrets.PROD_DB_URL || secrets.STAGING_DB_URL }}
+        run: supabase db push --db-url "$DB_URL" --yes
