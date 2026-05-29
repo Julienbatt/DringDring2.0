@@ -16,10 +16,14 @@ import { expect, test, type Page } from '@playwright/test'
 // the flow is gated behind manual Task-5 verification in 02-03-PLAN.md.
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000'
-const courierEmail = process.env.E2E_COURIER_EMAIL || 'coursier@dringdring.ch'
-const courierPassword = process.env.E2E_COURIER_PASSWORD || 'password'
-const adminEmail = process.env.E2E_ADMIN_EMAIL || 'admin_vs@dringdring.ch'
-const adminPassword = process.env.E2E_ADMIN_PASSWORD || 'password'
+// Credentials are required (no defaults). When unset, the tests skip — same
+// convention as auth-protected.spec.ts (SMOKE_TEST_EMAIL/PASSWORD). CI runs
+// without these set, so the spec is dormant in CI and only fires for manual
+// runs against a real staging env.
+const courierEmail = process.env.E2E_COURIER_EMAIL
+const courierPassword = process.env.E2E_COURIER_PASSWORD
+const adminEmail = process.env.E2E_ADMIN_EMAIL
+const adminPassword = process.env.E2E_ADMIN_PASSWORD
 
 // Shared mutable record so Test B can find Test A's delivery row by short_code
 // or by the address we read off the screen.
@@ -46,7 +50,11 @@ async function login(page: Page, email: string, password: string) {
 
 test.describe.serial('Phase 2 Wave 3 — delivery correction smoke', () => {
   test('A: courier corrects floor on own assigned delivery', async ({ page }) => {
-    await login(page, courierEmail, courierPassword)
+    test.skip(
+      !courierEmail || !courierPassword,
+      'E2E_COURIER_EMAIL/E2E_COURIER_PASSWORD not set — manual-run-only smoke'
+    )
+    await login(page, courierEmail as string, courierPassword as string)
 
     await page.goto(`${baseURL}/courier/dispatch`)
 
@@ -100,11 +108,15 @@ test.describe.serial('Phase 2 Wave 3 — delivery correction smoke', () => {
 
   test('B: dispatcher sees the audit row in correction history', async ({ page }) => {
     test.skip(
+      !adminEmail || !adminPassword,
+      'E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD not set — manual-run-only smoke'
+    )
+    test.skip(
       sharedContext.clientAddress === null,
       'Test A was skipped, nothing to verify in Test B.'
     )
 
-    await login(page, adminEmail, adminPassword)
+    await login(page, adminEmail as string, adminPassword as string)
     await page.goto(`${baseURL}/admin/dispatch`)
 
     // The dispatcher page renders a table — open the History panel on the
