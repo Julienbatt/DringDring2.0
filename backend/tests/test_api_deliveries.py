@@ -4,7 +4,7 @@ Covers authentication enforcement, input validation, and happy-path
 GET/POST with mocked DB results for shop, courier, and customer views.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock
 
@@ -689,3 +689,173 @@ class TestDeliveryCorrectionAudit:
         )
         assert response.status_code == 200, response.text
         assert "bags" in _audit_fields(mock_cursor)
+
+
+# ---------------------------------------------------------------------------
+# Task 3 (Phase 2 Wave 2 / DISP-03 read side / DISP-04):
+# PATCH /deliveries/courier/{id} + GET /deliveries/{id}/corrections
+# ---------------------------------------------------------------------------
+
+class TestCourierPatchAndCorrections:
+    """Eight tests covering the new routes from Task 3."""
+
+    @staticmethod
+    def _base_row(**overrides):
+        return TestDeliveryCorrectionAudit._base_row(**overrides)
+
+    # ---- PATCH /courier/{id} happy + auth + 404 ----
+
+    def test_courier_patch_logistics_succeeds_when_assigned(
+        self, courier_client, mocker
+    ):
+        """A courier sending {floor:..} on their own assigned delivery → 200."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.rowcount = 1
+        responses = _build_apply_delivery_update_side_effect(
+            initial_row=self._base_row(floor="2"),
+            courier_id_row=("courier-1",),
+            courier_assignment_row=("shop-1", "courier-1"),
+        )
+        mock_cursor.fetchone.side_effect = responses
+        _stub_tariff_engine(mocker)
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = courier_client.patch(
+            "/api/v1/deliveries/courier/d-1",
+            json={"floor": "5"},
+        )
+        assert response.status_code == 200, response.text
+        assert "floor" in _audit_fields(mock_cursor)
+
+    def test_courier_patch_returns_403_when_not_assigned(
+        self, courier_client, mocker
+    ):
+        """delivery.courier_id != my_courier_id → 403 'Not assigned to this delivery'."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.fetchone.side_effect = [
+            ("courier-1",),                   # courier identity
+            ("shop-1", "courier-OTHER"),      # assignment lookup — different courier
+        ]
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = courier_client.patch(
+            "/api/v1/deliveries/courier/d-1",
+            json={"floor": "5"},
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Not assigned to this delivery"
+
+    def test_courier_patch_returns_404_when_delivery_missing(
+        self, courier_client, mocker
+    ):
+        """SELECT shop_id, courier_id FROM delivery → None → 404 'Delivery not found'."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.fetchone.side_effect = [
+            ("courier-1",),  # courier identity
+            None,            # assignment lookup — no row
+        ]
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = courier_client.patch(
+            "/api/v1/deliveries/courier/d-1",
+            json={"floor": "5"},
+        )
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Delivery not found"
+
+    def test_courier_patch_with_bags_returns_422_from_pydantic(
+        self, courier_client
+    ):
+        """CourierDeliveryUpdate forbids unknown fields → 422 from FastAPI."""
+        response = courier_client.patch(
+            "/api/v1/deliveries/courier/d-1",
+            json={"bags": 5},
+        )
+        assert response.status_code == 422
+
+    def test_courier_patch_succeeds_post_delivered_within_grace(
+        self, courier_client, mocker
+    ):
+        """A delivery marked 'delivered' 1 hour ago is still editable for logistics."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.rowcount = 1
+        recent = datetime.now(timezone.utc) - timedelta(hours=1)
+        responses = _build_apply_delivery_update_side_effect(
+            initial_row=self._base_row(floor="2"),
+            status_row=("delivered", recent),
+            courier_id_row=("courier-1",),
+            courier_assignment_row=("shop-1", "courier-1"),
+        )
+        mock_cursor.fetchone.side_effect = responses
+        _stub_tariff_engine(mocker)
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = courier_client.patch(
+            "/api/v1/deliveries/courier/d-1",
+            json={"floor": "5"},
+        )
+        assert response.status_code == 200, response.text
+
+    # ---- GET /{id}/corrections ----
+
+    def test_get_corrections_returns_rows_for_admin_in_region(
+        self, admin_client, mocker
+    ):
+        """Admin in matching region gets the audit rows."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.fetchone.side_effect = [
+            ("ar-1",),  # region lookup row matching admin's admin_region_id
+        ]
+        mock_cursor.description = [
+            ("id",), ("delivery_id",), ("actor_user_id",), ("actor_role",),
+            ("field",), ("old_value",), ("new_value",), ("reason",),
+            ("created_at",),
+        ]
+        mock_cursor.fetchall.return_value = [
+            (
+                "audit-1", "d-1", "u-shop", "shop", "floor",
+                '"2"', '"3A"', None, datetime(2026, 5, 1, 10, 0, tzinfo=timezone.utc),
+            ),
+        ]
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = admin_client.get("/api/v1/deliveries/d-1/corrections")
+        assert response.status_code == 200, response.text
+        rows = response.json()
+        assert isinstance(rows, list)
+        assert len(rows) == 1
+        assert rows[0]["field"] == "floor"
+
+    def test_get_corrections_returns_403_for_admin_outside_region(
+        self, shop_outside_region_client, mocker
+    ):
+        """Admin whose admin_region_id ≠ delivery's region → 403 'Not in your region'."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.fetchone.side_effect = [
+            ("ar-1",),  # delivery's region, NOT this admin's "ar-OTHER"
+        ]
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = shop_outside_region_client.get(
+            "/api/v1/deliveries/d-1/corrections"
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Not in your region"
+
+    def test_get_corrections_returns_403_for_shop_user(self, shop_client):
+        """Shop role is not in require_dispatch_user → 403."""
+        response = shop_client.get("/api/v1/deliveries/d-1/corrections")
+        # Either 401/403 depending on which guard fires; we accept both.
+        assert response.status_code in (401, 403)
+
+    def test_get_corrections_returns_404_for_unknown_delivery(
+        self, admin_client, mocker
+    ):
+        """GET on a delivery that doesn't exist → 404 'Delivery not found'."""
+        mock_conn, mock_cursor = _mock_db_conn_cursor()
+        mock_cursor.fetchone.side_effect = [None]
+        mocker.patch("app.routes.deliveries.get_db_connection", return_value=mock_conn)
+
+        response = admin_client.get("/api/v1/deliveries/d-NOPE/corrections")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Delivery not found"
