@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#059669" />
+    <title>Hors ligne — DringDring</title>
+    <style>
+      :root {
+        --green: #059669;
+        --fg: #171717;
+        --muted: #6b7280;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+        padding: 24px;
+        background: #ffffff;
+        color: var(--fg);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 420px;
+      }
+      img {
+        width: 88px;
+        height: 88px;
+        margin-bottom: 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 8px;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.5;
+        margin: 0 0 24px;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 10px;
+        background: var(--green);
+        color: #f0fdf4;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 12px 24px;
+        cursor: pointer;
+      }
+      button:active {
+        opacity: 0.85;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="DringDring" width="88" height="88" />
+      <h1>Vous êtes hors ligne</h1>
+      <p>
+        Impossible de joindre DringDring. Vérifiez votre connexion — la page se
+        rechargera automatiquement dès le retour du réseau.
+      </p>
+      <button type="button" onclick="location.reload()">Réessayer</button>
+    </main>
+    <script>
+      window.addEventListener("online", function () {
+        location.reload();
+      });
+    </script>
+  </body>
+</html>
