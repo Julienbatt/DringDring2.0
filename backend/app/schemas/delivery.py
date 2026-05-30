@@ -54,3 +54,19 @@ class ShopDeliveryUpdate(BaseModel):
 
 class ShopDeliveryCancel(BaseModel):
     reason: Optional[str] = None
+
+
+class CourierDeliveryUpdate(BaseModel):
+    """Logistics-only payload a courier may PATCH on their own assigned delivery.
+
+    `model_config = {"extra": "forbid"}` makes Pydantic reject any unknown
+    key (e.g. `bags`, `delivery_date`) with HTTP 422 before the route runs.
+    This is the first of two gates protecting DISP-04; the second is
+    `assert_payload_within_classes` in app.core.delivery_fields.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    floor: Optional[str] = None
+    door_code: Optional[str] = None
+    notes: Optional[str] = None
